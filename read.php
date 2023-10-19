@@ -1,8 +1,10 @@
 <?php
 // Lecture basique des MD en CSW/DCAT
-
+require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/http.inc.php';
+require_once __DIR__.'/isomd.inc.php';
 
+use Symfony\Component\Yaml\Yaml;
 
 function arrayToXml(array $array, string $prefix=''): string {
   $xml = '';
@@ -132,6 +134,10 @@ readonly class Cache {
 readonly class CswServer {
   /** liste des serveurs connus */
   const SERVERS = [
+    'gpf'=> [
+      'title'=> "Géoplateforme",
+      'url'=> 'https://data.geopf.fr/csw',
+    ],
     'sextant'=> [
       'title'=> "Sextant (Ifremer)",
       'url'=> 'https://sextant.ifremer.fr/geonetwork/srv/fre/csw',
@@ -213,6 +219,8 @@ readonly class CswServer {
   function getCapabilitiesUrl(): string {
     return self::SERVERS[$this->serverId]['url'].'?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetCapabilities';
   }
+  
+  function getCapabilities(): string { return $this->cache->get($this->getCapabilitiesUrl()); }
   
   function getRecordsUrl(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
     $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
@@ -431,10 +439,16 @@ else { // utilisation en mode web
     case null: { // menu
       echo HTML_HEADER,"<h2>Choix d'une action pour \"$server->title\"</h2><ul>\n";
       echo "<li><a href='",$server->getCapabilitiesUrl(),"'>GetCapabilities</a></li>\n";
+      echo "<li><a href='?server=$id&action=GetCapabilities'>GetCapabilities@cache</a></li>\n";
       echo "<li><a href='?server=$id&action=list'>list</a></li>\n";
       die();
     }
-    case 'list2': { // liste les métadonnées n'utilisant pas MDs
+    case 'GetCapabilities': {
+      $xml = $server->getCapabilities();
+      echo HTML_HEADER,'<pre>',str_replace('<','&lt;', $xml);
+      die();
+    }
+    /*case 'list2': { // liste les métadonnées n'utilisant pas MDs
       $startPosition = $_GET['startPosition'] ?? 1;
       $url = $server->getRecordsUrl('dc', 'brief', $startPosition);
       echo "<a href='$url'>GetRecords@dc</a></p>\n";
@@ -471,7 +485,7 @@ else { // utilisation en mode web
       }
       echo "</table>\n";
       die();
-    }
+    }*/
     case 'list': {  // liste les métadonnées utilisant MDs
       $startPosition = $_GET['startPosition'] ?? 1;
       $nbreLignes = 0;
@@ -480,8 +494,13 @@ else { // utilisation en mode web
       foreach ($mds as $no => $record) {
         if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
         if (++$nbreLignes > NBRE_MAX_LIGNES) break;
-        $url = $server->getRecordByIdUrl('dcat', 'full', $record->dc_identifier);
-        echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td></tr>\n";
+        $dcatXmlUrl = $server->getRecordByIdUrl('dcat', 'full', $record->dc_identifier);
+        $dcatTtlUrl = "?server=$id&action=dcatTtl&id=".$record->dc_identifier;
+        $dcatTtlIsoUrl = "?server=$id&action=dcatTtlIso&id=".$record->dc_identifier;
+        $isoUrl = $server->getRecordByIdUrl('gmd', 'full', $record->dc_identifier);
+        echo "<tr><td><a href='$dcatXmlUrl'>$record->dc_title</a> ($record->dc_type)",
+             " <a href='$dcatTtlUrl'>dcatTtl</a>, <a href='$isoUrl'>iso</a>, <a href='$dcatTtlIsoUrl'>dcatTtl+iso</a>",
+             "</td></tr>\n";
       }
       echo "</table>\n";
       //echo "numberOfRecordsMatched=",$mds->numberOfRecordsMatched(),"<br>\n";
@@ -491,5 +510,41 @@ else { // utilisation en mode web
         echo "<a href='?server=$id&action=list&startPosition=$no'>suivant ($no / ",$mds->numberOfRecordsMatched(),")</a><br>\n";
       die();
     }
+    case 'dcatTtl': {
+      $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+      $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
+      /*$xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+      $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
+      echo "<pre>",str_replace('<','&lt;', $xml2);*/
+      $rdf = new \EasyRdf\Graph($url);
+      $rdf->parse($xml, 'rdf', $url);
+      $turtle = $rdf->serialise('turtle');
+      echo "<pre>",str_replace('<', '&lt;', $turtle),"</pre>\n";
+      die();
+    }
+    case 'iso': {
+      $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
+      /*$xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+      $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
+      echo "<pre>",str_replace('<','&lt;', $xml2);*/
+      $record = IsoMd::convert($xml);
+      echo '<pre>',Yaml::dump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+      die();
+    }
+    case 'dcatTtlIso': {
+      echo "<!DOCTYPE HTML><html><head><meta charset='UTF-8'><title>dcatTtlIso</title></head>
+<frameset cols='50%,50%' >
+  <frame src='?server=$id&action=dcatTtl&id=$_GET[id]' name='dcatttl'>
+  <frame src='?server=$id&action=iso&id=$_GET[id]' name='iso'>
+  <noframes>
+  	<body>
+  		<p><a href='index2.php'>Accès sans frame</p>
+  	</body>
+  </noframes>
+</frameset>
+";
+      die();
+    }
+    default: die("Action $_GET[action] inconnue");
   }
 }

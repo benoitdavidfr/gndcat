@@ -1,0 +1,7 @@
+{
+    "require": {
+        "symfony/yaml": "^6.3",
+        "easyrdf/easyrdf": "^1.1",
+        "ml/json-ld": "^1.2"
+    }
+}
