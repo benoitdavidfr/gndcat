@@ -6,6 +6,18 @@ require_once __DIR__.'/isomd.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+/** supprime les - suivis d'un retour à la ligne dans Yaml::dump()
+ * @param mixed $data
+ */
+function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0): string {
+  $options |= Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK;
+  $dump = Yaml::dump($data, $level, $indentation, $options);
+  //return $dump;
+  //return preg_replace('!-\n *!', '- ', $dump);
+  return preg_replace('!: \|-ZZ\n!', ": |-\n", preg_replace('!-\n *!', '- ', preg_replace('!(: +)\|-\n!', "\$1|-ZZ\n", $dump)));
+}
+
+/** Traduit un array en XML */
 function arrayToXml(array $array, string $prefix=''): string {
   $xml = '';
   foreach ($array as $key => $value) {
@@ -30,71 +42,31 @@ if (0) { // Test arrayToXml()
   echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
 }
 
-/** Itérateur sur les métadonnées DC brief */
-class MDs implements Iterator {
-  protected CswServer $server;
-  protected string $type;
-  protected SimpleXMLElement $records;
-  protected int $startPos; // position de démarrage définie à la création
-  protected int $fisrtPos; // première position du buffer courant
-  protected int $numberOfRecordsMatched;
-  protected int $nextRecord;
-  protected int $currentPos;
-  
-  function __construct(CswServer $server, int $startPosition) {
-    $this->server = $server;
-    $this->startPos = $startPosition;
-  }
-  
-  function numberOfRecordsMatched(): int { return $this->numberOfRecordsMatched; }
-  
-  function rewind(): void {
-    //echo "rewind()<br>\n";
-    $this->currentPos = $this->startPos;
-    $this->fisrtPos = floor(($this->startPos - 1) / 10) * 10 + 1;
-    $records = $this->server->getRecords('dc', 'brief', $this->fisrtPos);
-    $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
-    $this->records = new SimpleXMLElement($records);
-    $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
-    $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
-  }
-  
-  function current(): SimpleXMLElement {
-    //echo "current()<br>\n";
-    //echo "fisrtPos=$this->fisrtPos\n";
-    //echo "currentPos=$this->currentPos\n";
-    return $this->records->csw_SearchResults->csw_BriefRecord[$this->currentPos - $this->fisrtPos];
-  }
-  
-  function key(): int {
-    //echo "key()<br>\n";
-    return $this->currentPos;
-  }
-  
-  function next(): void {
-    //echo "next()<br>\n";
-    $this->currentPos++;
-    if (($this->currentPos - $this->fisrtPos) >= 10) {
-      $this->fisrtPos = $this->nextRecord;
-      if (!$this->fisrtPos)
-        throw new Exceprion("Erreur startPos==0");
-      $records = $this->server->getRecords('dc', 'brief', $this->fisrtPos);
-      $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
-      $this->records = new SimpleXMLElement($records);
-      $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
-      $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
+class Turtle {
+  /** Transforme le texte turtle en Html */
+  static function html(string $src): string {
+    //return str_replace('<', '&lt;', $src);
+    $mPrec = '';
+    while (preg_match('!<http([^>]+)>!', $src, $matches)) {
+      //echo $matches[1],"<br>\n";
+      if ($matches[1] == $mPrec)
+        throw new Exception("Ca boucle");
+      $mPrec = $matches[1];
+      $url = $matches[1];
+      $urlR = "&lt;<a href='HTTP$url'>HTTP$url</a>&gt;";
+      // Il faut échapper les caractères spécifiques de preg_replace()
+      $urlp = str_replace(['?','(',')'],['\?','\(','\)'], $matches[1]);
+      $src = preg_replace("!<http$urlp>!", $urlR, $src);
     }
-  }
-  
-  function valid(): bool {
-    //echo "valid()<br>\n";
-    return ($this->currentPos <= $this->numberOfRecordsMatched);
+    return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
   }
 };
 
-/** Gestion d'un cache */
+/** Gestion d'un cache pour des requêtes http */
 class Cache {
   readonly public string $cachedir; // '' si pas de cache
+  protected bool $lastOperationWasInCache = true;
+  protected string $lastCachepathReturned = '';
   
   function __construct(string $cachedir) {
     if (!$cachedir) {
@@ -110,6 +82,7 @@ class Cache {
     $this->cachedir = $cachedir;
   }
   
+  /** Retourne le chemin du fichier de cache pour une URL donnée */
   function id(string $url): string {
     if (!$this->cachedir)
       return '';
@@ -117,61 +90,70 @@ class Cache {
       return $this->cachedir.'/'.md5($url).'.xml';
   }
   
+  /** Retrouve en GET le doc correspondant à l'URL en utilisant le cache */
   function get(string $url): string {
-    if (!$this->cachedir)
+    if (!$this->cachedir) {
+      $this->lastOperationWasInCache = false;
       return file_get_contents($url);
+    }
     $cachepath = $this->cachedir.'/'.md5($url).'.xml';
-    if (is_file($cachepath))
+    if (is_file($cachepath)) {
+      //echo "$url en cache\n";
+      $this->lastOperationWasInCache = true;
+      $this->lastCachepathReturned = $cachepath;
       return file_get_contents($cachepath);
+    }
+    $this->lastOperationWasInCache = false;
     $contents = file_get_contents($url);
     if ($contents === false)
       throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
     file_put_contents($cachepath, $contents);
+    $this->lastCachepathReturned = $cachepath;
     return $contents;
+  }
+  
+  /** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache */
+  function request(string $url, array $options): array {
+    if (!$this->cachedir) {
+      $this->lastOperationWasInCache = false;
+      return Http::request($url, $options);
+    }
+    $doc = array_merge(['cswUrl'=> $url], $options);
+    $doc = json_encode($doc);
+    //echo $doc; die();
+    $cachepath = $this->cachedir.'/'.md5($doc).'.json';
+    if (is_file($cachepath)) {
+      $this->lastOperationWasInCache = true;
+      $this->lastCachepathReturned = $cachepath;
+      return json_decode(file_get_contents($cachepath), true);
+    }
+    $this->lastOperationWasInCache = false;
+    $contents = Http::request($url, $options);
+    if ($contents === false)
+      throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
+    file_put_contents($cachepath, json_encode($contents));
+    $this->lastCachepathReturned = $cachepath;
+    return $contents;
+  }
+
+  function lastOperationWasInCache(): bool { return $this->lastOperationWasInCache; }
+  
+  function lastCachepathReturned(): string { return $this->lastCachepathReturned; }
+
+  function clear(): void {
+    $output = null;
+    $retval = null;
+    exec("rm -r ".$this->cachedir, $output, $retval);
+    if ($retval)
+      echo "Returned with status $retval and output:\n";
+    else
+      echo "Cache effacé\n";
+    if ($output)
+      print_r($output);
   }
 };
 
 class CswServer {
-  /** liste des serveurs connus */
-  const SERVERS = [
-    'gpf'=> [
-      'title'=> "Géoplateforme",
-      'url'=> 'https://data.geopf.fr/csw',
-    ],
-    'geoide-gn'=> [
-      'title'=> "Géo-IDE, point Geonetwork",
-      'url'=> 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable',
-    ],
-    'sextant'=> [
-      'title'=> "Sextant (Ifremer)",
-      'url'=> 'https://sextant.ifremer.fr/geonetwork/srv/fre/csw',
-      //'post'=> true, // l'interrogation en POST fonctionne
-    ],
-    'geo2france'=> [
-      'title'=> "Géo2France",
-      'url'=> "https://www.geo2france.fr/geonetwork/srv/fre/csw",
-    ],
-    'geobretagne'=> [
-      'title'=> 'geobretagne',
-      'url'=> 'http://geobretagne.fr/geonetwork/srv/fre/csw',
-    ],
-    'datara'=> [
-      'title'=> "datara",
-      'url'=> 'https://www.datara.gouv.fr/geonetwork/srv/eng/csw-RAIN',
-    ],
-    'sigloire'=> [
-      'title'=> "sigloire",
-      'url'=> 'https://catalogue.sigloire.fr/geonetwork/srv/fr/csw-sigloire',
-    ],
-    'sigena'=> [
-      'title'=> "sigena",
-      'url'=> 'https://www.sigena.fr/geonetwork/srv/fre/csw',
-    ],
-    'odd-corse'=> [
-      'title'=> "Observatoire du Développement Durable de Corse (DREAL Corse)",
-      'url'=> 'https://georchestra.ac-corse.fr/geonetwork/srv/fre/csw',
-    ],
-  ];
   /** Paramètres du GetRecords en fonction du type de retour souhaité */
   const GETRECORDS_PARAMS = [
     'dc'=> [
@@ -206,26 +188,42 @@ class CswServer {
     ],
   ];
   
+  static array $servers;
   readonly public string $serverId;
   readonly public string $title;
   readonly public bool $post;
+  readonly public array $filter; // filtre des GetRecords en POST
   readonly public Cache $cache;
   
+  /** Retourne la liste des serveurs et leurs caractéristiques */
+  static function servers(): array {
+    if (!isset(self::$servers))
+      self::$servers = Yaml::parseFile(__DIR__.'/servers.yaml')['servers'];
+    return self::$servers;
+  }
+  
+  /** Retourne les caractéritiques du serveur s'il existe et sinon null */
+  static function exists(string $serverId): ?array { return self::servers()[$serverId] ?? null; }
+  
   function __construct(string $serverId, string $cachedir) {
-    if (!isset(self::SERVERS[$serverId]))
+    if (!($server = self::exists($serverId)))
       throw new Exception("Erreur, serveur $serverId inxeistant");
     $this->serverId = $serverId;
     $this->cache = new Cache($cachedir);
-    $this->title = self::SERVERS[$serverId]['title'];
-    $this->post = self::SERVERS[$serverId]['post'] ?? false;
+    $this->title = $server['title'];
+    $this->post = isset($server['post']);
+    $this->filter = $server['post']['filter'] ?? [];
   }
   
+  /** Retourne l'URL du GetCapabilities */
   function getCapabilitiesUrl(): string {
-    return self::SERVERS[$this->serverId]['url'].'?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetCapabilities';
+    return self::servers()[$this->serverId]['cswUrl'].'?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetCapabilities';
   }
   
+  /** Retourne le document du GetCapabilities en utilisant le cache */
   function getCapabilities(): string { return $this->cache->get($this->getCapabilitiesUrl()); }
   
+  /** Retourne l'URL du GetRecords en GET */
   function getRecordsUrl(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
     $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
     $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
@@ -233,7 +231,7 @@ class CswServer {
     if ($filter)
       $filter = urlencode(arrayToXml($filter));
 
-    return self::SERVERS[$this->serverId]['url']
+    return self::servers()[$this->serverId]['cswUrl']
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecords&ElementSetName=$ElementSetName"
       .'&ResultType=results&MaxRecords=10&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
@@ -241,13 +239,25 @@ class CswServer {
       .($filter ? "&CONSTRAINTLANGUAGE=FILTER&CONSTRAINT_LANGUAGE_VERSION=1.1.0&FILTER=$filter" : '');
   }
   
-  function getRecords(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
+  /** Réalise un GetRecords soit en GET soit en POST en fonction du paramétrage du serveur */
+  function getRecords(string $type, string $ElementSetName, int $startPosition): string {
+    if ($this->post) {
+      return $this->getRecordsInPost($type, $ElementSetName, $startPosition, $this->filter);
+    }
+    else {
+      return $this->getRecordsInGet($type, $ElementSetName, $startPosition);
+    }
+  }
+  
+  /** Réalise un GetRecords en GET */
+  private function getRecordsInGet(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
     //echo "CswServer::getRecords(startPosition=$startPosition)<br>\n";
     $url = $this->getRecordsUrl($type, $ElementSetName, $startPosition, $filter);
     return $this->cache->get($url);
   }
   
-  function getRecordsInPost(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
+  /** Réalise un GetRecords en POST */
+  private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
     $OutputSchema = self::GETRECORDS_PARAMS[$type]['OutputSchema'];
     $namespace = self::GETRECORDS_PARAMS[$type]['namespace'];
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
@@ -333,54 +343,163 @@ class CswServer {
       'ignore_errors' => true, // pour éviter la génération d'une exception
       'content'=> $query,
     ];
-    //echo '<pre>'; print_r(Http::request(self::SERVERS[$this->serverId]['url'], $options)); die();
-    $result = Http::request(self::SERVERS[$this->serverId]['url'], $options);
+    $result = $this->cache->request(self::servers()[$this->serverId]['cswUrl'], $options);
     $body = $result['body'];
     $result['body'] = str_replace('<','&lt;', $result['body']);
     echo "<pre>"; print_r($result); echo "</pre>\n";
     return $body;
   }
   
-  function getMds(int $startPosition): MDs {
-    return new MDs($this, $startPosition);
-  }
-  
+  /** Retourne l'URL d'un GetRecordById */
   function getRecordByIdUrl(string $type, string $ElementSetName, string $id): string {
     $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
     $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
-    return self::SERVERS[$this->serverId]['url']
+    return self::servers()[$this->serverId]['cswUrl']
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecordById&ElementSetName=$ElementSetName"
       .'&ResultType=results&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
       ."&id=".$id;
   }
   
+  /** Retourne le GetRecordById */
   function getRecordById(string $type, string $ElementSetName, string $id): string {
     $url = $this->getRecordByIdUrl($type, $ElementSetName, $id);
     return $this->cache->get($url);
   }
+
+  /** suppression du cache */
+  function clearCache(): void { $this->cache->clear(); }
+  
+  /** attente du délai défini s'il est défini et si la dernière opération n'était pas en cache.
+   *
+   * L'attente est destinée à ne pas stresser le catalogue moissoné.
+   */
+  function sleep(): void {
+    //echo "sleep()\n";
+    if ($this->cache->lastOperationWasInCache())
+      return;
+    $delay = self::servers()[$this->serverId]['delay'] ?? 0;
+    if ($delay >= 1) {
+      //echo "sleep($delay)\n";
+      sleep($delay);
+    }
+    else {
+      $delayMicroSec = (int)round($delay * 1_000_000);
+      //echo "usleep($delayMicroSec)\n";
+      usleep($delayMicroSec);
+    }
+  }
 };
 
+/** Itérateur sur les métadonnées DC brief */
+class MDs implements Iterator {
+  readonly public CswServer $server; // Serveur CSW sous-jacent
+  readonly public int $startPos; // position de démarrage définie à la création
+  //protected string $type;
+  protected int $firstPos; // première position du buffer courant
+  protected SimpleXMLElement $records; // tableau des enregistrements courants
+  protected int $numberOfRecordsMatched;
+  protected int $nextRecord; // no d'enregistrement du prochain buffer
+  protected int $currentPos; // position courante dans l'itérateur
+  
+  function __construct(string $serverId, string $cachedir, int $startPosition) {
+    $this->server = new CswServer($serverId, $cachedir);
+    $this->startPos = $startPosition;
+  }
+  
+  function numberOfRecordsMatched(): int { return $this->numberOfRecordsMatched; }
+  
+  /** lecture d'un buffer de records à partir de firstPos */
+  private function getBuffer() {
+    if ($this->server->post)
+      $records = $this->server->getRecords('dc', 'brief', $this->firstPos, $this->filter);
+    else
+      $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
+    $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
+    $this->records = new SimpleXMLElement($records);
+    $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
+    $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
+  }
+  
+  function rewind(): void {
+    //echo "rewind()<br>\n";
+    $this->currentPos = $this->startPos;
+    $this->firstPos = floor(($this->startPos - 1) / 10) * 10 + 1;
+    $this->getBuffer();
+  }
+  
+  function current(): SimpleXMLElement {
+    //echo "current()<br>\n";
+    //echo "firstPos=$this->firstPos\n";
+    //echo "currentPos=$this->currentPos\n";
+    return $this->records->csw_SearchResults->csw_BriefRecord[$this->currentPos - $this->firstPos];
+  }
+  
+  function key(): int {
+    //echo "key()<br>\n";
+    return $this->currentPos;
+  }
+  
+  function next(): void {
+    //echo "next()<br>\n";
+    $this->currentPos++;
+    if (($this->currentPos - $this->firstPos) >= 10) {
+      $this->firstPos = $this->nextRecord;
+      if (!$this->firstPos)
+        throw new Exceprion("Erreur firstPos==0");
+      $this->getBuffer();
+    }
+  }
+  
+  function valid(): bool {
+    //echo "valid()<br>\n";
+    return ($this->currentPos <= $this->numberOfRecordsMatched);
+  }
+};
+
+/** Utilisation du point Rdf des GN 3 */
+class RdfServer {
+  readonly public string $serverId;
+  readonly public string $title;
+  readonly public Cache $cache;
+  
+  static function exists(string $serverId): bool { return isset(cswServer::servers()[$serverId]['rdfSearchUrl']); }
+    
+  function __construct(string $serverId, string $cachedir) {
+    if (!self::exists($serverId))
+      throw new Exception("Erreur, serveur $serverId inexistant");
+    $this->serverId = $serverId;
+    $this->cache = new Cache("rdf-$cachedir");
+    $this->title = cswServer::servers()[$serverId]['title'];
+  }
+  
+  function rdfSearchUrl(): ?string { return cswServer::servers()[$this->serverId]['rdfSearchUrl'] ?? null; }
+
+  function rdfSearch(): ?string { return $this->cache->get($this->rdfSearchUrl()); }
+};
 
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>gndcat</title></head><body>\n";
 const NBRE_MAX_LIGNES = 38;
 
 if (php_sapi_name() == 'cli') { // utilisation en CLI
-  echo "argc=$argc\n";
+  //echo "argc=$argc\n";
   switch ($argc) {
     case 1: {
       echo "usage: php $argv[0] {catalog} {action}\n";
       echo "Liste des serveurs:\n";
-      foreach (CswServer::SERVERS as $id => $server)
+      foreach (CswServer::servers() as $id => $server)
         echo " - $id : $server[title]\n";
       die();
     }
     case 2: {
       $id = $argv[1];
+      if (!CswServer::exists($id))
+        die("Erreur le serveur $id n'est pas défini\n");
       echo "Liste des actions:\n";
       echo " - getRecords - lit les enregistrements en brief DC\n";
-      echo " - list - affiche titre et type\n";
+      echo " - listMDs - affiche titre et type des métadonnées en utilisant MDs\n";
+      echo " - clearCache - efface le cache\n";
       die();
     }
     case 3: {
@@ -388,6 +507,10 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
       $action = $argv[2];
       $server = new CswServer($id, $id);
       switch ($action) {
+        case 'clearCache': {
+          $server->clearCache();
+          die();
+        }
         case 'getRecords': {
           $startPosition = 1;
           while ($startPosition) {
@@ -398,7 +521,9 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
             $nextRecord = (int)$records->csw_SearchResults['nextRecord'];
             echo "$startPosition/$numberOfRecordsMatched, nextRecord=$nextRecord\n";
             $startPosition = $nextRecord;
+            $server->sleep();
           }
+          echo 'lastCachepathReturned=',$server->cache->lastCachepathReturned(),"\n";
           die();
         }
         /*case 'list': {
@@ -417,8 +542,8 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           }
           die();
         }*/
-        case 'list': {
-          foreach ($server->getMds() as $no => $md) {
+        case 'listMDs': {
+          foreach (new MDs($id, $id, 1) as $no => $md) {
             echo " - $md->dc_title ($md->dc_type)\n";
             //print_r([$no => $md]);
           }
@@ -431,7 +556,7 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
 else { // utilisation en mode web
   if (!isset($_GET['server'])) { // choix d'un des catalogues
     echo HTML_HEADER,"<h2>Choix d'un des catalogues connus</h2><ul>\n";
-    foreach (CswServer::SERVERS as $id => $server) {
+    foreach (CswServer::servers() as $id => $server) {
       echo "<li><a href='?server=$id'>$server[title]</a></li>\n";
     }
     die();
@@ -439,12 +564,22 @@ else { // utilisation en mode web
 
   $id = $_GET['server'];
   $server = new CswServer($id, $id);
+  $rdfServer = RdfServer::exists($id) ? new RdfServer($id, $id) : null;
   switch ($_GET['action'] ?? null) { // en fonction de l'action
     case null: { // menu
       echo HTML_HEADER,"<h2>Choix d'une action pour \"$server->title\"</h2><ul>\n";
       echo "<li><a href='",$server->getCapabilitiesUrl(),"'>GetCapabilities</a></li>\n";
       echo "<li><a href='?server=$id&action=GetCapabilities'>GetCapabilities@cache</a></li>\n";
-      echo "<li><a href='?server=$id&action=list'>list</a></li>\n";
+      echo "<li><a href='?server=$id&action=GetRecords'>GetRecords sans utiliser MDs</a></li>\n";
+      echo "<li><a href='?server=$id&action=listDatasets'>GetRecords des dataset en utilisant MDs</a></li>\n";
+      if ($rdfServer) {
+        echo "<li><a href='",$rdfServer->rdfSearchUrl(),"'>Affichage du contenu du point rdf.search</a></li>\n";
+        echo "<li><a href='?server=$id&action=rdf'>Affichage du RDF en Turtle</a></li>\n";
+      }
+      if (isset(CswServer::servers()[$id]['ogcApiRecordsUrl'])) {
+        $url = CswServer::servers()[$id]['ogcApiRecordsUrl'];
+        echo "<li><a href='$url'>ogcApiRecordsUrl</a></li>\n";
+      }
       die();
     }
     case 'GetCapabilities': {
@@ -452,24 +587,12 @@ else { // utilisation en mode web
       echo HTML_HEADER,'<pre>',str_replace('<','&lt;', $xml);
       die();
     }
-    /*case 'list2': { // liste les métadonnées n'utilisant pas MDs
+    case 'GetRecords': { // liste les métadonnées n'utilisant pas MDs
+      //$server = new CswServer($id, '');
       $startPosition = $_GET['startPosition'] ?? 1;
       $url = $server->getRecordsUrl('dc', 'brief', $startPosition);
       echo "<a href='$url'>GetRecords@dc</a></p>\n";
-      if ($server->post) {
-        $filter = [
-          'Filter'=> [
-            'PropertyIsEqualTo'=> [
-              'PropertyName'=> 'dc:type',
-              'Literal'=> 'dataset',
-            ],
-          ],
-        ];
-        $results = $server->getRecordsInPost('dc', 'brief', $startPosition, $filter);
-      }
-      else {
-        $results = $server->getRecords('dc', 'brief', $startPosition);
-      }
+      $results = $server->getRecords('dc', 'brief', $startPosition);
       echo '<pre>',str_replace('<','&lt;',$results),"</pre>\n";
       $results = str_replace(['csw:','dc:'],['csw_','dc_'], $results);
       $results = new SimpleXMLElement($results);
@@ -479,7 +602,8 @@ else { // utilisation en mode web
       echo "<tr><td>numberOfRecordsMatched</td><td>",$results->csw_SearchResults['numberOfRecordsMatched'],"</td></tr>\n";
       echo "<tr><td>startPosition</td><td>$startPosition</td></tr>\n";
       $nextRecord = $results->csw_SearchResults['nextRecord'];
-      echo "<tr><td>nextRecord</td><td><a href='?server=$id&action=list&startPosition=$nextRecord'>$nextRecord</a></td></tr>\n";
+      echo "<tr><td>nextRecord</td>",
+           "<td><a href='?server=$id&action=$_GET[action]&startPosition=$nextRecord'>$nextRecord</a></td></tr>\n";
       echo "</table></p>\n";
     
       echo "<table border=1>\n";
@@ -489,64 +613,140 @@ else { // utilisation en mode web
       }
       echo "</table>\n";
       die();
-    }*/
-    case 'list': {  // liste les métadonnées utilisant MDs
+    }
+    case 'listDatasets': {  // GetRecords des dataset en utilisant MDs
       $startPosition = $_GET['startPosition'] ?? 1;
+      $mds = new MDs($id, $id, $startPosition);
       $nbreLignes = 0;
       echo "<table border=1>\n";
-      $mds = $server->getMds($startPosition);
       foreach ($mds as $no => $record) {
         if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
         if (++$nbreLignes > NBRE_MAX_LIGNES) break;
-        $dcatXmlUrl = $server->getRecordByIdUrl('dcat', 'full', $record->dc_identifier);
-        $dcatTtlUrl = "?server=$id&action=dcatTtl&id=".$record->dc_identifier;
-        $dcatTtlIsoUrl = "?server=$id&action=dcatTtlIso&id=".$record->dc_identifier;
-        $isoUrl = $server->getRecordByIdUrl('gmd', 'full', $record->dc_identifier);
-        echo "<tr><td><a href='$dcatXmlUrl'>$record->dc_title</a> ($record->dc_type)",
-             " <a href='$dcatTtlUrl'>dcatTtl</a>, <a href='$isoUrl'>iso</a>, <a href='$dcatTtlIsoUrl'>dcatTtl+iso</a>",
-             "</td></tr>\n";
+        $url = "?server=$id&action=viewRecord&id=".$record->dc_identifier."&startPosition=$startPosition";
+        echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td></tr>\n";
       }
       echo "</table>\n";
       //echo "numberOfRecordsMatched=",$mds->numberOfRecordsMatched(),"<br>\n";
       //echo "no=$no<br>\n";
       //echo "nbre=$nbre<br>\n";
       if ($nbreLignes > NBRE_MAX_LIGNES)
-        echo "<a href='?server=$id&action=list&startPosition=$no'>suivant ($no / ",$mds->numberOfRecordsMatched(),")</a><br>\n";
+        echo "<a href='?server=$id&action=$_GET[action]&startPosition=$no'>",
+              "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a><br>\n";
       die();
     }
-    case 'dcatTtl': {
-      $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
-      $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
-      /*$xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
-      $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
-      echo "<pre>",str_replace('<','&lt;', $xml2);*/
-      $rdf = new \EasyRdf\Graph($url);
-      $rdf->parse($xml, 'rdf', $url);
-      $turtle = $rdf->serialise('turtle');
-      echo "<pre>",str_replace('<', '&lt;', $turtle),"</pre>\n";
-      die();
+    case 'viewRecord': {
+      $fmt = $_GET['fmt'] ?? 'iso-yaml';
+      $menu = HTML_HEADER;
+      $url = "?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]";
+      $menu .= "<table border=1><tr>";
+      foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-xml','double'] as $f) {
+        if ($f == $fmt)
+          $menu .= "<td>$f</td>";
+        else
+          $menu .= "<td><a href='$url&fmt=$f'>$f</a></td>";
+      }
+      $menu .= "<td><a href='?server=$id&action=listDatasets&startPosition=$_GET[startPosition]' target='_parent'>^</a></td>";
+      $menu .= "</table>\n";
+      
+      switch ($fmt) {
+        case 'iso-yaml': {
+          echo $menu;
+          $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
+          $record = IsoMd::convert($xml);
+          echo '<pre>',YamlDump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+          die();
+        }
+        case 'iso-xml': {
+          if (0) {
+            echo $menu;
+            $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
+            echo "<pre>",str_replace('<','&lt;', $xml);
+          }
+          else {
+            $url = $server->getRecordByIdUrl('gmd', 'full', $_GET['id']);
+            header('HTTP/1.1 302 Moved Temporarily');
+            header("Location: $url");
+          }
+          die();
+        }
+        case 'dcat-ttl': {
+          echo $menu;
+          $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+          $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
+          $xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+          $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
+          //echo "<pre>",str_replace('<','&lt;', $xml2);
+          $rdf = new \EasyRdf\Graph($url);
+          $rdf->parse($xml2, 'rdf', $url);
+          $turtle = $rdf->serialise('turtle');
+          //echo "<pre>",str_replace('<', '&lt;', $turtle),"</pre>\n";
+          echo "<pre>",Turtle::html($turtle),"</pre>\n";
+          die();
+        }
+        case 'dcat-xml': {
+          if (0) {
+            echo $menu;
+            $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+            $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
+            //$xml = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+            //$xml = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml);
+            echo "<pre>",str_replace('<','&lt;', $xml);
+            echo "<a href='$url'>Visualisation directe</a><br>\n";
+          }
+          else {
+            $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+            header('HTTP/1.1 302 Moved Temporarily');
+            header("Location: $url");
+          }
+          die();
+        }
+        case 'double': {
+          echo "
+    <frameset cols='50%,50%' >
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]' name='left'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-ttl&startPosition=$_GET[startPosition]' name='right'>
+      <noframes>
+      	<body>
+      		<p><a href='index2.php'>Accès sans frame</p>
+      	</body>
+      </noframes>
+    </frameset>
+    ";
+          die();
+        }
+      }
     }
-    case 'iso': {
-      $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
-      /*$xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
-      $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
-      echo "<pre>",str_replace('<','&lt;', $xml2);*/
-      $record = IsoMd::convert($xml);
-      echo '<pre>',Yaml::dump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-      die();
-    }
-    case 'dcatTtlIso': {
-      echo "<!DOCTYPE HTML><html><head><meta charset='UTF-8'><title>dcatTtlIso</title></head>
-<frameset cols='50%,50%' >
-  <frame src='?server=$id&action=dcatTtl&id=$_GET[id]' name='dcatttl'>
-  <frame src='?server=$id&action=iso&id=$_GET[id]' name='iso'>
-  <noframes>
-  	<body>
-  		<p><a href='index2.php'>Accès sans frame</p>
-  	</body>
-  </noframes>
-</frameset>
-";
+    case 'rdf': {
+      $fmt = $_GET['fmt'] ?? 'dcat-ttl';
+      $menu = HTML_HEADER;
+      $url = "?server=$id&action=rdf";
+      $menu .= "<table border=1><tr>";
+      foreach (['dcat-ttl','dcat-xml'] as $f) {
+        if ($f == $fmt)
+          $menu .= "<td>$f</td>";
+        else
+          $menu .= "<td><a href='$url&fmt=$f'>$f</a></td>";
+      }
+      $menu .= "</table>\n";
+      
+      switch ($fmt) {
+        case 'dcat-ttl': {
+          echo $menu;
+          $url = $rdfServer->rdfSearchUrl();
+          $xml = $rdfServer->rdfSearch();
+          $rdf = new \EasyRdf\Graph($url);
+          $rdf->parse($xml, 'rdf', $url);
+          $turtle = $rdf->serialise('turtle');
+          echo "<pre>",Turtle::html($turtle),"</pre>\n";
+          die();
+        }
+        case 'dcat-xml': {
+          $url = $rdfServer->rdfSearchUrl();
+          header('HTTP/1.1 302 Moved Temporarily');
+          header("Location: $url");
+          die();
+        }
+      }
       die();
     }
     default: die("Action $_GET[action] inconnue");

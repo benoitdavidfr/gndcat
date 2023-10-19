@@ -1,0 +1,89 @@
+title: liste de serveurs CSW connus
+servers:
+  # logiciels
+  georchestra:
+    title: 'Démo geOrchestra'
+    cswUrl: 'https://demo.georchestra.org/geonetwork/srv/fre/csw'
+    rdfSearchUrl: 'https://demo.georchestra.org/geonetwork/srv/fre/rdf.search'
+    ogcApiRecordsUrl: 'https://demo.georchestra.org/geonetwork/srv/api/search/records/_search'
+  # nationaux
+  gide-gn:
+    title: 'Géo-IDE, point Geonetwork en GET'
+    cswUrl: 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable'
+    delay: 0.1
+  gide-gn-pds:
+    title: 'Géo-IDE, point Geonetwork en POST avec un filtre sur type=dataset'
+    cswUrl: 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable'
+    post:
+      filter:
+        Filter:
+          PropertyIsEqualTo:
+            PropertyName: 'dc:type'
+            Literal: dataset
+  gide:
+    title: 'Géo-IDE, point spécifique'
+    cswUrl: 'http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable'
+  sextant:
+    title: 'Sextant (Ifremer)'
+    cswUrl: 'https://sextant.ifremer.fr/geonetwork/srv/fre/csw'
+  sandre:
+    title: 'Sandre (EauFrance)'
+    cswUrl: 'http://www.sandre.eaufrance.fr/atlas/srv/fre/csw'
+  naturefrance:
+    title: NatureFrance
+    cswUrl: 'https://data.naturefrance.fr/geonetwork/srv/fre/csw'
+  igngp:
+    title: 'Géoportail IGN'
+    cswUrl: 'https://wxs.ign.fr/catalogue/csw'
+  igngpf:
+    title: 'Géoplateforme IGN'
+    cswUrl: 'https://data.geopf.fr/csw'
+  cerema-data:
+    title: 'Cerema Data'
+    cswUrl: 'https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata'
+  sas:
+    title: 'GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers'
+    cswUrl: 'https://geosas.fr/geonetwork/srv/fre/csw'
+    www: 'https://geosas.fr/'
+    rdfSearchUrl: 'https://geosas.fr/geonetwork/srv/fre/rdf.search'
+  geo2france:
+    title: Géo2France
+    cswUrl: 'https://www.geo2france.fr/geonetwork/srv/fre/csw'
+  geobretagne:
+    title: GéoBretagne
+    cswUrl: 'http://geobretagne.fr/geonetwork/srv/fre/csw'
+  datara:
+    title: DatARA
+    cswUrl: 'https://www.datara.gouv.fr/geonetwork/srv/eng/csw-RAIN'
+    rdfSearchUrl: 'https://www.datara.gouv.fr/geonetwork/srv/eng/rdf.search'
+  sigloire:
+    title: sigloire
+    cswUrl: 'https://catalogue.sigloire.fr/geonetwork/srv/fr/csw-sigloire'
+  sigena:
+    title: 'Sigena - Nouvelle-Aquitaine - Dreal'
+    cswUrl: 'https://www.sigena.fr/geonetwork/srv/fre/csw'
+  pigma:
+    title: 'PIGMA - Nouvelle-Aquitaine - Région'
+    cswUrl: 'https://www.pigma.org/geonetwork/srv/fre/csw'
+  picto:
+    title: 'Picto Occitanie'
+    cswUrl: 'https://www.picto-occitanie.fr/geonetwork/srv/fre/csw-geocatalogue'
+  bfc:
+    title: 'IDéO BFC'
+    cswUrl: 'https://inspire.ternum-bfc.fr/geonetwork/srv/fre/csw'
+    www: 'https://ideo.ternum-bfc.fr/'
+  odd-corse:
+    title: 'Observatoire du Développement Durable de Corse (DREAL Corse)'
+    cswUrl: 'https://georchestra.ac-corse.fr/geonetwork/srv/fre/csw'
+  geoguyane:
+    title: GéoGuyane
+    cswUrl: 'https://catalogue.geoguyane.fr/geonetwork/srv/fre/csw-geoguyane'
+  geomartinique:
+    title: GéoMartinique
+    cswUrl: 'http://www.geomartinique.fr/geonetwork/srv/fre/csw'
+  karugeo:
+    title: 'Karugeo (Guadeloupe)'
+    cswUrl: 'https://www.karugeo.fr/geonetwork/srv/fre/csw'
+  mayotte:
+    title: 'Observatoire de Mayotte'
+    cswUrl: 'https://www.observatoire-de-mayotte.fr/geonetwork/srv/fre/csw'
