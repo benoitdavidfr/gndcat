@@ -93,8 +93,8 @@ class MDs implements Iterator {
 };
 
 /** Gestion d'un cache */
-readonly class Cache {
-  public string $cachedir; // '' si pas de cache
+class Cache {
+  readonly public string $cachedir; // '' si pas de cache
   
   function __construct(string $cachedir) {
     if (!$cachedir) {
@@ -131,12 +131,16 @@ readonly class Cache {
   }
 };
 
-readonly class CswServer {
+class CswServer {
   /** liste des serveurs connus */
   const SERVERS = [
     'gpf'=> [
       'title'=> "Géoplateforme",
       'url'=> 'https://data.geopf.fr/csw',
+    ],
+    'geoide-gn'=> [
+      'title'=> "Géo-IDE, point Geonetwork",
+      'url'=> 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable',
     ],
     'sextant'=> [
       'title'=> "Sextant (Ifremer)",
@@ -202,10 +206,10 @@ readonly class CswServer {
     ],
   ];
   
-  public string $serverId;
-  public string $title;
-  public bool $post;
-  public Cache $cache;
+  readonly public string $serverId;
+  readonly public string $title;
+  readonly public bool $post;
+  readonly public Cache $cache;
   
   function __construct(string $serverId, string $cachedir) {
     if (!isset(self::SERVERS[$serverId]))
