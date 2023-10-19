@@ -188,7 +188,7 @@ class CswServer {
     ],
   ];
   
-  static array $servers;
+  static array $servers; // liste des serveurs et leurs caractéristiques
   readonly public string $serverId;
   readonly public string $title;
   readonly public bool $post;
@@ -568,12 +568,12 @@ else { // utilisation en mode web
   switch ($_GET['action'] ?? null) { // en fonction de l'action
     case null: { // menu
       echo HTML_HEADER,"<h2>Choix d'une action pour \"$server->title\"</h2><ul>\n";
-      echo "<li><a href='",$server->getCapabilitiesUrl(),"'>GetCapabilities</a></li>\n";
+      echo "<li><a href='",$server->getCapabilitiesUrl(),"'>Lien vers les GetCapabilities</a></li>\n";
       echo "<li><a href='?server=$id&action=GetCapabilities'>GetCapabilities@cache</a></li>\n";
       echo "<li><a href='?server=$id&action=GetRecords'>GetRecords sans utiliser MDs</a></li>\n";
-      echo "<li><a href='?server=$id&action=listDatasets'>GetRecords des dataset en utilisant MDs</a></li>\n";
+      echo "<li><a href='?server=$id&action=listDatasets'>Liste des dataset (en utilisant MDs)</a></li>\n";
       if ($rdfServer) {
-        echo "<li><a href='",$rdfServer->rdfSearchUrl(),"'>Affichage du contenu du point rdf.search</a></li>\n";
+        echo "<li><a href='",$rdfServer->rdfSearchUrl(),"'>Lien vers le point rdf.search</a></li>\n";
         echo "<li><a href='?server=$id&action=rdf'>Affichage du RDF en Turtle</a></li>\n";
       }
       if (isset(CswServer::servers()[$id]['ogcApiRecordsUrl'])) {
@@ -639,7 +639,7 @@ else { // utilisation en mode web
       $menu = HTML_HEADER;
       $url = "?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]";
       $menu .= "<table border=1><tr>";
-      foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-xml','double'] as $f) {
+      foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-yamlld-c','dcat-xml','double'] as $f) {
         if ($f == $fmt)
           $menu .= "<td>$f</td>";
         else
@@ -677,10 +677,44 @@ else { // utilisation en mode web
           $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
           //echo "<pre>",str_replace('<','&lt;', $xml2);
           $rdf = new \EasyRdf\Graph($url);
-          $rdf->parse($xml2, 'rdf', $url);
+          try {
+            $rdf->parse($xml2, 'rdf', $url);
+          }
+          catch (EasyRdf\Parser\Exception $e) {
+            die("Erreur sur le parse RDF: ".$e->getMessage());
+          }
           $turtle = $rdf->serialise('turtle');
           //echo "<pre>",str_replace('<', '&lt;', $turtle),"</pre>\n";
           echo "<pre>",Turtle::html($turtle),"</pre>\n";
+          die();
+        }
+        case 'dcat-yamlld-c': {
+          echo $menu;
+          //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
+          
+          $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+          $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
+          $xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+          $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
+          //echo "<pre>",str_replace('<','&lt;', $xml2);
+          $rdf = new \EasyRdf\Graph($url);
+          try {
+            $rdf->parse($xml2, 'rdf', $url);
+          }
+          catch (EasyRdf\Parser\Exception $e) {
+            die("Erreur sur le parse RDF: ".$e->getMessage());
+          }
+          if (0) { // affichage du JSON-LD
+            $jsonld = json_decode($rdf->serialise('jsonld'), true);
+            echo "<pre>",Yaml::dump($jsonld),"</pre>\n";
+            die();
+          }
+          $compacted = ML\JsonLD\JsonLD::compact(
+            $rdf->serialise('jsonld'),
+            json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
+          $compacted = json_decode(json_encode($compacted), true);
+          $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
+          echo "<pre>",Yaml::dump($compacted, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
           die();
         }
         case 'dcat-xml': {
