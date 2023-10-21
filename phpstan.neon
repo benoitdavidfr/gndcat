@@ -1,0 +1,7 @@
+parameters:
+  level: 6
+  #level: 2
+  paths:
+    - read.php
+    - http.inc.php
+    - isomd.inc.php

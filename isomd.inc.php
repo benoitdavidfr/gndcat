@@ -22,6 +22,8 @@ class IsoMd {
     return $val2;
   }*/
 
+  /** @param array<string,mixed> $subelt
+   * @return array<string,mixed>|string|int */
   static function elt2Val(array $subelt): array|string|float|int {
     if (count($subelt) == 1) {
       return self::val($subelt['val']);
@@ -41,6 +43,10 @@ class IsoMd {
     }
   }
 
+  /** Transforme un mdrecord en array de type JSON.
+   * @param array<string,mixed> $mdrecord
+   * @return array<string,mixed>
+   */
   static function mdrecord2array(array $mdrecord): array {
     $record = [];
     foreach ($mdrecord as $var => $elt) {
@@ -55,8 +61,10 @@ class IsoMd {
     return $record;
   }
 
+  /** convertit une chaine XML en un array type JSON
+   * @return array<string,mixed> */
   static function convert(string $xml): array {
-    $record = Mdvars::extract($xml);
+    $record = Mdvars::extract($xml); // @phpstan-ignore-line
     return self::mdrecord2array($record);
   }
 };

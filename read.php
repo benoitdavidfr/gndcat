@@ -27,7 +27,8 @@ function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0)
           $dump)));
 }
 
-/** Traduit un array en XML */
+/** Traduit un array en XML.
+ * @param array<string,mixed> $array */
 function arrayToXml(array $array, string $prefix=''): string {
   $xml = '';
   foreach ($array as $key => $value) {
@@ -40,7 +41,7 @@ function arrayToXml(array $array, string $prefix=''): string {
   }
   return $xml;
 }
-if (0) { // Test arrayToXml()
+if (0) { // @phpstan-ignore-line // Test arrayToXml()
   $filter = [
     'Filter'=> [
       'PropertyIsEqualTo'=> [
@@ -83,10 +84,12 @@ class Turtle {
 class Cache {
   readonly public string $cachedir; // répertoire de stockage des fichiers du cache, '' si pas de cache
   protected bool $lastResultComesFromTheCache = true; // indique si la dernière opération effectuée a utilisé ou non le cache
+  /** @var list<string> $lastHeaders */
   protected array $lastHeaders = []; // headers du dernier appel à Http::get()
   protected string $lastCachepathReturned = ''; // conserve le chemin du dernier fichier de cache utilisé
   
   function lastResultComesFromTheCache(): bool { return $this->lastResultComesFromTheCache; }
+  /** @return list<string> $lastHeaders */
   function lastHeaders(): array { return $this->lastHeaders; }
   function lastCachepathReturned(): string { return $this->lastCachepathReturned; }
 
@@ -112,52 +115,6 @@ class Cache {
       return $this->cachedir.'/'.md5($url).'.xml';
   }
   
-  /** Retrouve en GET le doc correspondant à l'URL en utilisant le cache 
-  function get(string $url): string {
-    if (!$this->cachedir) {
-      $this->lastResultComesFromTheCache = false;
-      return file_get_contents($url);
-    }
-    $cachepath = $this->cachedir.'/'.md5($url).'.xml';
-    if (is_file($cachepath)) {
-      //echo "$url en cache\n";
-      $this->lastResultComesFromTheCache = true;
-      $this->lastCachepathReturned = $cachepath;
-      return file_get_contents($cachepath);
-    }
-    $this->lastResultComesFromTheCache = false;
-    $contents = file_get_contents($url);
-    if ($contents === false)
-      throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
-    file_put_contents($cachepath, $contents);
-    $this->lastCachepathReturned = $cachepath;
-    return $contents;
-  }
-  
-  / ** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache 
-  function request(string $url, array $options): array {
-    if (!$this->cachedir) {
-      $this->lastResultComesFromTheCache = false;
-      return Http::call($url, $options);
-    }
-    $doc = array_merge(['cswUrl'=> $url], $options);
-    $doc = json_encode($doc);
-    //echo $doc; die();
-    $cachepath = $this->cachedir.'/'.md5($doc).'.json';
-    if (is_file($cachepath)) {
-      $this->lastResultComesFromTheCache = true;
-      $this->lastCachepathReturned = $cachepath;
-      return json_decode(file_get_contents($cachepath), true);
-    }
-    $this->lastResultComesFromTheCache = false;
-    $contents = Http::call($url, $options);
-    if ($contents === false)
-      throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
-    file_put_contents($cachepath, json_encode($contents));
-    $this->lastCachepathReturned = $cachepath;
-    return $contents;
-  }*/
-  
   /** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache.
    *
    * Les options sont celles définies pour Http::call()
@@ -175,6 +132,8 @@ class Cache {
    *  2) doc en cache => retourne le doc en cache
    *  3) doc pas en cache & erreur => Http::call() retourne false et pas de mise en cache
    *  4) doc pas en cache & !erreur => Http::call(), mise en cache et retourne résultat
+   *
+   * @param array<string,string|int|number> $options; liste des options définies dans Http::all()
    */
   function get(string $url, array $options=[]): string|false {
     if (!$this->cachedir) { // si pas de cache
@@ -261,22 +220,28 @@ class CswServer {
     ],
   ];
   
-  static array $servers; // dictionnaire des serveurs et leurs caractéristiques
+  /** dictionnaire des caractéristiques des serveurs .
+   * @var array<string,mixed> */
+  static array $servers;
   readonly public string $serverId;
   readonly public string $cswUrl;
   readonly public string $title;
+  /** @var array<mixed> */
   readonly public array $post;
+  /** @var array<string,string|int|number> $httpOptions */
   readonly public array $httpOptions;
   readonly public Cache $cache;
   
-  /** Retourne le dictionnaire des serveurs et leurs caractéristiques */
+  /** Retourne le dictionnaire des caractéristiques des serveurs.
+   * @return array<string,mixed> */
   static function servers(): array {
     if (!isset(self::$servers))
       self::$servers = Yaml::parseFile(__DIR__.'/servers.yaml')['servers'];
     return self::$servers;
   }
   
-  /** Retourne les caractéritiques du serveur s'il existe et sinon null */
+  /** Retourne les caractéritiques du serveur s'il existe et sinon null.
+   * @return array<string,mixed>|null */
   static function exists(string $serverId): ?array { return self::servers()[$serverId] ?? null; }
   
   function __construct(string $serverId, string $cachedir) {
@@ -410,7 +375,9 @@ class CswServer {
   }
 };
 
-/** Itérateur sur les métadonnées DC brief */
+/** Itérateur sur les métadonnées DC brief.
+ * La clé (TKey) est la postion dans le GetRecords, La valeur (TValue) est un SimpleXMLElement,
+ * @implements \Iterator<int,SimpleXMLElement> */
 class MDs implements Iterator {
   readonly public CswServer $server; // Serveur CSW sous-jacent
   readonly public int $startPos; // position de démarrage définie à la création
@@ -429,7 +396,7 @@ class MDs implements Iterator {
   function numberOfRecordsMatched(): int { return $this->numberOfRecordsMatched; }
   
   /** lecture d'un buffer de records à partir de firstPos */
-  private function getBuffer() {
+  private function getBuffer(): void {
     $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
     $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
     $this->records = new SimpleXMLElement($records);
@@ -440,7 +407,7 @@ class MDs implements Iterator {
   function rewind(): void {
     //echo "rewind()<br>\n";
     $this->currentPos = $this->startPos;
-    $this->firstPos = floor(($this->startPos - 1) / 10) * 10 + 1;
+    $this->firstPos = (int)floor(($this->startPos - 1) / 10) * 10 + 1;
     $this->getBuffer();
   }
   
@@ -462,7 +429,7 @@ class MDs implements Iterator {
     if (($this->currentPos - $this->firstPos) >= 10) {
       $this->firstPos = $this->nextRecord;
       if (!$this->firstPos)
-        throw new Exceprion("Erreur firstPos==0");
+        throw new \Exception("Erreur firstPos==0");
       $this->getBuffer();
     }
   }
@@ -479,17 +446,17 @@ class RdfServer {
   readonly public string $title;
   readonly public Cache $cache;
   
-  static function exists(string $serverId): bool { return isset(cswServer::servers()[$serverId]['rdfSearchUrl']); }
+  static function exists(string $serverId): bool { return isset(CswServer::exists($serverId)['rdfSearchUrl']); }
     
   function __construct(string $serverId, string $cachedir) {
     if (!self::exists($serverId))
       throw new Exception("Erreur, serveur $serverId inexistant");
     $this->serverId = $serverId;
     $this->cache = new Cache("rdf-$cachedir");
-    $this->title = cswServer::servers()[$serverId]['title'];
+    $this->title = CswServer::exists($serverId)['title'];
   }
   
-  function rdfSearchUrl(): ?string { return cswServer::servers()[$this->serverId]['rdfSearchUrl'] ?? null; }
+  function rdfSearchUrl(): ?string { return CswServer::exists($this->serverId)['rdfSearchUrl'] ?? null; }
 
   function rdfSearch(): ?string { return $this->cache->get($this->rdfSearchUrl()); }
 };
@@ -634,6 +601,7 @@ else { // utilisation en mode web
       $startPosition = $_GET['startPosition'] ?? 1;
       $mds = new MDs($id, $id, $startPosition);
       $nbreLignes = 0;
+      $no = 0;
       echo "<table border=1>\n";
       foreach ($mds as $no => $record) {
         if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
@@ -675,7 +643,7 @@ else { // utilisation en mode web
           die();
         }
         case 'iso-xml': {
-          if (0) {
+          if (0) { // @phpstan-ignore-line
             echo $menu;
             $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
             echo "<pre>",str_replace('<','&lt;', $xml);
@@ -722,7 +690,7 @@ else { // utilisation en mode web
           catch (EasyRdf\Parser\Exception $e) {
             die("Erreur sur le parse RDF: ".$e->getMessage());
           }
-          if (0) { // affichage du JSON-LD
+          if (0) { // @phpstan-ignore-line // affichage du JSON-LD
             $jsonld = json_decode($rdf->serialise('jsonld'), true);
             echo "<pre>",Yaml::dump($jsonld),"</pre>\n";
             die();
@@ -736,7 +704,7 @@ else { // utilisation en mode web
           die();
         }
         case 'dcat-xml': {
-          if (0) {
+          if (0) { // @phpstan-ignore-line
             echo $menu;
             $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
             $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
