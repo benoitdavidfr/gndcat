@@ -1,89 +1,185 @@
 title: liste de serveurs CSW connus
+$schema:
+  $id: http://geoapi.fr/gndcat/servers.yaml#schema
+  definitions:
+    ogcFilter:
+      description: |
+        Filtre encodé en object respectant "OpenGIS® Filter Encoding 1.1.0" (OGC 04-095).
+        La conversion object en XML est définie par arrayToXml()
+        A compléter.
+      type: object
+      additionalProperties: false
+      required: [Filter]
+      properties:
+        Filter:
+          type: object
+          patternProperties:
+            ^(PropertyIsEqualTo)$:
+              type: object
+              properties:
+                PropertyName:
+                  type: string
+                Literal:
+                  type: string
+    post:
+      description: structure de paramétrage de l'appel GetRecords en POST au serveurs CSW
+      type: object
+      additionalProperties: false
+      required: [filter]
+      properties:
+        filter:
+          description: filtre encodé en object respectant "OpenGIS® Filter Encoding 1.1.0" (OGC 04-095)
+          $ref: '#/definitions/ogcFilter'
+    httpOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        max-retries:
+          description: nbre de relances à faire en cas de timeout, défaut 0 <=> un seul appel
+          type: integer
+        timeout:
+          description: Délai maximal d'attente pour la lecture, sous la forme d'un nombre décimal (e.g. 10.5)
+          type: number
+    server:
+      description: description d'un serveur CSW et d'éventuels points complémentaires
+      type: object
+      additionalProperties: false
+      required: [title, cswUrl]
+      properties:
+        title:
+          type: string
+          description: titre du serveur
+        cswUrl:
+          type: string
+          description: URL CSW sans les paramètres CSW
+        www:
+          type: string
+          description: URL du site HTML du catalogue ou de la plateforme
+        rdfSearchUrl:
+          type: string
+          description: URL du point rdf.search
+        ogcApiRecordsUrl:
+          type: string
+          description: URL du point OpenAPI Records
+        delay:
+          type: number
+          description: délai d'attente en secondes entre 2 appels lors du moissonnage en cli
+        httpOptions:
+          description: options à utiliser dans les appels HTTP GetRecords au serveur
+          $ref: '#/definitions/httpOptions'
+        post:
+          description: indique que le serveur CSW doit être appelé en POST pour les GetRecords et fournit le filtre à utiliser
+          $ref: '#/definitions/post'
+      
+  type: object
+  additionnalProperties: false
+  required: [title, $schema, servers]
+  properties:
+    title:
+      type: string
+    $schema: http://json-schema.org/schema#
+    servers:
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-z0-9]*$:
+          description: Description d'un serveur.
+          $ref: '#/definitions/server'
+    eof:
+      type: 'null'
+      
 servers:
   # logiciels
   georchestra:
-    title: 'Démo geOrchestra'
-    cswUrl: 'https://demo.georchestra.org/geonetwork/srv/fre/csw'
-    rdfSearchUrl: 'https://demo.georchestra.org/geonetwork/srv/fre/rdf.search'
-    ogcApiRecordsUrl: 'https://demo.georchestra.org/geonetwork/srv/api/search/records/_search'
+    title: Démo geOrchestra
+    cswUrl: https://demo.georchestra.org/geonetwork/srv/fre/csw
+    rdfSearchUrl: https://demo.georchestra.org/geonetwork/srv/fre/rdf.search
+    ogcApiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
   # nationaux
   gide-gn:
-    title: 'Géo-IDE, point Geonetwork en GET'
-    cswUrl: 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable'
-    delay: 0.1
+    title: Géo-IDE, point Geonetwork en GET
+    cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+    delay: 0.1 # attente entre 2 appels lors du moissonnage en cli
+    httpOptions:
+      max-retries: 3
+    
   gide-gn-pds:
-    title: 'Géo-IDE, point Geonetwork en POST avec un filtre sur type=dataset'
-    cswUrl: 'http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable'
+    title: Géo-IDE, point Geonetwork en POST avec un filtre sur type=dataset
+    cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
     post:
       filter:
         Filter:
           PropertyIsEqualTo:
-            PropertyName: 'dc:type'
+            PropertyName: dc:type
             Literal: dataset
   gide:
-    title: 'Géo-IDE, point spécifique'
-    cswUrl: 'http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable'
+    title: Géo-IDE, point spécifique
+    cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
   sextant:
-    title: 'Sextant (Ifremer)'
-    cswUrl: 'https://sextant.ifremer.fr/geonetwork/srv/fre/csw'
+    title: Sextant (Ifremer)
+    cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
   sandre:
-    title: 'Sandre (EauFrance)'
-    cswUrl: 'http://www.sandre.eaufrance.fr/atlas/srv/fre/csw'
+    title: Sandre (EauFrance)
+    cswUrl: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw
   naturefrance:
     title: NatureFrance
-    cswUrl: 'https://data.naturefrance.fr/geonetwork/srv/fre/csw'
+    cswUrl: https://data.naturefrance.fr/geonetwork/srv/fre/csw
   igngp:
-    title: 'Géoportail IGN'
-    cswUrl: 'https://wxs.ign.fr/catalogue/csw'
+    title: Géoportail IGN
+    cswUrl: https://wxs.ign.fr/catalogue/csw
   igngpf:
-    title: 'Géoplateforme IGN'
-    cswUrl: 'https://data.geopf.fr/csw'
+    title: Géoplateforme IGN
+    cswUrl: https://data.geopf.fr/csw
   cerema-data:
-    title: 'Cerema Data'
-    cswUrl: 'https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata'
+    title: Cerema Data
+    cswUrl: https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata
   sas:
-    title: 'GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers'
-    cswUrl: 'https://geosas.fr/geonetwork/srv/fre/csw'
-    www: 'https://geosas.fr/'
-    rdfSearchUrl: 'https://geosas.fr/geonetwork/srv/fre/rdf.search'
+    title: GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers
+    cswUrl: https://geosas.fr/geonetwork/srv/fre/csw
+    www: https://geosas.fr/
+    rdfSearchUrl: https://geosas.fr/geonetwork/srv/fre/rdf.search
   geo2france:
     title: Géo2France
-    cswUrl: 'https://www.geo2france.fr/geonetwork/srv/fre/csw'
+    cswUrl: https://www.geo2france.fr/geonetwork/srv/fre/csw
   geobretagne:
     title: GéoBretagne
-    cswUrl: 'http://geobretagne.fr/geonetwork/srv/fre/csw'
+    cswUrl: http://geobretagne.fr/geonetwork/srv/fre/csw
   datara:
     title: DatARA
-    cswUrl: 'https://www.datara.gouv.fr/geonetwork/srv/eng/csw-RAIN'
-    rdfSearchUrl: 'https://www.datara.gouv.fr/geonetwork/srv/eng/rdf.search'
+    cswUrl: https://www.datara.gouv.fr/geonetwork/srv/eng/csw-RAIN
+    rdfSearchUrl: https://www.datara.gouv.fr/geonetwork/srv/eng/rdf.search
   sigloire:
     title: sigloire
-    cswUrl: 'https://catalogue.sigloire.fr/geonetwork/srv/fr/csw-sigloire'
+    cswUrl: https://catalogue.sigloire.fr/geonetwork/srv/fr/csw-sigloire
   sigena:
-    title: 'Sigena - Nouvelle-Aquitaine - Dreal'
-    cswUrl: 'https://www.sigena.fr/geonetwork/srv/fre/csw'
+    title: Sigena - Nouvelle-Aquitaine - Dreal
+    cswUrl: https://www.sigena.fr/geonetwork/srv/fre/csw
   pigma:
-    title: 'PIGMA - Nouvelle-Aquitaine - Région'
-    cswUrl: 'https://www.pigma.org/geonetwork/srv/fre/csw'
+    title: PIGMA - Nouvelle-Aquitaine - Région
+    cswUrl: https://www.pigma.org/geonetwork/srv/fre/csw
   picto:
-    title: 'Picto Occitanie'
-    cswUrl: 'https://www.picto-occitanie.fr/geonetwork/srv/fre/csw-geocatalogue'
+    title: Picto Occitanie
+    cswUrl: https://www.picto-occitanie.fr/geonetwork/srv/fre/csw-geocatalogue
   bfc:
-    title: 'IDéO BFC'
-    cswUrl: 'https://inspire.ternum-bfc.fr/geonetwork/srv/fre/csw'
-    www: 'https://ideo.ternum-bfc.fr/'
+    title: IDéO BFC
+    cswUrl: https://inspire.ternum-bfc.fr/geonetwork/srv/fre/csw
+    www: https://ideo.ternum-bfc.fr/
   odd-corse:
-    title: 'Observatoire du Développement Durable de Corse (DREAL Corse)'
-    cswUrl: 'https://georchestra.ac-corse.fr/geonetwork/srv/fre/csw'
+    title: Observatoire du Développement Durable de Corse (DREAL Corse)
+    cswUrl: https://georchestra.ac-corse.fr/geonetwork/srv/fre/csw
   geoguyane:
     title: GéoGuyane
-    cswUrl: 'https://catalogue.geoguyane.fr/geonetwork/srv/fre/csw-geoguyane'
+    cswUrl: https://catalogue.geoguyane.fr/geonetwork/srv/fre/csw-geoguyane
   geomartinique:
     title: GéoMartinique
-    cswUrl: 'http://www.geomartinique.fr/geonetwork/srv/fre/csw'
+    cswUrl: http://www.geomartinique.fr/geonetwork/srv/fre/csw
   karugeo:
-    title: 'Karugeo (Guadeloupe)'
-    cswUrl: 'https://www.karugeo.fr/geonetwork/srv/fre/csw'
+    title: Karugeo (Guadeloupe)
+    cswUrl: https://www.karugeo.fr/geonetwork/srv/fre/csw
   mayotte:
-    title: 'Observatoire de Mayotte'
-    cswUrl: 'https://www.observatoire-de-mayotte.fr/geonetwork/srv/fre/csw'
+    title: Observatoire de Mayotte
+    cswUrl: https://www.observatoire-de-mayotte.fr/geonetwork/srv/fre/csw
+  error:
+    title: serveur erreur pour tests
+    cswUrl: http://localhost/geoapi/gndcat/cswservertest.php
+eof:

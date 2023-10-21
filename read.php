@@ -1,20 +1,30 @@
 <?php
-// Lecture basique des MD en CSW/DCAT
+/** Lecture des MD d'un serveur CSW en ISO ou en DCAT.
+ *
+ * La classe CswServer implémente les méthodees d'appel à un serveur CSW.
+ * Elle utilise un dictionnaire de serveurs définis dans le fichier servers.yaml.
+ * La classe MDs implémente un itérateur sur GetRecords afin d'afficher une liste de métadonnées
+ * plus indépendamment des appels GetRecords.
+ * La classe Cache implémente un cache pour les appels Http effectués par le serveur CSW.
+ */
 require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/http.inc.php';
 require_once __DIR__.'/isomd.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
-/** supprime les - suivis d'un retour à la ligne dans Yaml::dump()
+/** supprime les - suivis d'un retour à la ligne dans Yaml::dump() et ajoute par défaut l'option DUMP_MULTI_LINE_LITERAL_BLOCK
  * @param mixed $data
  */
 function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0): string {
   $options |= Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK;
   $dump = Yaml::dump($data, $level, $indentation, $options);
   //return $dump;
-  //return preg_replace('!-\n *!', '- ', $dump);
-  return preg_replace('!: \|-ZZ\n!', ": |-\n", preg_replace('!-\n *!', '- ', preg_replace('!(: +)\|-\n!', "\$1|-ZZ\n", $dump)));
+  return
+    preg_replace('!: \|-ZZ\n!', ": |-\n", 
+      preg_replace('!-\n *!', '- ', 
+        preg_replace('!(: +)\|-\n!', "\$1|-ZZ\n",
+          $dump)));
 }
 
 /** Traduit un array en XML */
@@ -42,6 +52,7 @@ if (0) { // Test arrayToXml()
   echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
 }
 
+/** Manipulation de code Turtle */
 class Turtle {
   /** Transforme le texte turtle en Html */
   static function html(string $src): string {
@@ -61,13 +72,24 @@ class Turtle {
     return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
   }
 };
-
-/** Gestion d'un cache pour des requêtes http */
+    
+/** Gestion d'un cache pour des requêtes http.
+ *
+ * get() effectue un appel Http sauf si le résultat est déjà en cache et dans ce cas renvoit le contenu du cache.
+ * lastResultComesFromTheCache() indique si le dernier get provient du cache ou d'une requête Http.
+ * lastHeaders() retourne les headers du dernier appel à Http::get()
+ * lastCachepathReturned() fournit le chemin du dernier fichier de cache utilisé (en lecture ou en écriture)
+ */
 class Cache {
-  readonly public string $cachedir; // '' si pas de cache
-  protected bool $lastOperationWasInCache = true;
-  protected string $lastCachepathReturned = '';
+  readonly public string $cachedir; // répertoire de stockage des fichiers du cache, '' si pas de cache
+  protected bool $lastResultComesFromTheCache = true; // indique si la dernière opération effectuée a utilisé ou non le cache
+  protected array $lastHeaders = []; // headers du dernier appel à Http::get()
+  protected string $lastCachepathReturned = ''; // conserve le chemin du dernier fichier de cache utilisé
   
+  function lastResultComesFromTheCache(): bool { return $this->lastResultComesFromTheCache; }
+  function lastHeaders(): array { return $this->lastHeaders; }
+  function lastCachepathReturned(): string { return $this->lastCachepathReturned; }
+
   function __construct(string $cachedir) {
     if (!$cachedir) {
       $this->cachedir = '';
@@ -90,20 +112,20 @@ class Cache {
       return $this->cachedir.'/'.md5($url).'.xml';
   }
   
-  /** Retrouve en GET le doc correspondant à l'URL en utilisant le cache */
+  /** Retrouve en GET le doc correspondant à l'URL en utilisant le cache 
   function get(string $url): string {
     if (!$this->cachedir) {
-      $this->lastOperationWasInCache = false;
+      $this->lastResultComesFromTheCache = false;
       return file_get_contents($url);
     }
     $cachepath = $this->cachedir.'/'.md5($url).'.xml';
     if (is_file($cachepath)) {
       //echo "$url en cache\n";
-      $this->lastOperationWasInCache = true;
+      $this->lastResultComesFromTheCache = true;
       $this->lastCachepathReturned = $cachepath;
       return file_get_contents($cachepath);
     }
-    $this->lastOperationWasInCache = false;
+    $this->lastResultComesFromTheCache = false;
     $contents = file_get_contents($url);
     if ($contents === false)
       throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
@@ -112,33 +134,84 @@ class Cache {
     return $contents;
   }
   
-  /** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache */
+  / ** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache 
   function request(string $url, array $options): array {
     if (!$this->cachedir) {
-      $this->lastOperationWasInCache = false;
-      return Http::request($url, $options);
+      $this->lastResultComesFromTheCache = false;
+      return Http::call($url, $options);
     }
     $doc = array_merge(['cswUrl'=> $url], $options);
     $doc = json_encode($doc);
     //echo $doc; die();
     $cachepath = $this->cachedir.'/'.md5($doc).'.json';
     if (is_file($cachepath)) {
-      $this->lastOperationWasInCache = true;
+      $this->lastResultComesFromTheCache = true;
       $this->lastCachepathReturned = $cachepath;
       return json_decode(file_get_contents($cachepath), true);
     }
-    $this->lastOperationWasInCache = false;
-    $contents = Http::request($url, $options);
+    $this->lastResultComesFromTheCache = false;
+    $contents = Http::call($url, $options);
     if ($contents === false)
       throw new Exception("Erreur '".($http_response_header[0] ?? 'unknown')."' sur url=$url");
     file_put_contents($cachepath, json_encode($contents));
     $this->lastCachepathReturned = $cachepath;
     return $contents;
-  }
-
-  function lastOperationWasInCache(): bool { return $this->lastOperationWasInCache; }
+  }*/
   
-  function lastCachepathReturned(): string { return $this->lastCachepathReturned; }
+  /** Retrouve le document correspondant à l'URL et aux options en utilisaant le cache.
+   *
+   * Les options sont celles définies pour Http::call()
+   *
+   * Objectifs:
+   *  1) fusionner Cache::get() et Cache::request()
+   *  2) retourner le body en string car le retour [headers, body] est compliqué à gérer pour l'appellant
+   *  3) possibilité de conserver le dernier headers retourné en variable statique de la classe Http
+   *  4) n'utiliser pour définir la clé de cache que les options qui impactent le contenu de la réponse
+   *    - par exemple le content en POST impacte le retour
+   *    - par contre max-retries n'impacte pas le contenu du retour
+   *
+   * 4 cas de figure:
+   *  1) pas de cache => retourne Http::call()
+   *  2) doc en cache => retourne le doc en cache
+   *  3) doc pas en cache & erreur => Http::call() retourne false et pas de mise en cache
+   *  4) doc pas en cache & !erreur => Http::call(), mise en cache et retourne résultat
+   */
+  function get(string $url, array $options=[]): string|false {
+    if (!$this->cachedir) { // si pas de cache
+      $result = Http::call($url, $options);
+      $this->lastResultComesFromTheCache = false;
+      $this->lastHeaders = Http::$lastHeaders;
+      return $result;
+    }
+    $docCache = []; // les éléments pour construire le md5
+    // Les options qui peuvent avoir un impact sur le contenu du résultat retourné
+    foreach ($options as $key => $value) {
+      if (in_array($key, ['Accept','Accept-Language','content']))
+        $docCache[$key] = $value;
+    }
+    if (!$docCache) { // si aucune option n'est concerné o  n'utilise que l'url pour définir la clé de cache
+      $cachepath = $this->cachedir.'/'.md5($url).'.xml';
+      // permet ainsi de garder une compatibilité avec la ersion précédente
+    }
+    else {
+      $docCache['cswUrl'] = $url; // l'URL a un impact ur le contenu du résultat retourné 
+      $cachepath = $this->cachedir.'/'.md5(json_encode($docCache)).'.xml';
+    }
+    if (is_file($cachepath)) { // si l'URL est en cache
+      $this->lastResultComesFromTheCache = true;
+      $this->lastCachepathReturned = $cachepath;
+      return file_get_contents($cachepath);
+    }
+    // sinon appel Http
+    $this->lastResultComesFromTheCache = false;
+    $contents = Http::call($url, $options);
+    $this->lastHeaders = Http::$lastHeaders;
+    if ($contents === false)
+      return false;
+    file_put_contents($cachepath, $contents);
+    $this->lastCachepathReturned = $cachepath;
+    return $contents;
+  }
 
   function clear(): void {
     $output = null;
@@ -188,14 +261,15 @@ class CswServer {
     ],
   ];
   
-  static array $servers; // liste des serveurs et leurs caractéristiques
+  static array $servers; // dictionnaire des serveurs et leurs caractéristiques
   readonly public string $serverId;
+  readonly public string $cswUrl;
   readonly public string $title;
-  readonly public bool $post;
-  readonly public array $filter; // filtre des GetRecords en POST
+  readonly public array $post;
+  readonly public array $httpOptions;
   readonly public Cache $cache;
   
-  /** Retourne la liste des serveurs et leurs caractéristiques */
+  /** Retourne le dictionnaire des serveurs et leurs caractéristiques */
   static function servers(): array {
     if (!isset(self::$servers))
       self::$servers = Yaml::parseFile(__DIR__.'/servers.yaml')['servers'];
@@ -207,61 +281,67 @@ class CswServer {
   
   function __construct(string $serverId, string $cachedir) {
     if (!($server = self::exists($serverId)))
-      throw new Exception("Erreur, serveur $serverId inxeistant");
+      throw new Exception("Erreur, serveur $serverId inexistant");
     $this->serverId = $serverId;
-    $this->cache = new Cache($cachedir);
+    $this->cswUrl = $server['cswUrl'];
     $this->title = $server['title'];
-    $this->post = isset($server['post']);
-    $this->filter = $server['post']['filter'] ?? [];
+    $this->post = $server['post'] ?? [];
+    $this->httpOptions = $server['httpOptions'] ?? [];
+    $this->cache = new Cache($cachedir);
   }
   
   /** Retourne l'URL du GetCapabilities */
   function getCapabilitiesUrl(): string {
-    return self::servers()[$this->serverId]['cswUrl'].'?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetCapabilities';
+    return $this->cswUrl.'?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetCapabilities';
   }
   
   /** Retourne le document du GetCapabilities en utilisant le cache */
-  function getCapabilities(): string { return $this->cache->get($this->getCapabilitiesUrl()); }
+  function getCapabilities(): string {
+    $result = $this->cache->get($this->getCapabilitiesUrl(), $this->httpOptions);
+    if ($result === false)
+      throw new Exception("Erreur dans l'appel de ".$this->getCapabilitiesUrl());
+    return $result;
+  }
   
   /** Retourne l'URL du GetRecords en GET */
-  function getRecordsUrl(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
+  function getRecordsUrl(string $type, string $ElementSetName, int $startPosition): string {
     $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
     $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
-    if ($filter)
-      $filter = urlencode(arrayToXml($filter));
 
     return self::servers()[$this->serverId]['cswUrl']
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecords&ElementSetName=$ElementSetName"
       .'&ResultType=results&MaxRecords=10&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
-      ."&startPosition=$startPosition"
-      .($filter ? "&CONSTRAINTLANGUAGE=FILTER&CONSTRAINT_LANGUAGE_VERSION=1.1.0&FILTER=$filter" : '');
+      ."&startPosition=$startPosition";
   }
   
   /** Réalise un GetRecords soit en GET soit en POST en fonction du paramétrage du serveur */
   function getRecords(string $type, string $ElementSetName, int $startPosition): string {
-    if ($this->post) {
-      return $this->getRecordsInPost($type, $ElementSetName, $startPosition, $this->filter);
-    }
-    else {
-      return $this->getRecordsInGet($type, $ElementSetName, $startPosition);
-    }
+    if ($this->post)
+      $result = $this->getRecordsInPost($type, $ElementSetName, $startPosition);
+    else
+      $result = $this->getRecordsInGet($type, $ElementSetName, $startPosition);
+    var_dump($result);
+    if ($result === false)
+      throw new Exception("Erreur dans l'appel de getRecords");
+    return $result;
   }
   
   /** Réalise un GetRecords en GET */
-  private function getRecordsInGet(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
+  private function getRecordsInGet(string $type, string $ElementSetName, int $startPosition): string|false {
     //echo "CswServer::getRecords(startPosition=$startPosition)<br>\n";
-    $url = $this->getRecordsUrl($type, $ElementSetName, $startPosition, $filter);
-    return $this->cache->get($url);
+    $url = $this->getRecordsUrl($type, $ElementSetName, $startPosition);
+    return $this->cache->get($url, $this->httpOptions);
   }
   
   /** Réalise un GetRecords en POST */
-  private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition, array $filter=[]): string {
+  private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition): string|false {
     $OutputSchema = self::GETRECORDS_PARAMS[$type]['OutputSchema'];
     $namespace = self::GETRECORDS_PARAMS[$type]['namespace'];
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
     
+    $filter = $this->post['filter'] ?? [];
     $query = '<?xml version="1.0" encoding="utf-8"?>'."\n"
       ."<GetRecords service='CSW' version='2.0.2' maxRecords='10'\n"
       ."  startPosition='$startPosition' resultType='results' outputFormat='application/xml'\n"
@@ -274,80 +354,19 @@ class CswServer {
       ."  </Query>\n"
       ."</GetRecords>";
       
-      
-      {/*<csw:GetRecords xmlns:dc="http://purl.org/dc/elements/1.1/"
-        xmlns:dct="http://purl.org/dc/terms/"
-        xmlns:csw="http://www.opengis.net/cat/csw/2.0.2"
-        service="CSW"
-        resultType="results" startPosition="1"
-        version="2.0.2"
-        outputSchema="http://www.opengis.net/cat/csw/2.0.2">
-        <csw:Query typeNames="csw:Record"
-          xmlns:ogc="http://www.opengis.net/ogc"
-          xmlns:gml="http://www.opengis.net/gml">
-          <csw:ElementSetName>brief
-          <csw:Constraint version="1.1.0">
-            <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
-              xmlns:gml="http://www.opengis.net/gml">
-            <ogc:PropertyIsLike escape="" singleChar="_" wildCard="%">
-              <ogc:PropertyName>Title</ogc:PropertyName>
-              <ogc:Literal>%risques%</ogc:Literal>
-            </ogc:PropertyIsLike>
-          </ogc:Filter>
-          </csw:Constraint>
-        </csw:Query>
-      </csw:GetRecords>*/}
-        
-      {/* Exemple donné dans le standard
-        <GetRecords xmlns="http://www.opengis.net/cat/csw/2.0.2"
-        xmlns:csw="http://www.opengis.net/cat/csw/2.0.2"
-        xmlns:ogc="http://www.opengis.net/ogc" xmlns:ows="http://www.opengis"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-        xmlns:dc="http://purl.org/dc/elements/1.1/"
-        xmlns:dct="http://purl.org/dc/terms/" xmlns:gml="http://www.opengis.net/gml"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" service="CSW"
-        version="2.0.2" resultType="results" outputFormat="application/xml"
-        outputSchema="http://www.opengis.net/cat/csw/2.0.2" startPosition="1"
-        maxRecords="5">
-        <Query typeNames="csw:Record">
-          <ElementSetName typeNames="">brief</ElementSetName>
-          <Constraint version="1.1.0">
-            <ogc:Filter>
-              <ogc:And>
-                <ogc:PropertyIsLike escapeChar="\" singleChar="?" wildCard="*">
-                  <ogc:PropertyName>dc:title</ogc:PropertyName>
-                  <ogc:Literal>*spectra*</ogc:Literal>
-                </ogc:PropertyIsLike>
-                <ogc:PropertyIsEqualTo>
-                  <ogc:PropertyName>dc:type</ogc:PropertyName>
-                  <ogc:Literal>dataset</ogc:Literal>
-                </ogc:PropertyIsEqualTo>
-                <ogc:Intersects>
-                  <ogc:PropertyName>ows:BoundingBox</ogc:PropertyName>
-                  <gml:Envelope>
-                    <gml:lowerCorner>14.05 46.46</gml:lowerCorner>
-                    <gml:upperCorner>17.24 48.42</gml:upperCorner>
-                  </gml:Envelope>
-                </ogc:Intersects>
-              </ogc:And>
-            </ogc:Filter>
-          </Constraint>
-        </Query>
-      </GetRecords> */}
-        
-    
-    echo "getRecordsInPost(query=",str_replace('<','&lt;',$query),")<br>\n";
-    $options = [
-      'method'=> 'POST',
-      'Content-Type'=> 'application/xml',
-      'ignore_errors' => true, // pour éviter la génération d'une exception
-      'content'=> $query,
-    ];
-    $result = $this->cache->request(self::servers()[$this->serverId]['cswUrl'], $options);
-    $body = $result['body'];
-    $result['body'] = str_replace('<','&lt;', $result['body']);
-    echo "<pre>"; print_r($result); echo "</pre>\n";
-    return $body;
+    //echo "getRecordsInPost(query=",str_replace('<','&lt;',$query),")<br>\n";
+    $httpOptions = array_merge($this->httpOptions, [
+        'method'=> 'POST',
+        'Content-Type'=> 'application/xml',
+        'content'=> $query,
+      ]);
+    $result = $this->cache->get($this->cswUrl, $httpOptions);
+    /*echo "<pre>";
+    if (!$this->cache->lastResultComesFromTheCache()) {
+      echo "headers="; print_r($this->cache->lastHeaders());
+    }
+    echo "result=",str_replace('<','&lt;', $result),"</pre>\n"; */
+    return $result;
   }
   
   /** Retourne l'URL d'un GetRecordById */
@@ -355,7 +374,7 @@ class CswServer {
     $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
     $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
-    return self::servers()[$this->serverId]['cswUrl']
+    return $this->cswUrl
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecordById&ElementSetName=$ElementSetName"
       .'&ResultType=results&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
@@ -364,8 +383,7 @@ class CswServer {
   
   /** Retourne le GetRecordById */
   function getRecordById(string $type, string $ElementSetName, string $id): string {
-    $url = $this->getRecordByIdUrl($type, $ElementSetName, $id);
-    return $this->cache->get($url);
+    return $this->cache->get($this->getRecordByIdUrl($type, $ElementSetName, $id), $this->httpOptions);
   }
 
   /** suppression du cache */
@@ -377,7 +395,7 @@ class CswServer {
    */
   function sleep(): void {
     //echo "sleep()\n";
-    if ($this->cache->lastOperationWasInCache())
+    if ($this->cache->lastResultComesFromTheCache())
       return;
     $delay = self::servers()[$this->serverId]['delay'] ?? 0;
     if ($delay >= 1) {
@@ -412,10 +430,7 @@ class MDs implements Iterator {
   
   /** lecture d'un buffer de records à partir de firstPos */
   private function getBuffer() {
-    if ($this->server->post)
-      $records = $this->server->getRecords('dc', 'brief', $this->firstPos, $this->filter);
-    else
-      $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
+    $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
     $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
     $this->records = new SimpleXMLElement($records);
     $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
@@ -580,6 +595,7 @@ else { // utilisation en mode web
         $url = CswServer::servers()[$id]['ogcApiRecordsUrl'];
         echo "<li><a href='$url'>ogcApiRecordsUrl</a></li>\n";
       }
+      echo "</ul><a href='?'>Retour à la liste des catalogues.</a></p>\n";
       die();
     }
     case 'GetCapabilities': {
@@ -631,7 +647,9 @@ else { // utilisation en mode web
       //echo "nbre=$nbre<br>\n";
       if ($nbreLignes > NBRE_MAX_LIGNES)
         echo "<a href='?server=$id&action=$_GET[action]&startPosition=$no'>",
-              "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a><br>\n";
+              "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a> / \n";
+      echo "<a href='?server=$id&action=listDatasets'>Retour au 1er</a> / \n";
+      echo "<a href='?server=$id'>Retour à l'accueil</a></p>";
       die();
     }
     case 'viewRecord': {
@@ -641,7 +659,7 @@ else { // utilisation en mode web
       $menu .= "<table border=1><tr>";
       foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-yamlld-c','dcat-xml','double'] as $f) {
         if ($f == $fmt)
-          $menu .= "<td>$f</td>";
+          $menu .= "<td><b>$f</b></td>";
         else
           $menu .= "<td><a href='$url&fmt=$f'>$f</a></td>";
       }
@@ -688,7 +706,7 @@ else { // utilisation en mode web
           echo "<pre>",Turtle::html($turtle),"</pre>\n";
           die();
         }
-        case 'dcat-yamlld-c': {
+        case 'dcat-yamlld-c': { // Yaml-LD compacté avec le contexte context.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           
@@ -714,7 +732,7 @@ else { // utilisation en mode web
             json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
           $compacted = json_decode(json_encode($compacted), true);
           $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
-          echo "<pre>",Yaml::dump($compacted, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
+          echo "<pre>",YamlDump($compacted, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
           die();
         }
         case 'dcat-xml': {
@@ -738,7 +756,7 @@ else { // utilisation en mode web
           echo "
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-ttl&startPosition=$_GET[startPosition]' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yaml-c&startPosition=$_GET[startPosition]' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
