@@ -28,7 +28,7 @@ function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0)
 }
 
 /** Traduit un array en XML.
- * @param array<string,mixed> $array */
+ * @param array<mixed> $array */
 function arrayToXml(array $array, string $prefix=''): string {
   $xml = '';
   if (array_is_list($array)) {
@@ -184,7 +184,7 @@ class Cache {
     }
     
     // sinon appel Http
-    if (1) {
+    if (1) { // @phpstan-ignore-line
       echo "<pre>document pas en cache:\n";
       if ($docCache)
         echo "  docCache=",json_encode($docCache),"\n";
@@ -273,6 +273,7 @@ class CswServer {
   
   /** Retourne les caractéritiques du serveur s'il existe et sinon null.
    * $serverId peut être un chemin constitué de groupes de serveeurs se terminant par un id d serveur.
+   * @param array<string,mixed>|null $servers dictionnaire des serveurs, initialement le dictionnaire complet puis sous-dict.
    * @return array<string,mixed>|null */
   static function exists(string $serverId, array $servers=null): ?array {
     //echo "CswServerexists($serverId)<br>\n";
@@ -459,7 +460,6 @@ class MDs implements Iterator {
     $this->records = new SimpleXMLElement($records);
     if ($this->records->Exception) {
       throw new Exception("Exception retournée: ".$this->records->Exception->ExceptionText);
-      die();
     }
     $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
     $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
