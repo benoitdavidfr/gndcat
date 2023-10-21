@@ -31,12 +31,19 @@ function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0)
  * @param array<string,mixed> $array */
 function arrayToXml(array $array, string $prefix=''): string {
   $xml = '';
-  foreach ($array as $key => $value) {
-    if (is_array($value)) {
-      $xml .= "<$prefix$key>".arrayToXml($value, $prefix)."</$prefix$key>";
+  if (array_is_list($array)) {
+    foreach ($array as $value) {
+      $xml .= arrayToXml($value, $prefix);
     }
-    else {
-      $xml .= "<$prefix$key>$value</$prefix$key>";
+  }
+  else {
+    foreach ($array as $key => $value) {
+      if (is_array($value)) {
+        $xml .= "<$prefix$key>".arrayToXml($value, $prefix)."</$prefix$key>";
+      }
+      else {
+        $xml .= "<$prefix$key>$value</$prefix$key>";
+      }
     }
   }
   return $xml;
@@ -50,7 +57,21 @@ if (0) { // @phpstan-ignore-line // Test arrayToXml()
       ],
     ],
   ];
-  echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
+  $yaml = <<<EOT
+Filter:
+  - PropertyIsEqualTo:
+      PropertyName: dc:type
+      Literal: dataset
+  - PropertyIsLike:
+      PropertyName: OrganisationName
+      Literal: 37
+EOT;
+  $filter = Yaml::parse($yaml);
+  //echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
+  $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
+  
+  header('Content-type: application/xml');
+  die($filreXml);
 }
 
 /** Manipulation de code Turtle */
@@ -161,7 +182,17 @@ class Cache {
       $this->lastCachepathReturned = $cachepath;
       return file_get_contents($cachepath);
     }
+    
     // sinon appel Http
+    if (1) {
+      echo "<pre>document pas en cache:\n";
+      if ($docCache)
+        echo "  docCache=",json_encode($docCache),"\n";
+      else
+        echo "  url=$url\n";
+      echo "  cachePath=$cachepath\n";
+      echo "</pre>\n";
+    }
     $this->lastResultComesFromTheCache = false;
     $contents = Http::call($url, $options);
     $this->lastHeaders = Http::$lastHeaders;
@@ -241,8 +272,18 @@ class CswServer {
   }
   
   /** Retourne les caractéritiques du serveur s'il existe et sinon null.
+   * $serverId peut être un chemin constitué de groupes de serveeurs se terminant par un id d serveur.
    * @return array<string,mixed>|null */
-  static function exists(string $serverId): ?array { return self::servers()[$serverId] ?? null; }
+  static function exists(string $serverId, array $servers=null): ?array {
+    //echo "CswServerexists($serverId)<br>\n";
+    $serverIds = explode('/', $serverId);
+    if (!$servers)
+      $servers = self::servers();
+    if (count($serverIds) == 1)
+      return $servers[$serverId] ?? null;
+    $groupeId = array_shift($serverIds);
+    return self::exists(implode('/', $serverIds), $servers[$groupeId]['servers']);
+  }
   
   function __construct(string $serverId, string $cachedir) {
     if (!($server = self::exists($serverId)))
@@ -251,8 +292,14 @@ class CswServer {
     $this->cswUrl = $server['cswUrl'];
     $this->title = $server['title'];
     $this->post = $server['post'] ?? [];
+    
+    /*$filter = $this->post['filter'] ?? [];
+    $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
+    header('Content-type: application/xml');
+    die($filreXml);*/
+    
     $this->httpOptions = $server['httpOptions'] ?? [];
-    $this->cache = new Cache($cachedir);
+    $this->cache = new Cache(str_replace('/','-',$cachedir));
   }
   
   /** Retourne l'URL du GetCapabilities */
@@ -274,7 +321,7 @@ class CswServer {
     $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
     $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
 
-    return self::servers()[$this->serverId]['cswUrl']
+    return $this->cswUrl
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecords&ElementSetName=$ElementSetName"
       .'&ResultType=results&MaxRecords=10&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
@@ -290,6 +337,13 @@ class CswServer {
     //var_dump($result);
     if ($result === false)
       throw new Exception("Erreur dans l'appel de getRecords");
+    if ($result === '') {
+      if ($this->cache->lastResultComesFromTheCache())
+        throw new Exception("Erreur GetRecords retourne une chaine vide provenant de "
+          .$this->cache->lastCachepathReturned());
+      else
+        throw new Exception("Erreur GetRecords retourne une chaine vide ne provenant pas du cache");
+    }
     return $result;
   }
   
@@ -362,7 +416,7 @@ class CswServer {
     //echo "sleep()\n";
     if ($this->cache->lastResultComesFromTheCache())
       return;
-    $delay = self::servers()[$this->serverId]['delay'] ?? 0;
+    $delay = self::exists($this->serverId)['delay'] ?? 0;
     if ($delay >= 1) {
       //echo "sleep($delay)\n";
       sleep($delay);
@@ -398,8 +452,15 @@ class MDs implements Iterator {
   /** lecture d'un buffer de records à partir de firstPos */
   private function getBuffer(): void {
     $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
+    if (!$records) {
+      throw new Exception("Erreur getRecords() retourne une chaine vide");
+    }
     $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
     $this->records = new SimpleXMLElement($records);
+    if ($this->records->Exception) {
+      throw new Exception("Exception retournée: ".$this->records->Exception->ExceptionText);
+      die();
+    }
     $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
     $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
   }
@@ -508,22 +569,6 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           echo 'lastCachepathReturned=',$server->cache->lastCachepathReturned(),"\n";
           die();
         }
-        /*case 'list': {
-          $startPosition = 1;
-          while ($startPosition) {
-            $records = $server->getRecords('dc', 'brief', $startPosition);
-            $records = str_replace(['csw:','dc:'],['csw_','dc_'], $records);
-            $records = new SimpleXMLElement($records);
-            $numberOfRecordsMatched = $records->csw_SearchResults['numberOfRecordsMatched'];
-            $startPosition = (int)$records->csw_SearchResults['nextRecord'];
-            if (!$records->csw_SearchResults)
-              die("Résultat erroné");
-            foreach ($records->csw_SearchResults->csw_BriefRecord as $record) {
-              echo " - $record->dc_title ($record->dc_type)\n";
-            }
-          }
-          die();
-        }*/
         case 'listMDs': {
           foreach (new MDs($id, $id, 1) as $no => $md) {
             echo " - $md->dc_title ($md->dc_type)\n";
@@ -541,10 +586,21 @@ else { // utilisation en mode web
     foreach (CswServer::servers() as $id => $server) {
       echo "<li><a href='?server=$id'>$server[title]</a></li>\n";
     }
+    echo "</ul><a href='?server=error&action=doc'>doc</a></p>\n";
     die();
   }
 
   $id = $_GET['server'];
+  $server = CswServer::exists($id);
+  if ($server && !isset($server['cswUrl'])) {
+    echo HTML_HEADER,"<h2>Choix d'un des catalogues connus de \"$server[title]\"</h2><ul>\n";
+    foreach ($server['servers'] as $id2 => $server) {
+      echo "<li><a href='?server=$id/$id2'>$server[title]</a></li>\n";
+    }
+    echo "</ul>\n";
+    die();
+  }
+  
   $server = new CswServer($id, $id);
   $rdfServer = RdfServer::exists($id) ? new RdfServer($id, $id) : null;
   switch ($_GET['action'] ?? null) { // en fonction de l'action
@@ -558,8 +614,8 @@ else { // utilisation en mode web
         echo "<li><a href='",$rdfServer->rdfSearchUrl(),"'>Lien vers le point rdf.search</a></li>\n";
         echo "<li><a href='?server=$id&action=rdf'>Affichage du RDF en Turtle</a></li>\n";
       }
-      if (isset(CswServer::servers()[$id]['ogcApiRecordsUrl'])) {
-        $url = CswServer::servers()[$id]['ogcApiRecordsUrl'];
+      if (isset(CswServer::exists($id)['ogcApiRecordsUrl'])) {
+        $url = CswServer::exists($id)['ogcApiRecordsUrl'];
         echo "<li><a href='$url'>ogcApiRecordsUrl</a></li>\n";
       }
       echo "</ul><a href='?'>Retour à la liste des catalogues.</a></p>\n";
@@ -579,6 +635,10 @@ else { // utilisation en mode web
       echo '<pre>',str_replace('<','&lt;',$results),"</pre>\n";
       $results = str_replace(['csw:','dc:'],['csw_','dc_'], $results);
       $results = new SimpleXMLElement($results);
+      if ($results->Exception) {
+        echo "Exception retournée: ",$results->Exception->ExceptionText;
+        die();
+      }
       if (!$results->csw_SearchResults)
         die("Résultat erroné");
       echo "<table border=1>\n";
@@ -767,6 +827,15 @@ else { // utilisation en mode web
           die();
         }
       }
+      die();
+    }
+    case 'doc': { // doc
+      echo HTML_HEADER,"<b>Docs</b><ul>";
+      echo "<li><a href='https://portal.ogc.org/files/80534'>",
+        "OpenGIS® Catalogue Services Specification 2.0.2 - ISO Metadata Application Profile: Corrigendum</a></li>\n";
+      echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130'>",
+        "OpenGIS ® Filter Encoding Implementation Specification</a></li>\n";
+      echo "</ul>\n";
       die();
     }
     default: die("Action $_GET[action] inconnue");

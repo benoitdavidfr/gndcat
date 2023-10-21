@@ -70,6 +70,26 @@ $schema:
         post:
           description: indique que le serveur CSW doit être appelé en POST pour les GetRecords et fournit le filtre à utiliser
           $ref: '#/definitions/post'
+    servers:
+      description: dictionnaire de serveurs ou de groupes de serveurs.
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-z0-9]*$:
+          oneOf:
+            - description: Description d'un serveur.
+              $ref: '#/definitions/server'
+            - description: Description d'un groupe de serveurs.
+              type: object
+              additionalProperties: false
+              required: [title, servers]
+              properties:
+                title:
+                  description: titre du groupe.
+                  type: string
+                servers:
+                  description: dictionnaire de serveurs.
+                  $ref: '#/definitions/servers'
       
   type: object
   additionnalProperties: false
@@ -79,12 +99,7 @@ $schema:
       type: string
     $schema: http://json-schema.org/schema#
     servers:
-      type: object
-      additionalProperties: false
-      patternProperties:
-        ^[-a-z0-9]*$:
-          description: Description d'un serveur.
-          $ref: '#/definitions/server'
+      $ref: '#/definitions/servers'
     eof:
       type: 'null'
       
@@ -96,25 +111,70 @@ servers:
     rdfSearchUrl: https://demo.georchestra.org/geonetwork/srv/fre/rdf.search
     ogcApiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
   # nationaux
-  gide-gn:
-    title: Géo-IDE, point Geonetwork en GET
-    cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-    delay: 0.1 # attente entre 2 appels lors du moissonnage en cli
-    httpOptions:
-      max-retries: 3
-    
-  gide-gn-pds:
-    title: Géo-IDE, point Geonetwork en POST avec un filtre sur type=dataset
-    cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-    post:
-      filter:
-        Filter:
-          PropertyIsEqualTo:
-            PropertyName: dc:type
-            Literal: dataset
   gide:
-    title: Géo-IDE, point spécifique
-    cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
+    title: Géo-IDE
+    servers:
+      gn:
+        title: Géo-IDE-GN en GET
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        delay: 0.1 # attente entre 2 appels lors du moissonnage en cli
+        httpOptions:
+          max-retries: 3
+      gn-pds:
+        title: Géo-IDE-GN/POST avec un filtre sur type=dataset
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              PropertyIsEqualTo:
+                PropertyName: dc:type
+                Literal: dataset
+      gn-pds37:
+        title: Géo-IDE-GN/POST avec un filtre sur type=dataset & DDT37
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo:
+                    PropertyName: dc:type
+                    Literal: dataset
+                - Or:
+                  - PropertyIsLike:
+                      PropertyName: OrganisationName
+                      Literal: DDT 37
+                  - PropertyIsLike:
+                      PropertyName: OrganisationName
+                      Literal: Direction Départementale des Territoires  d'Indre-et-Loire
+
+      sp:
+        title: Géo-IDE, point spécifique
+        cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
+
+      sp37:
+        title: Géo-IDE, point spécifique, post, dataset DDT 37 - NE MARCHE PAS
+        cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo:
+                    PropertyName: dc:type
+                    Literal: dataset
+                - PropertyIsLike:
+                    PropertyName: OrganisationName
+                    Literal: DDT 37
+
+  grp1:
+    title: grp1
+    servers:
+      grp2:
+        title: grp2
+        servers:
+          sextant:
+            title: Sextant (Ifremer)
+            cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
+          
   sextant:
     title: Sextant (Ifremer)
     cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
