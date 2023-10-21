@@ -756,7 +756,7 @@ else { // utilisation en mode web
           echo "
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yaml-c&startPosition=$_GET[startPosition]' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlld-c&startPosition=$_GET[startPosition]' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
