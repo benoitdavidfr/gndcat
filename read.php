@@ -322,7 +322,7 @@ class CswServer {
       $result = $this->getRecordsInPost($type, $ElementSetName, $startPosition);
     else
       $result = $this->getRecordsInGet($type, $ElementSetName, $startPosition);
-    var_dump($result);
+    //var_dump($result);
     if ($result === false)
       throw new Exception("Erreur dans l'appel de getRecords");
     return $result;
