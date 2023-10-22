@@ -66,6 +66,13 @@ Filter:
       PropertyName: OrganisationName
       Literal: 37
 EOT;
+  $yaml = <<<EOT
+Filter:
+  And:
+    - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+    - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT de Charente }
+
+EOT;
   $filter = Yaml::parse($yaml);
   //echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
   $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
@@ -73,6 +80,25 @@ EOT;
   header('Content-type: application/xml');
   die($filreXml);
 }
+
+class OrgRef {
+  static array $ref=[]; // [(altLabel|prefLabel) -> prefLabel]
+  
+  static function init(): void {
+    if (is_file(__DIR__.'/orgref.yaml'))
+    $ref = Yaml::parseFile(__DIR__.'/orgref.yaml')['réf'];
+    foreach ($ref as $concept) {
+      self::$ref[strtolower($concept['prefLabel'])] = $concept['prefLabel'];
+      foreach ($concept['altLabel'] ?? [] as $label)
+        self::$ref[strtolower($label)] = $concept['prefLabel'];
+    }
+  }
+  
+  static function prefLabel(string $label): string {
+    return self::$ref[strtolower($label)] ?? $label;
+  }
+};
+OrgRef::init();
 
 /** Manipulation de code Turtle */
 class Turtle {
@@ -263,11 +289,36 @@ class CswServer {
   readonly public array $httpOptions;
   readonly public Cache $cache;
   
+  /** génère un dictionnaire de serveurs à la place des définitions de groupe générique.
+   * @param array<string,mixed> $servers // le dictionnaire en entrée contenant possiblement des groupes généras
+   * @return array<string,mixed> // le dictionnaire en sortie dans lequel les groupes générés le sont
+   */
+  static function generate(array $servers): array {
+    foreach ($servers as $id => &$server) {
+      if (isset($server['vars'])) {
+        $vars = $server['vars'];
+        unset($server['vars']);
+        $patternYaml = Yaml::dump($server['pattern']);
+        unset($server['pattern']);
+        $sservers = [];
+        foreach ($vars as $k => $v) {
+          $patternY = str_replace(['$key', '$value'], [$k, $v], $patternYaml);
+          $pattern = Yaml::parse($patternY);
+          //echo '<pre>'; print_r($pattern); echo '</pre>';
+          $sservers = array_merge($sservers, $pattern);
+        }
+        $server['servers'] = $sservers;
+      }
+    }
+    return $servers;
+  }
+  
   /** Retourne le dictionnaire des caractéristiques des serveurs.
    * @return array<string,mixed> */
   static function servers(): array {
     if (!isset(self::$servers))
-      self::$servers = Yaml::parseFile(__DIR__.'/servers.yaml')['servers'];
+      self::$servers = self::generate(Yaml::parseFile(__DIR__.'/servers.yaml')['servers']);
+    //echo "<pre>",Yaml::dump(self::$servers, 9, 2); die();
     return self::$servers;
   }
   
@@ -438,7 +489,7 @@ class MDs implements Iterator {
   readonly public int $startPos; // position de démarrage définie à la création
   //protected string $type;
   protected int $firstPos; // première position du buffer courant
-  protected SimpleXMLElement $records; // tableau des enregistrements courants
+  protected ?SimpleXMLElement $records; // tableau des enregistrements courants ou null
   protected int $numberOfRecordsMatched;
   protected int $nextRecord; // no d'enregistrement du prochain buffer
   protected int $currentPos; // position courante dans l'itérateur
@@ -452,6 +503,12 @@ class MDs implements Iterator {
   
   /** lecture d'un buffer de records à partir de firstPos */
   private function getBuffer(): void {
+    //echo "getBuffer - firstPos=$this->firstPos<br>\n";
+    if ($this->firstPos == 0) {
+      $this->records = null;
+      //echo "<pre>"; print_r($this);
+      return;
+    }
     $records = $this->server->getRecords('dc', 'brief', $this->firstPos);
     if (!$records) {
       throw new Exception("Erreur getRecords() retourne une chaine vide");
@@ -463,6 +520,7 @@ class MDs implements Iterator {
     }
     $this->numberOfRecordsMatched = (int)$this->records->csw_SearchResults['numberOfRecordsMatched'];
     $this->nextRecord = (int)$this->records->csw_SearchResults['nextRecord'];
+    //echo "numberOfRecordsMatched=$this->numberOfRecordsMatched<br>\n";
   }
   
   function rewind(): void {
@@ -489,15 +547,13 @@ class MDs implements Iterator {
     $this->currentPos++;
     if (($this->currentPos - $this->firstPos) >= 10) {
       $this->firstPos = $this->nextRecord;
-      if (!$this->firstPos)
-        throw new \Exception("Erreur firstPos==0");
       $this->getBuffer();
     }
   }
   
   function valid(): bool {
     //echo "valid()<br>\n";
-    return ($this->currentPos <= $this->numberOfRecordsMatched);
+    return $this->records && ($this->currentPos <= $this->numberOfRecordsMatched);
   }
 };
 
@@ -522,6 +578,35 @@ class RdfServer {
   function rdfSearch(): ?string { return $this->cache->get($this->rdfSearchUrl()); }
 };
 
+/** Balaie le catalogue indiqué et retour un array [responsibleParty.name][dataset.id] => 1 */
+function responsibleParties(string $id, string $cacheDir, callable $stdOrgName): array {
+  $mds = new MDs($id, $cacheDir, 1);
+  $server = new CswServer($id, $cacheDir);
+  foreach ($mds as $no => $record) {
+    if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
+    //echo " - $record->dc_title ($record->dc_type)\n";
+    //echo "$no / ",$mds->numberOfRecordsMatched(),"\n";
+    $xml = $server->getRecordById('gmd', 'full', (string)$record->dc_identifier);
+    $data = IsoMd::convert($xml);
+    //echo YamlDump([$data], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+    if (!isset($data['responsibleParty'])) {}
+    elseif (array_is_list($data['responsibleParty'])) {
+      foreach ($data['responsibleParty'] as $responsibleParty) {
+        //echo YamlDump([$responsibleParty], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        if (isset($responsibleParty['name']))
+          $rpNames[$stdOrgName($responsibleParty['name'])][(string)$record->dc_identifier] = 1;
+      }
+    }
+    else {
+      //echo YamlDump([$data['responsibleParty']], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+      if (isset($data['responsibleParty']['name']))
+        $rpNames[$stdOrgName($data['responsibleParty']['name'])][(string)$record->dc_identifier] = 1;
+    }
+  }
+  ksort($rpNames);
+  return $rpNames;
+}
+  
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>gndcat</title></head><body>\n";
 const NBRE_MAX_LIGNES = 38;
 
@@ -542,6 +627,10 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
       echo "Liste des actions:\n";
       echo " - getRecords - lit les enregistrements en brief DC\n";
       echo " - listMDs - affiche titre et type des métadonnées en utilisant MDs\n";
+      echo " - responsibleParty - affiche les responsibleParty\n";
+      echo " - responsiblePartyStd - affiche les responsibleParty standardisés avec le référentiel orgref.yaml\n";
+      echo " - idxRespParty - construit un index responsibleParty -> daraset.Id\n";
+      echo " - idxRespPartyStd - construit un index responsibleParty -> daraset.Id  std avec le réf. orgref.yaml\n";
       echo " - clearCache - efface le cache\n";
       die();
     }
@@ -576,6 +665,63 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           }
           die();
         }
+        case 'responsibleParty': // affiche les responsibleParty non standardisés
+        case 'responsiblePartyStd': { // affiche les responsibleParty standardisés
+          if ($action == 'responsibleParty')
+            $stdOrgNameFun = function(string $orgName): string { return $orgName; };
+          else
+            $stdOrgNameFun = function(string $orgName): string { return OrgRef::prefLabel($orgName); };
+          $rpNames = responsibleParties($id, $id, $stdOrgNameFun);
+          foreach ($rpNames as $rpName => $dsids)
+            $rpNames[$rpName] = count($dsids);
+          echo YamlDump(['names'=> $rpNames]);
+          die("FIN\n");
+        }
+        case 'idxRespParty': { // construit un index responsibleParty -> daraset.Id
+          $stdOrgNameFun = function(string $orgName): string { return $orgName; };
+          $rpNames = responsibleParties($id, $id, $stdOrgNameFun);
+          $idxname = str_replace('/','-',$id).'.resparty.idx.pser';
+          file_put_contents(__DIR__."/idx/$idxname", serialize($rpNames));
+          die("FIN\n");
+        }
+        case 'idxRespPartyStd': { // construit un index responsibleParty standardisés -> daraset.Id
+          $stdOrgNameFun = function(string $orgName): string { return OrgRef::prefLabel($orgName); };
+          $rpNames = responsibleParties($id, $id, $stdOrgNameFun);
+          $idxname = str_replace('/','-',$id).'.respartystd.idx.pser';
+          file_put_contents(__DIR__."/idx/$idxname", serialize($rpNames));
+          die("FIN\n");
+        }
+        case 'mdDateStat': {
+          $mds = new MDs($id, $id, 1);
+          $server = new CswServer($id, $id);
+          $mdDates = [];
+          foreach ($mds as $no => $record) {
+            if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
+            //echo " - $record->dc_title ($record->dc_type)\n";
+            //echo "$no / ",$mds->numberOfRecordsMatched(),"\n";
+            $xml = $server->getRecordById('gmd', 'full', (string)$record->dc_identifier);
+            $data = IsoMd::convert($xml);
+            if (!isset($data['mdDate'])) continue;
+            $mdDate = $data['mdDate'];
+            //echo "$no -> $mdDate\n";
+            $month = substr($mdDate, 0, 7);
+            if (!isset($mdDates[$month]))
+              $mdDates[$month] = 1;
+            else
+              $mdDates[$month]++;
+          }
+          ksort($mdDates);
+          echo YamlDump(['$mdDates'=> $mdDates]);
+          $sum = 0;
+          $nb = 0;
+          foreach ($mdDates as $month => $val) {
+            if (strcmp($month,'2019') == -1) continue; // je saute avant 2019
+            $sum += $val;
+            $nb++; 
+          }
+          echo "moyenne: ",$sum/$nb,"\n";
+          die("FIN\n");
+        }
       }
     }
   }
@@ -586,7 +732,8 @@ else { // utilisation en mode web
     foreach (CswServer::servers() as $id => $server) {
       echo "<li><a href='?server=$id'>$server[title]</a></li>\n";
     }
-    echo "</ul><a href='?server=error&action=doc'>doc</a></p>\n";
+    echo "</ul><a href='?server=error&action=doc'>doc</a><br>\n";
+    echo "<a href='?server=error&action=misc'>divers</a></p>\n";
     die();
   }
 
@@ -683,7 +830,8 @@ else { // utilisation en mode web
     case 'viewRecord': {
       $fmt = $_GET['fmt'] ?? 'iso-yaml';
       $menu = HTML_HEADER;
-      $url = "?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]";
+      $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
+      $url = "?server=$id&action=viewRecord&id=$_GET[id]$startPosition";
       $menu .= "<table border=1><tr>";
       foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-yamlld-c','dcat-xml','double'] as $f) {
         if ($f == $fmt)
@@ -691,7 +839,8 @@ else { // utilisation en mode web
         else
           $menu .= "<td><a href='$url&fmt=$f'>$f</a></td>";
       }
-      $menu .= "<td><a href='?server=$id&action=listDatasets&startPosition=$_GET[startPosition]' target='_parent'>^</a></td>";
+      if ($startPosition)
+        $menu .= "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>";
       $menu .= "</table>\n";
       
       switch ($fmt) {
@@ -829,6 +978,17 @@ else { // utilisation en mode web
       }
       die();
     }
+    case 'idxRespParty': { // utilise l'index pour lister les jeux de données correspondant à un respParty
+      // utilise l'index qui doit être créé en CLI pour lister les jeux de données correspondant à un respParty
+      // Ce resParty doit être passé en paramètre GET
+      // Des liens permettent d'afficher les MD du JD
+      $idxname = str_replace('/','-',$id).'.resparty.idx.pser';
+      $rpNames = unserialize(file_get_contents(__DIR__."/idx/$idxname"));
+      foreach (array_keys($rpNames[$_GET['respParty']]) as $dsid) {
+        echo "<a href='?server=$id&action=viewRecord&id=$dsid'>$dsid</a><br>\n";
+      }
+      die();
+    }
     case 'doc': { // doc
       echo HTML_HEADER,"<b>Docs</b><ul>";
       echo "<li><a href='https://portal.ogc.org/files/80534'>",
@@ -836,6 +996,11 @@ else { // utilisation en mode web
       echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130'>",
         "OpenGIS ® Filter Encoding Implementation Specification</a></li>\n";
       echo "</ul>\n";
+      die();
+    }
+    case 'misc': {
+      echo "<a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
+            "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a><br>\n";
       die();
     }
     default: die("Action $_GET[action] inconnue");

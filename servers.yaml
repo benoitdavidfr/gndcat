@@ -75,7 +75,7 @@ $schema:
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-z0-9]*$:
+        ^[-a-z0-9$]*$:
           oneOf:
             - description: Description d'un serveur.
               $ref: '#/definitions/server'
@@ -90,7 +90,29 @@ $schema:
                 servers:
                   description: dictionnaire de serveurs.
                   $ref: '#/definitions/servers'
-      
+            - description: |
+                Définition d'un groupe généré.
+                Le champ vars contient un dictionnaire [key => value].
+                Le chmap pattern contient le modèle de définition d'un serveur dans laquelle les champs $key ey $value
+                doivent être remplacées respectivement par la clé et la valeur de vars.
+              type: object
+              additionalProperties: false
+              required: [title, vars, pattern]
+              properties:
+                title:
+                  description: titre du groupe.
+                  type: string
+                vars:
+                  description: dictionnaire de variables
+                  type: object
+                  additionalProperties: false
+                  patternProperties:
+                    ^[-a-z0-9]*$:
+                      description: la valeur associée à la clé
+                      type: string
+                pattern:
+                  description: motif décrivant un serveur paramétré par $key et $value
+                  $ref: '#/definitions/servers'
   type: object
   additionnalProperties: false
   required: [title, $schema, servers]
@@ -111,8 +133,9 @@ servers:
     rdfSearchUrl: https://demo.georchestra.org/geonetwork/srv/fre/rdf.search
     ogcApiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
   # nationaux
+  # Géo-IDE
   gide:
-    title: Géo-IDE
+    title: Géo-IDE global
     servers:
       gn:
         title: Géo-IDE-GN en GET
@@ -130,27 +153,41 @@ servers:
                 PropertyName: dc:type
                 Literal: dataset
       gn-pds37:
-        title: Géo-IDE-GN/POST avec un filtre sur type=dataset & DDT37
+        title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like 'DDT 37'
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
         post:
           filter:
             Filter:
               And:
-                - PropertyIsEqualTo:
-                    PropertyName: dc:type
-                    Literal: dataset
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+                - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
+      gn-pdsCharente:
+        title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & (OrganisationName like 'DDT 16' or (OrganisationName like 'DDT' and OrganisationName like 'Charente'))
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
                 - Or:
-                  - PropertyIsLike:
-                      PropertyName: OrganisationName
-                      Literal: DDT 37
-                  - PropertyIsLike:
-                      PropertyName: OrganisationName
-                      Literal: Direction Départementale des Territoires  d'Indre-et-Loire
+                    - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 16 }
+                    - And:
+                        - PropertyIsLike: { PropertyName: OrganisationName, Literal: Charente }
+                        - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT }
+      gn-Vendée:
+        title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)"
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+                - PropertyIsLike: { PropertyName: OrganisationName, Literal: "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)" }
+
 
       sp:
         title: Géo-IDE, point spécifique
         cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
-
       sp37:
         title: Géo-IDE, point spécifique, post, dataset DDT 37 - NE MARCHE PAS
         cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
@@ -158,23 +195,111 @@ servers:
           filter:
             Filter:
               And:
-                - PropertyIsEqualTo:
-                    PropertyName: dc:type
-                    Literal: dataset
-                - PropertyIsLike:
-                    PropertyName: OrganisationName
-                    Literal: DDT 37
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+                - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
 
-  grp1:
-    title: grp1
-    servers:
-      grp2:
-        title: grp2
-        servers:
-          sextant:
-            title: Sextant (Ifremer)
-            cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
-          
+  gide01:50:
+    title: Géo-IDE généré D01->D50
+    vars:
+      '01': DDT 01
+      '02': DDT 02
+      '03': DDT 03
+      '04': DDT 04
+      '05': DDT 05
+      '06': DDTM 06
+      '07': DDT 07
+      '08': DDT 08
+      '09': DDT 09
+      10: DDT 10
+      11: DDTM 11
+      12: DDT 12
+      13: DDTM 13
+      14: DDTM 14
+      16: DDT 16
+      17: DDTM 17
+      18: DDT 18
+      2A: DDTM 2A
+      2B: DDTM 2B
+      21: DDT 21
+      22: DDTM 22
+      23: DDT 23
+      24: DDT 24 # vide
+      25: DDT 25 # vide
+      26: DDT 26
+      27: DDTM 27
+      28: DDT 28
+      29: DDTM 29
+      30: DDTM 30
+      31: DDT 31
+      32: DDT du Gers # marche pas !
+      33: DDTM 33
+      34: DDTM 34
+      35: DDTM 35
+      36: DDT 36
+      37: DDT 37
+      38: DDT 38
+      39: DDT 39
+      40: DDTM 40
+      41: DDT 41
+      42: DDT 42
+      43: DDT 43 # marche pas
+      44: DDTM 44
+      45: DDT 45
+      46: DDT 46
+      47: DDT 47
+      48: DDT 48
+      49: DDT 49
+      50: DDTM 50
+    pattern:
+      gn-pds$key:
+        title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+                - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
+      
+  gide51:95:
+    title: Géo-IDE généré D51->D74
+    vars:
+      51: DDT 51
+      52: DDT 52
+      53: DDT 53
+      54: DDT 54
+      55: DDT 55
+      56: DDTM 56
+      #57: DDT 57 Moselle - absent
+      58: DDT 58
+      59: DDTM 59 # ???
+      
+      60: DDT 60
+      61: DDT 61
+      62: DDT 62
+      63: DDT 63
+      64: DDT 64
+      65: DDT 65
+      66: DDT 66
+      67: DDT 67
+      68: DDT 68
+      69: DDT 69
+      70: DDT 70
+      71: DDT 71
+      72: DDT 72
+      73: DDT 73
+      74: DDT 74
+    pattern:
+      gn-pds$key:
+        title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
+        cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
+        post:
+          filter:
+            Filter:
+              And:
+                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+                - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
+      
   sextant:
     title: Sextant (Ifremer)
     cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
