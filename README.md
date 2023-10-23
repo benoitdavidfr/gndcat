@@ -41,3 +41,33 @@ est fourni dans [geoide.orga.yaml](geoide.orga.yaml).
 
 Lors des requêtes aux catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
+
+Le code du proto est principalement dans le fichier [read.php](read.php) qui est décomposé en plusieurs classes:
+
+  - la classe OrgRef gère un référentiel des organisations stocké dans le fichier [orgref.yaml](orgref.yaml) ;
+    il est partiel et a été utilisé pour effectuer des tests sur Géo-IDE.
+    
+  - la classe Cache gère le cache des requêtes Http de manière sommaire.
+  
+  - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
+    et en effectuant les requêtes au travers du cache.
+    
+  - la classe Turtle facilite l'affichage en Turtle/Html, cad un texte Turtle dans lequel les URL sont transformés
+    en lien HTML.
+    
+  - la classe YamlLD gère des graphes RDF, les transforme en JSON-LD/YAML-LD et effectue l'opération de compactage.
+  
+  - la classe MDs implémente un itérateur sur les réponses aux GetRecords retournés par un serveur CSW
+    pour itérer plus facilement dans les métadonnées retournées.
+    
+  - la classe RdfServer est utilisée pour tester les points DCAT sans CSW de certains serveurs.
+
+  - enfin le reste du code enchaine les actions demandées soit en CLI soit en web.
+
+De plus:
+
+  - le fichier [http.inc.php](http.inc.php) définit la classe Http qui simplifie l'utilisation de requêtes Http.
+  - le fichier [mdvars2.inc.php](mdvars2.inc.php) a été repris de projets précédents,
+    il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire et effectue la conversion d'une fice de MD en JSON.
+  - la classe IsoMd définie dans le fichier [isomd.inc.php](isomd.inc.php) complète Mdvars
+    et simplifie la structure JSON retournée.
