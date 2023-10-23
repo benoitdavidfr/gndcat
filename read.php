@@ -1003,10 +1003,8 @@ else { // utilisation en mode web
         case 'dcat-ttl': {
           echo $menu;
           $rdf = $rdfServer->rdfSearch();
-          $rdf->parse($xml, 'rdf', $url);
-          xxx
-            $turtle = $rdf->serialise('turtle');
-          echo "<pre>",Turtle::html($turtle),"</pre>\n";
+          $turtle = new Turtle($rdf);
+          echo "<pre>$turtle</pre>\n";
           die();
         }
         case 'dcat-xml': {
