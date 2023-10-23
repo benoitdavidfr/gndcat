@@ -1,0 +1,459 @@
+names:
+  ADL: 1
+  "ADL DDT d'Eure-et-Loir": 1
+  "AELB 72 (Agence de l'Eau Loire-Bretagne de la Sarthe)": 1
+  ARCEP: 2
+  'ARS (Antenne de Chartres)': 1
+  'ARS / Agence Régionale de Santé Bretagne - Délégation départementale - Finistère': 1
+  "AUDIAR (Agence d'urbanisme et de développement intercommunal de l'agglomération rennaise)": 2
+  'Agence MTDA': 4
+  'Agence Nationale des Fréquences (ANFR)': 3
+  'Agence de Services et de Paiements ( ASP)': 1
+  "Agence de l'eau Rhin-Meuse": 1
+  "Agences de l'eau : Adour Garonne, Loire Bretagne, Rhône Méditerranée": 3
+  'Association Seine-Normandie Migrateurs': 9
+  'Atelier de Suivi des Territoires': 40
+  'BARBERA Francis': 1
+  BRGM: 13
+  'BRGM 61 (Bureau de Recherches Géologiques et Minières - Normandie)': 1
+  'BRGM Auvergne': 1
+  'BRGM Poitou-Charentes': 2
+  "Bureau d'Administration et de Valorisation des Données (BAVD)": 86
+  CD28: 1
+  'CEREMA Centre-Est (ADL)': 1
+  'CEREMA Eau, mer et Fleuves': 1
+  'CEREMA/DTer NC/DADT/GEEL': 1
+  'CEREMA/DTerSO/DT/ERR - Groupe eau risques résilience': 3
+  CG15: 2
+  'CMSIG DOO': 1
+  'CMSIG DOSO': 1
+  'COQUILLON Nathalie (Responsable de la MAT-SD) - DDT 95/SUAD/PEAD': 1
+  COVADIS: 176
+  'Cellule Risques': 1
+  'Christophe ARNAUD': 1
+  'Commune de Miquelon-Langlade': 4
+  "Conseil Départemental d'Indre et Loire (CD37)": 1
+  'Conseil Départemental de Seine-et-Marne': 2
+  "Conseil Départemental de l'Isère": 44
+  'Conseil General du Cantal - Stéphanie PAULET': 1
+  'Conseil Régional de Lorraine': 1
+  'Conseil Régional du Grand Est': 7
+  'Conseil Régional du Nord - Pas de Calais': 2
+  "Contact par défaut de l'organisation": 55
+  "Contact par défaut de l'organisation GSG": 1
+  "Contact repris de l'existant 58615": 8
+  "DAAF 972 (Direction de l'Alimentation, de l'Agriculture et de la Forêt de la Martinique)": 6
+  'DDCSPP 15 (Direction Départementale de la Cohésion Sociale et de la Protection des Populations du Cantal)': 2
+  'DDCSPP 28 (Direction Départementale de la Cohésion Sociale et de la Protection des Populations)': 1
+  "DDCSPP 61 (Direction Départementale de la Cohésion Sociale et de la Protection des Populations de l'Orne)": 2
+  "DDT 01 (Direction Départementale des Territoires de l'Ain)": 129
+  'DDT 02': 15
+  "DDT 03 (Direction Départementale des Territoires de l'Allier)": 19
+  'DDT 04 (Direction Départementale des Territoires des Alpes de Haute-Provence)': 81
+  'DDT 05 (Direction Départementale des territoires des Hautes-Alpes': 13
+  'DDT 05 (Direction Départementale des territoires des Hautes-Alpes)': 35
+  "DDT 07 (Direction Départementale des Territoires de l'Ardèche)": 7
+  'DDT 08 (Direction Départementale des Territoires des Ardennes)': 29
+  "DDT 09 (Direction Départementale des Territoires de l'Ariège)": 1010
+  "DDT 10 (Direction Départementale des Territoires de l'Aube)": 571
+  "DDT 12 (Direction Départementale des Territoires de l'Aveyron)": 115
+  'DDT 15 (Direction Départementale des Territoires du Cantal)': 169
+  'DDT 15 (Direction Départementale des Territoires du Cantal) Service Connaissance Aménagement Développement': 16
+  'DDT 15 (Direction Départementale des Territoires du Cantal) Service Economie Agricole': 2
+  'DDT 15 (Direction Départementale des Territoires du Cantal) Service Environnement': 53
+  'DDT 15 (Direction Départementale des Territoires du Cantal) Service Habitat Logement': 6
+  'DDT 16 (Direction Départementale des Territoires de Charente)': 88
+  'DDT 18 (Direction Départementale des Territoires du Cher)': 1071
+  'DDT 19 (Direction Départementale des Territoires de la Corrèze)': 402
+  "DDT 21 (Direction Départementale des Territoires de Côte-d'Or)": 565
+  'DDT 23 (Direction Départementale des Territoires de la Creuse)': 34
+  'DDT 23 (Direction Départemntale des Territoires de la Creuse)': 9
+  'DDT 26 (Direction Départementale des Territoires de la Drôme)': 507
+  "DDT 28 (Direction Départementale des Territoires d'Eure-et-Loir)": 218
+  'DDT 2A (Direction Départementale des Territoires de Corse-du-Sud)': 24
+  'DDT 2B (Direction Départementale des Territoires de Haute-Corse)': 46
+  'DDT 31 (Direction Départementale des Territoires de Haute-Garonne)': 106
+  "DDT 36 (Direction Départementale des Territoires de l'Indre)": 137
+  "DDT 37 (Direction Départementale des Territoires  d'Indre-et-Loire)": 118
+  "DDT 37 (Direction départementale des territoires  d'Indre-et-Loire)": 46
+  "DDT 38 (Direction Départementale des Territoires de l'Isère)": 389
+  'DDT 39 (Direction Départementale des Territoires du Jura)': 46
+  'DDT 41 (Direction Départementale des Territoires du Loir-et-Cher)': 741
+  'DDT 42 (Direction Départementale des Territoires de la Loire)': 2
+  'DDT 45 (Direction Départementale des Territoires du Loiret)': 334
+  'DDT 46 (Direction Départementale des Territoires du Lot)': 53
+  'DDT 47 (Direction Départementale des Territoires de Lot-et-Garonne)': 7
+  'DDT 47 (Direction Départementale des Territoires du Lot-et-Garonne)': 2
+  'DDT 48 (Direction Départementale des Territoires de la Lozère)': 89
+  'DDT 48 - Service Economie Agricole - Unité accompagnement des exploitations': 1
+  'DDT 48 - Service Sécurité Risques Energie Construction - Unité Prévention des risques et gestion de crise': 27
+  'DDT 48 -Service Aménagement et Logement- Urbanisme et Territoires': 54
+  'DDT 49 (Direction Départementale des Territoires de Maine-et-Loire)': 87
+  'DDT 49 / Mission Développement Durable et Connaissance des Territoires': 8
+  'DDT 49 / Service Construction Habitat Ville (SCHV)': 1
+  'DDT 49 / Service Eau Environnement Forêt': 1
+  'DDT 49 / Service Eau Environnement et Biodiversité': 22
+  'DDT 49 / Service Sécurité Routière Gestion de Crise': 10
+  'DDT 49 / Service Urbanisme Aménagement et Risques': 30
+  'DDT 51 (Direction Départementale des Territoires de la Marne)': 178
+  'DDT 52 (Direction Départementale des Territoires de la Haute-Marne)': 63
+  'DDT 53 (Direction Départementale des Territoires de la Mayenne)': 41
+  'DDT 54 (Direction Départementale des Territoires de Meurthe-et-Moselle)': 780
+  'DDT 55 (Direction départementale des Territoires de la Meuse)': 34
+  'DDT 55 / SE': 8
+  'DDT 55 / SUH': 1
+  'DDT 58 (Direction Départementale des Territoires de la Nièvre)': 199
+  'DDT 58 (Service Aménagement Urbanisme Habitat)': 2
+  'DDT 58 (Service Loire Sécurité Risques)': 126
+  "DDT 61 (Direction Départemental des territoires de l'Orne)": 17
+  "DDT 61 (Direction Départementale des Territoires de l'Orne)": 513
+  'DDT 63 (Direction Départementale des Territoires du Puy-de-dôme)': 210
+  'DDT 65 (Direction Départementale des Territoires des Hautes-Pyrénées)': 491
+  'DDT 68 (Direction Départementale des Territoires du Haut-Rhin)': 243
+  'DDT 68/DIR/MIT': 26
+  'DDT 69 (Direction Départementale des Territoires du Rhône)': 183
+  'DDT 70 (Direction Départementale des Territoires de la Haute-Saône)': 111
+  'DDT 70 SER/Prévention des Risques et gestion de Crises': 2
+  'DDT 71': 1
+  'DDT 71 (Direction Départementale des Territoires de Saône-et-Loire)': 184
+  'DDT 72 (Direction Départementale des Territoires de la Sarthe)': 161
+  'DDT 73 (Direction Départementale des Territoires de la Savoie)': 226
+  'DDT 74 (Direction Départementale des Territoires de la Haute-Savoie)': 582
+  'DDT 77 (Direction Départementale des Territoires de Seine-et-Marne)': 134
+  'DDT 77 -  Service Habitat et Rénovation Urbaine': 2
+  'DDT 77 - Service Environnement, Prévention des Risques': 32
+  "DDT 77 - Service Territoires, Aménagements et Connaissances - Pôle des Systèmes d'Information": 3
+  'DDT 77 – Service Territoires, Aménagements et Connaissances': 16
+  'DDT 78 (Direction Départementale des Territoires des Yvelines)': 46
+  'DDT 79 (Direction Départementale des Territoires des Deux-Sèvres)': 104
+  'DDT 79/SAT (Service Agriculture et Territoires)': 1
+  'DDT 79/SEE (Service Eau et Environnement)': 52
+  'DDT 81': 1
+  'DDT 81 (Direction Départementale des Territoires du Tarn)': 97
+  'DDT 81 (Direction Départementale des Territoires du Tarn) - BSIG': 5
+  'DDT 81 (Direction Départementale des Territoires du Tarn) - SCTU': 4
+  'DDT 82 (Direction Départementale des Territoires de Tarn-et-Garonne)': 328
+  'DDT 84 (Direction Départementale des Territoires du Vaucluse)': 56
+  "DDT 84 Zone d'accélération ENR": 3
+  'DDT 86 (Direction Départementale des Territoires de la Vienne)': 135
+  'DDT 87/SIT/Er (Service Ingénierie des Territoires / Education routière)': 1
+  'DDT 87/SIT/TE-R (Service Igénierie des Territoires / Transition Energétique - Risques)': 31
+  'DDT 88 (Direction Départementale des Territoires des Vosges)': 204
+  'DDT 90 (DDT Territoire de Belfort)': 8
+  "DDT 91 (Direction Départementale des Territoires de l'Essonne)": 266
+  'DDT 91 / Service Territoire et Prospective': 3
+  "DDT 95 (Direction Départementale des Territoires du Val-d'Oise)": 574
+  'DDT Ardèche': 1
+  'DDT de Charente': 15
+  'DDT de Saône-et-Loire': 40
+  'DDT de Seine et Marne': 27
+  'DDT de Seine-et-Marne, Service Territoires, Aménagement et Connaissances': 1
+  "DDT de l'AVEYRON": 2
+  "DDT de l'Ain": 1
+  "DDT de l'Aisne - Unité Connaissance des Territoires": 2
+  "DDT de l'Ariège": 350
+  "DDT de l'Oise": 94
+  "DDT de l'Orne": 1
+  "DDT de l'Yonne": 19
+  'DDT de la Dordogne': 2
+  'DDT de la Haute-Vienne': 125
+  'DDT de la Moselle': 9
+  'DDT des yvelines': 1
+  'DDT du Bas-Rhin': 163
+  'DDT du Gers': 2709
+  'DDT du Jura': 26
+  'DDT du gers': 1
+  'DDT08 - service environnement - eau': 1
+  'DDT08 - service sécurité et bâtiment durable - risque et sécurité routière': 1
+  DDT12: 63
+  'DDT45 - Bruit PPBE': 123
+  'DDT45 - SEEF': 7
+  'DDT45 - SHRU': 2
+  'DDT45 - SLRT': 1
+  'DDT45 - SUADT': 49
+  'DDT47/SRS (Direction Départementale des Territoires de Lot-et-Garonne, Service Risques et Sécurité)': 1
+  DDT47/SRS/PR: 11
+  'DDT52 - Service Sécurité Aménagement - Bureau études et connaissance': 2
+  DDT70-SER/EAU: 2
+  'DDT84 MSIG': 4
+  DDT87: 2
+  'DDT89/SCTEP/Connaissance des Territoires et Etudes Générales': 1
+  DDT89/SEFREN/UMAAP: 1
+  'DDT89/SUHR/Habitat et Logement Social': 7
+  'DDT95 - Pôle Urbanisme': 1
+  'DDT95 - Pôle risques et bruit': 116
+  'DDTM 06 (Direction Départementale des territoires et de la Mer des Alpes-Maritimes)': 31
+  'DDTM 11': 2
+  "DDTM 11 (Direction Départementale des Territoires de l'Aude)": 55
+  'DDTM 13 (Direction Départementale des Territoires et de la Mer des Bouches-du-Rhône)': 288
+  'DDTM 14 (Direction départementale des territoires et de la Mer du Calvados)': 136
+  'DDTM 17': 3
+  'DDTM 17 (Direction Départementale des Territoires et de la Mer de Charente-Maritime)': 607
+  'DDTM 17 - SCTE - Connaissances': 75
+  'DDTM 17 - Services des activités maritimes - Cultures marines et pêche': 4
+  'DDTM 17 - service littoral - gestion intégrée du DPM': 2
+  'DDTM 17/UARDD/Amenagement': 1
+  "DDTM 22 (Direction Départementale des Territoires et de la Mer des Côtes-d'Armor)": 20
+  'DDTM 22 / SOFT / EM': 1
+  "DDTM 27 (Direction Départementale des Territoires et de la Mer de l'Eure)": 182
+  'DDTM 29 (Direction Départementale des Territoires et de la Mer du Finistère)': 89
+  'DDTM 29 SEA UEEC (Unité Évolution des Exploitations et Conjoncture)': 1
+  "DDTM 29/CST/SIG (Système d'Information Géographique)": 8
+  'DDTM 29/SA/UEEA (Unité Etudes et Expertise en Aménagement)': 2
+  'DDTM 29/SA/UPR (Service Aménagement - Unité Prévention des Risques)': 18
+  'DDTM 29/SEA/UAEDR (Service Economie Agricole - Unité Aides Economiques et Développement Rural)': 1
+  'DDTM 29/SEB (Service Eau et Biodiversité)': 3
+  'DDTM 29/SEB/UMISEN (Service Eau et Biodiversité - Unité animation de la MISEN)': 7
+  'DDTM 29/SL/UCM (Service du Littoral - Unité Cultures Marines)': 5
+  'DDTM 29/SL/UEGE (Service du Littoral - Unité Etudes Générales et Expertises)': 30
+  'DDTM 29/SL/UEM (Service du Littoral - Unité Environnement Maritime)': 2
+  'DDTM 2A (Direction Départementale des Territoires et de la Mer de Corse-du-Sud)': 162
+  'DDTM 2B (Direction Départementale des Territoires et de la Mer de Haute-Corse)': 34
+  'DDTM 30 (Direction Départementale des Territoires et de la Mer du Gard)': 401
+  'DDTM 30 - SEA': 1
+  'DDTM 30 - SEF - Forêt/DFCI': 36
+  'DDTM 30 - SEI': 255
+  'DDTM 30 - SER': 14
+  'DDTM 30 - SUH - HI': 6
+  'DDTM 33 - Unité Analyses et Connaissance': 29
+  "DDTM 34 (Direction Départementale des Territoires et de la Mer de l'Hérault)": 84
+  'DDTM 35': 14
+  "DDTM 35 (Direction Départementale des Territoires et de la Mer d'Ille-et-Vilaine)": 197
+  'DDTM 40 (Direction Départementale des Territoires et de la Mer des Landes)': 225
+  'DDTM 44': 2
+  'DDTM 44 (Direction Départementale des Territoires et de la Mer de Loire-Atlantique)': 146
+  'DDTM 50 / Service Mer et Littoral / Pôle Gestion du Littoral': 1
+  'DDTM 50 /SE /Eaux et Milieux Aquatiques': 1
+  'DDTM 56 (Direction Départementale des Territoires et de la Mer du Morbihan)': 34
+  'DDTM 56/DML/SAMEL (Service Aménagement Mer et Littoral)': 3
+  'DDTM 56/SEBR/BMAF': 1
+  'DDTM 56/SEBR/PRE': 1
+  'DDTM 56/SENB/ASS-GSP (Assainissement Gestion Services Publics)': 5
+  'DDTM 56/SENB/MARE': 4
+  'DDTM 56/SENB/PoleEau': 3
+  'DDTM 56/SPACES/PRN': 2
+  'DDTM 62 (Direction départementale des territoires et de la mer du Pas-de-Calais)': 497
+  'DDTM 64 (Direction Départementale des Territoires et de la Mer des Pyrénées-Atlantiques)': 791
+  'DDTM 66 (Direction Départementale des Territoires et de la Mer des Pyrénées Orientales)': 8
+  'DDTM 66 (Direction Départementale des Territoires et de la Mer des Pyrénées-Orientales)': 58
+  'DDTM 76 - SRMT  Bureau des Risques Naturels': 6
+  'DDTM 80 (Direction Départementale des Territoires et de la Mer de la Somme)': 841
+  'DDTM 83 (Direction Départementale des Territoires et de la Mer du Var)': 226
+  'DDTM 83/SEBIO': 2
+  'DDTM 83/SML': 1
+  'DDTM 83/SPP/PR': 63
+  'DDTM 83/SPP/PSIGP/BSIG': 1
+  'DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)': 133
+  'DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée) MITRA': 30
+  'DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)- SEN': 51
+  'DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)- SERN': 25
+  'DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)-SUA': 1
+  'DDTM de Seine-Maritime': 147
+  "DDTM de l'Hérault": 4
+  "DDTM de l'Hérault -service web": 29
+  'DDTM de la Manche': 135
+  'DDTM du Calvados': 22
+  'DDTM du Morbihan  SUH  PH': 3
+  'DDTM du Nord': 25
+  DDTM/SEF/BECV: 4
+  DDTM17/MSIG: 23
+  'DDTM17/MTP -  89, avenue des Cordeliers  - 17018 La Rochelle Cédex': 4
+  DDTM17/PLDS/HABITAT: 1
+  'DDTM17/PLDS/SCTE/unité connaissances': 1
+  DDTM17/RSL/GL: 1
+  'DDTM17/Service Littoral': 4
+  DDTM2A/SREF: 5
+  'DDTM30 - SEF': 1
+  'DDTM30 - SSB - ICR': 1
+  'DDTM33 - SDML': 3
+  'DDTM33 - SEN': 2
+  'DDTM33 - SHLCD': 1
+  'DDTM33 - SRGC': 6
+  'DDTM33/SUPEM/MET - Mobilité Energie Transports': 4
+  "DDTM35/METSSI (Direction Départementale des Territoires et de la Mer d'Ille-et-Vilaine/Mission de l'Expertise Territoriale et de la Stratégie du Système d'Information)": 6
+  DDTM50/SETRIS/RISC: 2
+  'DDTM56 (Direction Départementale des Territoires et de la Mer du Morbihan)': 1
+  DDTM56/STA/UCT: 1
+  'DDTM76 SCAU BMCP': 22
+  'DDTM76 SCH': 15
+  'DDTM76 SPERIC': 4
+  'DDTM76 SPERIC BGCRT': 9
+  'DDTM76 SPERIC BRNT': 56
+  DDTM76/SPERIC/BRNT: 7
+  DDTM80: 15
+  DDTM83/DML: 2
+  DDTM83/DML/BATB: 2
+  DDTM83/DML/BLO/BATB: 1
+  DDTM83/SAD/BECV: 47
+  DDTM83/SAD/BR: 55
+  DDTM83/SAD/BTA/SIG: 2
+  DDTM83/SAD/PR: 2
+  DDTM83/SAEF/BFDFCI: 4
+  DDTM83/SAF: 2
+  DDTM83/SEADR: 1
+  DDTM83/SEF: 9
+  DDTM83/SEF/BCFS: 1
+  DDTM83/SEF/PFDFCI: 1
+  DDTM83/SML/BLO: 1
+  'DEAL Guadeloupe': 118
+  "DGAC (Direction générale de l'Aviation Civile)": 2
+  "DGALN (Direction Générale de l'Aménagement, du Logement et de la Nature)": 20
+  'DIR ONCFS Hauts de France / Normandie': 1
+  "DIRE (Direction Interdépartementale des Routes de l'Est)": 1
+  'DIRE - Bureau développement durable et documentation': 1
+  'DIRM MED (Direction Interrégionale de la Mer Méditerranée)': 5
+  'DIRM MEMN (Direction InterRégionale Mer Manche Est - Mer du Nord)': 64
+  'DIRM NAMO (Direction interrégionale de la mer Nord Atlantique - Manche Ouest)': 1
+  'DIRM Sud Atlantique': 31
+  'DIRNO (Direction Interdépartementale des Routes Nord-Ouest)': 1
+  'DIRSO (Direction Interdépartementale des Routes Sud-Ouest)': 1
+  DMLC: 1
+  'DRAAF 52 (Direction Régionale de l’Alimentation, de l’Agriculture et de la Forêt des Pays de la Loire)': 2
+  'DRAAF Auvergne-Rhône-Alpes': 2
+  'DRAAF Basse-Normandie': 5
+  "DRAAF Bourgogne-Franche-Comté (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt de Franche-Comté)": 15
+  'DRAAF Bretagne': 12
+  'DRAAF Centre-Val de Loire': 14
+  "DRAAF Franche-Comté (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt de Franche-Comté)": 5
+  "DRAAF Hauts-de-France (Direction Régionale de l'Alimentation de l'Agriculture et de la Forêt Hauts-de-France)": 4
+  'DRAAF Ile de France /SRISE': 2
+  'DRAAF Languedoc-Roussillon': 33
+  "DRAAF Lorraine (Direction régionale de l'alimentation, de l'agriculture et de la forêt de Lorraine)": 13
+  "DRAAF Normandie (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt de Normandie)": 40
+  "DRAAF Nouvelle-Aquitaine (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt)": 70
+  "DRAAF Picardie  (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt de Picardie)": 5
+  'DRAAF Poitou-Charentes': 1
+  'DRAAF-AUVERGNE-RHONE-ALPES (DRAAF Auvergne-Rhône-Alpes (Lyon))': 1
+  'DRAAF-BOURGOGNE (DRAAF Bourgogne(Dijon))': 5
+  "DRAAF-OCCITANIE (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt Occitanie)": 80
+  'DRAAF-OCCITANIE (Direction Régionale de l’Alimentation de l’Agriculture et de la Forêt Occitanie)': 9
+  'DRAC CENTRE - VAL DE LOIRE': 3
+  "DREAL 72 (Direction Régionale de l'Environnement, de l'Aménagement et du Logement de la Sarthe)": 2
+  "DREAL Aquitaine (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Aquitaine)": 3
+  "DREAL Auvergne (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Auvergne)": 10
+  'DREAL BRETAGNE/SPPR/Service prévention des pollutions et des risques': 1
+  'DREAL CENTRE-VAL DE LOIRE / SEB': 1
+  'DREAL Centre': 10
+  'DREAL Centre (données risques)': 16
+  'DREAL Centre-Val de Loire': 31
+  "DREAL Centre-Val de Loire (Direction régionale de l'environnement, de l'aménagement et du logement)": 3
+  "DREAL Fr.Comté (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Franche-Comté)": 10
+  'DREAL Franche-Comté - Service EDAD - Département Information Géographique': 10
+  "DREAL Grand Est (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Grand Est)": 279
+  "DREAL Grand Est (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Grand-Est)": 4
+  "DREAL Grand Est (Direction régionale de l'Environnement, de l'Aménagement et du Logement)": 11
+  'DREAL Grand Est - Service Connaissance et Développement Durable - Pôle Connaissance Territoriale et Analyse Statistique': 3
+  'DREAL Grand Est - Service Transports - Pôle Mobilité': 6
+  'DREAL Grand Est - Service eau, biodiversité, paysages - Pôle Espèces et expertises naturalistes': 262
+  "DREAL Grand Est [ex-Lorraine] (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Grand Est)": 186
+  "DREAL HdF (Direction Régionale de l'Environnement de l'Aménagement et du Logement des Hauts de France)": 143
+  "DREAL HdF (Direction Régionale de l'Environnement de l'Aménagement et du Logement des Hauts-de-France)": 16
+  "DREAL Lang.Rous. (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Languedoc-Roussillon)": 1
+  "DREAL Lorraine (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Lorraine)": 2
+  "DREAL N-PdC (Direction Régionale de l'Environnement de l'Aménagement et du Logement du Nord - Pas de Calais)": 2
+  'DREAL Nord-Pas-de-Calais': 1
+  "DREAL Normandie (Direction Régionale de l'Environnement, de l'Aménagement et du Logement Normandie)": 3
+  'DREAL Normandie - Site de Caen': 3
+  'DREAL PACA': 1
+  'DREAL PAYS DE LOIRE': 2
+  "DREAL Provence-Alpes-Côte d'Azur": 177
+  "DRIAAF ILE DE FRANCE (Direction régionale et interdépartementale de l'alimentation, de l'agriculture et de la forêt d'Ile-de-France)": 11
+  'DRIEA-IF Siège': 1
+  DRIEA-IF/UTEA92: 3
+  DRIEA-IF/UTEA94: 9
+  "DRIEAT Île-de-France (Direction régionale et interdépartementale de l'environnement, de l'aménagement et des transports d'Île-de-France)": 289
+  'DRIEE Île-de-France - Délégation de bassin Seine-Normandie': 1
+  "DT ARS 61 (Direction territoriale de l'Agence Regionale pour la santé de l'Orne)": 4
+  'DTAM Saint Pierre et Miquelon': 64
+  "Direction Départementale des Territoires (DDT) de l'Aveyron": 1
+  'Direction Départementale des Territoires 04': 1
+  "Direction Départementale des Territoires d'Eure-et-Loir (028) - SCCP - Bureau SIG et Jérôme CONNAN Instructeur Éducation Routière": 1
+  'Direction Départementale des Territoires de Lot-et-Garonne': 4
+  "Direction Départementale des Territoires de l'Aveyron": 1
+  'Direction Départementale des Territoires des Hautes Alpes': 1
+  'Direction Départementale des Territoires du Tarn - SERES': 14
+  "Direction Régionale de l'Environnement, de l'Aménagement et du Logement Grand Est": 1
+  "Direction Régionale et Interdépartementale de l'Environnement et de l'Energie_2": 1
+  'Direction Régionale et Interdépartementale de l’Environnement et de l’Energie d’Île-de-France': 2
+  'Direction de la mer et du littoral de Corse (DMLC)': 3
+  'Direction des Routes Ile-de-France (DIRIF)': 2
+  'Direction départementale des territoires de Seine et Marne': 12
+  "Direction régionale et interdépartementale de l'équipement et de l'aménagement Île-de-France - Unité départementale de Paris": 77
+  'Données STAP 65 / Report DDT 65': 6
+  'Dreal Hauts-de-France': 1
+  "Délégation interministérielle à l'aménagement du territoire et à l'attractivité régionale (DATAR)": 6
+  "Délégation à l'action foncière et immobilière": 2
+  ECOSCOP: 2
+  'FMA - Forum Marais Atlantiques': 1
+  'FORMAIX3 (Test EOLE 2.4)': 5
+  FORMAIX4: 3
+  'FREDON Languedoc-Roussillon': 4
+  'France Télécom (Yoann RICHE)': 2
+  'France Télécom - Orange': 1
+  'François virevialle': 2
+  'Gendarmerie Nationale de Chartres': 3
+  'Groupe Socle Geomatique': 23
+  'Hugues-Mary BREMAUD DGALN/DHUP': 1
+  IGN: 1
+  INAO: 4
+  "Institut National de l'Information Géographique et Forestière (IGN-F)": 4
+  'Institut National de la Statistique et des Etudes Economiques (INSEE)': 1
+  'Institut national de la statistique et des études économiques (INSEE)': 1
+  'Institut national de la statistique et des études économiques Midi-Pyrénées(Insee)': 1
+  JOGUET-RECCORDON: 168
+  'Jean-Emmanuel Ménard': 10
+  Maljean: 1
+  "Ministère de l'Enseignement supérieur, de la Recherche et de l'Innovation": 1
+  "Ministère de l'Éducation nationale et de la Jeunesse": 1
+  'Ministère de la Défense_1': 1
+  'Nathalie LE COZ': 1
+  'Nicolas Marchand': 19
+  'ODONAT Grand Est': 265
+  'ONCFS Service Départementale Saint-Pierre et Miquelon': 2
+  ONEMA: 2
+  "ONEMA 72 (Office National de l'Eau et des Milieux Aquatiques de la Sarthe)": 1
+  'ONF (Office National des Forêts)': 5
+  'ONF - Direction territoriale Grand-Est': 1
+  "Office National de l'Eau et des Milieux Aquatiques": 1
+  'Office National des Forêts': 1
+  'Open Data Réseaux Énergies (ODRÉ)': 5
+  'PREFECTURE DU CANTAL - Service des sécurités - Bureau éducation et sécurité routière': 2
+  'Parc national de forêts - Eloïse Moulin-Tanguy -Géomaticienne': 1
+  'Port autonome de Paris': 2
+  'Préfecture 86': 2
+  'Préfecture de la Charente': 6
+  'Préfecture du Loiret - DDT45 - SLRT / PRC': 51
+  RATP: 1
+  RFF: 1
+  'RFF 52 (Réseau Ferré de France Direction Régionale Bretagne – Pays de la Loire)': 2
+  "RTE (Réseau de Transport d'Electricité)": 2
+  'Région Grand Est': 2
+  "Réseau de Transport d'Electricité": 1
+  SANDRE: 1
+  SDE: 1
+  'SDE : Isabelle DUBOIS': 1
+  "SDIS 72 (Service Départemental d'Incendie et de Secours de la Sarthe)": 1
+  "SDIS15 (Service Départemental d'Incendie et de Secours du Cantal)": 1
+  'SE / Service Environnement': 1
+  'SHOM / Service hydrographique et océanographique de la Marine': 1
+  SNCF: 1
+  'SNCF Opendata': 2
+  "STAP 28 (Service Territorial de l'Architecture et du Patrimoine)": 4
+  'Service Agricole et Forêt/ Pôle Exploitations et Espaces Agricoles': 1
+  'Service Environnement Industriel DDPP': 29
+  'Service Mer et Littoral': 10
+  'Service Mer, Eau et Environnement (SMEE)': 3
+  "Service de défense, de sécurité et d'intelligence économique": 2
+  'Théophile ¨PARENT': 1
+  'UD93 (Unité départementale de Seine-Saint-Denis)': 7
+  'UDEA94 (Unité départementale du Val de Marne)': 12
+  "UT DREAL 61 (Directions Régionales de l'Environnement, de l'Aménagement et du Logement - Unité Territoriale de l'Orne)": 4
+  'Unité Gestion des Connaissances': 3
+  'VENDEE EAU': 1
+  "Ville et Communauté d'Agglomération de Chartres": 13
+  'clothilde mariusse': 1
+  'contact MIC': 1
+  ddt12: 1
+  'laurent dufour': 13
+  'magali monier': 5
+  'sig sriset alpc site de bordeaux': 7

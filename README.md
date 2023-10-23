@@ -2,7 +2,8 @@
 
 **Développements en cours**.
 
-L'objectif principal de ce projet est de tester l'utilisation du modèle DCAT dans les requêtes CSW de Geonetwork.
+L'objectif principal de ce projet est de tester l'utilisation du modèle [DCAT](https://www.w3.org/TR/vocab-dcat-3/)
+dans les requêtes [CSW](https://www.ogc.org/standard/cat/) de [Geonetwork](https://geonetwork-opensource.org/).
 
 L'outil de test est disponible sur https://geoapi.fr/gndcat/read.php.
 
@@ -20,7 +21,9 @@ le contexte utilisé ici est défini dans [context.yaml](context.yaml).
 
 Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
-Le résultat à ces derniers tests est plutôt négatif car le libéllé des organisations responsables est assez hétérogène.
+Le résultat de ces derniers tests est plutôt négatif car les libellés des organisations responsables sont assez hétérogènes.
+A titre d'info la liste des libellés des organisations avec pour chacune le nombre de jeux de données associés est fourni
+dans [geoide.org.yaml].
 
 Lors des requêtes aux catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
