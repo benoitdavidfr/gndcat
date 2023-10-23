@@ -624,7 +624,13 @@ class RdfServer {
   
   function rdfSearchUrl(): ?string { return CswServer::exists($this->serverId)['rdfSearchUrl'] ?? null; }
 
-  function rdfSearch(): ?string { return $this->cache->get($this->rdfSearchUrl()); }
+  function rdfSearch(): \EasyRdf\Graph {
+    $url = $this->rdfSearchUrl();
+    $xml = $this->cache->get($url);
+    $rdf = new \EasyRdf\Graph($url);
+    $rdf->parse($xml, 'rdf', $url);
+    return $rdf;
+  }
 };
 
 /** Balaie le catalogue indiqué et retour un array [responsibleParty.name][dataset.id] => 1 */
@@ -996,11 +1002,10 @@ else { // utilisation en mode web
       switch ($fmt) {
         case 'dcat-ttl': {
           echo $menu;
-          $url = $rdfServer->rdfSearchUrl();
-          $xml = $rdfServer->rdfSearch();
-          $rdf = new \EasyRdf\Graph($url);
+          $rdf = $rdfServer->rdfSearch();
           $rdf->parse($xml, 'rdf', $url);
-          $turtle = $rdf->serialise('turtle');
+          xxx
+            $turtle = $rdf->serialise('turtle');
           echo "<pre>",Turtle::html($turtle),"</pre>\n";
           die();
         }

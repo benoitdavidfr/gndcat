@@ -1,6 +1,6 @@
 ## Test de l'utilisation de DCAT avec Geonetwork (GN)
 
-**Développements en cours**.
+**Attention, développements en cours !**
 
 L'objectif principal de ce projet est de tester l'utilisation du modèle [DCAT](https://www.w3.org/TR/vocab-dcat-3/)
 dans les requêtes [CSW](https://www.ogc.org/standard/cat/) de [Geonetwork](https://geonetwork-opensource.org/).
@@ -18,7 +18,7 @@ Pour afficher une fiche de MD:
   
 On peut ensuite choisir le format d'affichage en haut avec la possibilité d'en afficher 2 côte-à-côte.
 
-L'affichage ISO des MD est effectué soit en XML, soit après une conversion en JSON définie
+L'affichage ISO des MD est effectué soit en XML, soit en JSON après une conversion définie
 dans [mdvars2.inc.php](mdvars2.inc.php) et [isomd.inc.php](isomd.inc.php).
 Cette conversion en JSON est partielle par rapport à l'ensemble des éléments de MD définis dans ISO 19115/19139
 mais contient au moins tous les éléments définis dans
@@ -29,7 +29,7 @@ le [Guide de saisie des éléments de métadonnées INSPIRE, v 2.0, décembre 20
 L'affichage DCAT des MD est effectué soit en XML, soit en [Turtle](https://www.w3.org/TR/turtle/),
 soit en [YAML-LD](https://json-ld.github.io/yaml-ld/spec/)
 (YAML-LD ressemble à du JSON-LD en étant plus lisible) compacté.
-Le mécanisme de compactage en JSON-LD/YAML-LD permet de faciliter la lecture d'un document en appliquant un contexte ;
+Le compactage en JSON-LD/YAML-LD facilite à un humain la lecture d'un document en appliquant un contexte ;
 le contexte utilisé ici est défini dans [context.yaml](context.yaml).  
 
 Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
@@ -39,9 +39,10 @@ car les libellés des organisations responsables sont assez hétérogènes.
 A titre d'info la liste des libellés des organisations, avec pour chacune le nombre de jeux de données associés,
 est fourni dans [geoide.orga.yaml](geoide.orga.yaml).
 
-Lors des requêtes aux catalogues les résultats sont mis en cache.
+Lors des requêtes sur les catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
 
+### Organisation du code
 Le code du proto est principalement dans le fichier [read.php](read.php) qui est décomposé en plusieurs classes:
 
   - la classe OrgRef gère un référentiel des organisations stocké dans le fichier [orgref.yaml](orgref.yaml) ;
@@ -50,10 +51,10 @@ Le code du proto est principalement dans le fichier [read.php](read.php) qui est
   - la classe Cache gère le cache des requêtes Http de manière sommaire.
   
   - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
-    et en effectuant les requêtes au travers du cache.
+    et en effectuant les requêtes au travers du cache associé au serveur.
     
   - la classe Turtle facilite l'affichage en Turtle/Html, cad un texte Turtle dans lequel les URL sont transformés
-    en lien HTML.
+    en liens HTML.
     
   - la classe YamlLD gère des graphes RDF, les transforme en JSON-LD/YAML-LD et effectue l'opération de compactage.
   
@@ -62,13 +63,14 @@ Le code du proto est principalement dans le fichier [read.php](read.php) qui est
     
   - la classe RdfServer est utilisée pour tester les points DCAT sans CSW de certains serveurs.
 
-  - enfin le reste du code enchaine les actions demandées soit en CLI soit en web.
+  - enfin le reste du code enchaine les actions demandées soit en CLI, soit en web.
 
 De plus:
 
-  - le fichier [http.inc.php](http.inc.php) définit la classe Http qui simplifie l'utilisation de requêtes Http.
+  - le fichier [http.inc.php](http.inc.php) définit la classe Http qui simplifie la réalisation de requêtes Http.
   - le fichier [mdvars2.inc.php](mdvars2.inc.php) a été repris de projets précédents,
-    il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire et effectue la conversion d'une fice de MD en JSON.
+    il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire
+    et effectue la conversion en JSON d'une fiche de MD.
   - la classe IsoMd définie dans le fichier [isomd.inc.php](isomd.inc.php) complète Mdvars
     et simplifie la structure JSON retournée.
     
@@ -76,6 +78,6 @@ Enfin, le code utilise les bibliothèques suivantes:
 
   - https://symfony.com/doc/current/components/yaml.html pour lire et écrire les fichiers Yaml,
   - https://www.easyrdf.org/ pour convertir le RDF entre XML, Turtle et JSON-LD,
-  - https://github.com/lanthaler/JsonLD notamment pour compacter le JSON-LD
+  - https://github.com/lanthaler/JsonLD notamment pour compacter le JSON-LD,
   
 et est régulièrement testé avec l'[outil PhpStan](https://phpstan.org/).
