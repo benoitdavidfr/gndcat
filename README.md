@@ -1,4 +1,4 @@
-###Test de l'utilisation de DCAT avec Geonetwork (GN)
+### Test de l'utilisation de DCAT avec Geonetwork (GN)
 
 L'objectif principal de ce projet est de tester l'utilisation du modèle DCAT dans les requêtes CSW de Geonetwork.
 
