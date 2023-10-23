@@ -14,7 +14,7 @@ Pour afficher une fiche de MD:
 
   - cliquer sur un catalogue
   - cliquer sur "Liste des dataset (en utilisant MDs)"
-  - cliquer sur le titre d'une des fiches ou passer àa la page suivante
+  - cliquer sur le titre d'une des fiches ou passer à la page suivante
   
 On peut ensuite choisir le format d'affichage en haut avec la possibilité d'en afficher 2 côte-à-côte.
 
@@ -30,9 +30,10 @@ le contexte utilisé ici est défini dans [context.yaml](context.yaml).
 
 Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
-Le résultat de ces derniers tests est plutôt négatif car les libellés des organisations responsables sont assez hétérogènes.
-A titre d'info la liste des libellés des organisations avec pour chacune le nombre de jeux de données associés est fourni
-dans [geoide.orga.yaml](geoide.orga.yaml).
+Le résultat de ces derniers tests est plutôt **négatif**
+car les libellés des organisations responsables sont assez hétérogènes.
+A titre d'info la liste des libellés des organisations, avec pour chacune le nombre de jeux de données associés,
+est fourni dans [geoide.orga.yaml](geoide.orga.yaml).
 
 Lors des requêtes aux catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
