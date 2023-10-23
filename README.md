@@ -4,7 +4,8 @@ L'objectif principal de ce projet est de tester l'utilisation du modèle DCAT da
 
 L'outil de test est disponible sur https://geoapi.fr/gndcat/read.php.
 
-Pour effectuer ces tests un certain nombre de catalogues sont recensés dans l'outil.
+Pour effectuer ces tests un certain nombre de catalogues sont recensés dans l'outil
+dans le fichier [servers.yaml][servers.yaml].
 
 Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
