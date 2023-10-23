@@ -71,3 +71,11 @@ De plus:
     il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire et effectue la conversion d'une fice de MD en JSON.
   - la classe IsoMd définie dans le fichier [isomd.inc.php](isomd.inc.php) complète Mdvars
     et simplifie la structure JSON retournée.
+    
+Enfin, le code utilise les bibliothèques suivantes:
+
+  - https://symfony.com/doc/current/components/yaml.html pour lire et écrire les fichiers Yaml,
+  - https://www.easyrdf.org/ pour convertir le RDF entre XML, Turtle et JSON-LD,
+  - https://github.com/lanthaler/JsonLD notamment pour compacter le JSON-LD
+  
+et est régulièrement testé avec l'[outil PhpStan](https://phpstan.org/).
