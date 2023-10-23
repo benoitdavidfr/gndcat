@@ -13,6 +13,9 @@ title: Mdvars - classe statique contenant la description des variables des élé
 pubproperties:
 methods:
 journal: |
+  23/10/2023:
+    - ajout des adresse email dans responsibleParty et mdContact afin d'intégrer les éléments définis par le règlement
+      Inspire métadonnées.
   26/9/2015 :
   - correction d'un bug sur les xpath des 2 langues
   - ajout de la lecture d'un éventuel codeSpace d'un URI encodé avec un RS_Identifier
