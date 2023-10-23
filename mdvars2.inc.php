@@ -454,8 +454,14 @@ doc: |
         'xpath' => '//gmd:pointOfContact/*/gmd:organisationName/gco:CharacterString',
         'stdFunc' => 'stdOrganisationName',
       ],
+      // Ajout email le 23/10/2023
+      'svar2' => [
+        'name' => 'email',
+        'xpath' => '//gmd:pointOfContact/*/gmd:contactInfo/*/gmd:address/*/gmd:electronicMailAddress/gco:CharacterString',
+        'stdFunc' => true,
+      ],
 // 9.2. Rôle de la partie responsable - 9.2. Responsible party role
-      'svar0' => [
+      'svar3' => [
         'name' => 'role',
         'xpath' => '//gmd:pointOfContact/*/gmd:role/gmd:CI_RoleCode/@codeListValue',
         'stdFunc' => true,
@@ -468,8 +474,18 @@ doc: |
     'mdContact' => [
       'title-fr' => "Point de contact des métadonnées",
       'title-en' => "Metadata point of contact",
-      'xpath' => '//gmd:contact/*/gmd:organisationName/gco:CharacterString',
-      'stdFunc' => 'stdOrganisationName',
+      // Ajout email le 23/10/2023
+      'xpath' => '//gmd:contact',
+      'svar' => [
+        'name' => 'name',
+        'xpath' => '//gmd:contact/*/gmd:organisationName/gco:CharacterString',
+        'stdFunc' => 'stdOrganisationName',
+      ],
+      'svar2' => [
+        'name' => 'email',
+        'xpath' => '//gmd:contact/*/gmd:contactInfo/*/gmd:address/*/gmd:electronicMailAddress/gco:CharacterString',
+        'stdFunc' => true,
+      ],
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
 // 10.2. Date des métadonnées - 10.2. Metadata date

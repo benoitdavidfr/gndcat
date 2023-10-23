@@ -65,6 +65,7 @@ class IsoMd {
    * @return array<string,mixed> */
   static function convert(string $xml): array {
     $record = Mdvars::extract($xml); // @phpstan-ignore-line
+    //echo '<pre>',Yaml::dump($record,4),"</pre>\n";
     return self::mdrecord2array($record);
   }
   

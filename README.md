@@ -20,7 +20,11 @@ On peut ensuite choisir le format d'affichage en haut avec la possibilité d'en 
 
 L'affichage ISO des MD est effectué soit en XML, soit après une conversion en JSON définie
 dans [mdvars2.inc.php](mdvars2.inc.php) et [isomd.inc.php](isomd.inc.php).
-Cette conversion en JSON est **partielle**.
+Cette conversion en JSON est partielle par rapport à l'ensemble des éléments de MD définis dans ISO 19115/19139
+mais contient au moins tous les éléments définis dans
+le [règlement Inspire](https://eur-lex.europa.eu/legal-content/FR/TXT/ELI/?eliuri=eli:reg:2008:1205:oj)
+et utilise les XPath définis dans
+le [Guide de saisie des éléments de métadonnées INSPIRE, v 2.0, décembre 2019](https://cnig.gouv.fr/IMG/pdf/guide-de-saisie-des-elements-de-metadonnees-inspire-v2.0-1.pdf).
 
 L'affichage DCAT des MD est effectué soit en XML, soit en [Turtle](https://www.w3.org/TR/turtle/),
 soit en [YAML-LD](https://json-ld.github.io/yaml-ld/spec/)
