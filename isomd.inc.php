@@ -67,6 +67,11 @@ class IsoMd {
     $record = Mdvars::extract($xml); // @phpstan-ignore-line
     return self::mdrecord2array($record);
   }
+  
+  /** indicateur qualité */
+  static function quality(array $record): float {
+    return count($record) / count(Mdvars::$mdvars);
+  }
 };
 
 

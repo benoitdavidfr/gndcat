@@ -100,27 +100,6 @@ class OrgRef {
 };
 OrgRef::init();
 
-/** Manipulation de code Turtle */
-class Turtle {
-  /** Transforme le texte turtle en Html */
-  static function html(string $src): string {
-    //return str_replace('<', '&lt;', $src);
-    $mPrec = '';
-    while (preg_match('!<http([^>]+)>!', $src, $matches)) {
-      //echo $matches[1],"<br>\n";
-      if ($matches[1] == $mPrec)
-        throw new Exception("Ca boucle");
-      $mPrec = $matches[1];
-      $url = $matches[1];
-      $urlR = "&lt;<a href='HTTP$url'>HTTP$url</a>&gt;";
-      // Il faut échapper les caractères spécifiques de preg_replace()
-      $urlp = str_replace(['?','(',')'],['\?','\(','\)'], $matches[1]);
-      $src = preg_replace("!<http$urlp>!", $urlR, $src);
-    }
-    return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
-  }
-};
-    
 /** Gestion d'un cache pour des requêtes http.
  *
  * get() effectue un appel Http sauf si le résultat est déjà en cache et dans ce cas renvoit le contenu du cache.
@@ -452,11 +431,27 @@ class CswServer {
       ."&id=".$id;
   }
   
-  /** Retourne le GetRecordById */
+  /** Retourne le GetRecordById comme chaine XML */
   function getRecordById(string $type, string $ElementSetName, string $id): string {
     return $this->cache->get($this->getRecordByIdUrl($type, $ElementSetName, $id), $this->httpOptions);
   }
 
+  /** Retourne le GetRecordById en Full DCAT comme \EasyRdf\Graph */
+  function getFullDcatById(string $id): \EasyRdf\Graph {
+    $url = $this->getRecordByIdUrl('dcat', 'full', $id);
+    $xml = $this->getRecordById('dcat', 'full', $id);
+    $xml = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
+    $xml = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml);
+    $rdf = new \EasyRdf\Graph($url);
+    try {
+      $rdf->parse($xml, 'rdf', $url);
+    }
+    catch (EasyRdf\Parser\Exception $e) {
+      die("Erreur sur le parse RDF: ".$e->getMessage());
+    }
+    return $rdf;
+  }
+  
   /** suppression du cache */
   function clearCache(): void { $this->cache->clear(); }
   
@@ -478,6 +473,60 @@ class CswServer {
       //echo "usleep($delayMicroSec)\n";
       usleep($delayMicroSec);
     }
+  }
+};
+
+/** Manipulation de code Turtle */
+class Turtle {
+  readonly public string $turtle; // le code Turtle
+  
+  function __construct(\EasyRdf\Graph $rdf) {
+    $this->turtle = $rdf->serialise('turtle');
+  }
+  
+  /** Transforme le texte turtle en Html */
+  function __toString(): string {
+    $src = $this->turtle;
+    //return str_replace('<', '&lt;', $src);
+    $mPrec = '';
+    while (preg_match('!<http([^>]+)>!', $src, $matches)) {
+      //echo $matches[1],"<br>\n";
+      if ($matches[1] == $mPrec)
+        throw new Exception("Ca boucle");
+      $mPrec = $matches[1];
+      $url = $matches[1];
+      $urlR = "&lt;<a href='HTTP$url'>HTTP$url</a>&gt;";
+      // Il faut échapper les caractères spécifiques de preg_replace()
+      $urlp = str_replace(['?','(',')'],['\?','\(','\)'], $matches[1]);
+      $src = preg_replace("!<http$urlp>!", $urlR, $src);
+    }
+    return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
+  }
+};
+
+/** Manipulation de YamlLD */
+class YamlLD {
+  readonly public array $array; // stockage comme array
+  
+  /** construit un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph */
+  function __construct(\EasyRdf\Graph|array $rdfOrArray) {
+    if (is_array($rdfOrArray))
+      $this->array = $rdfOrArray;
+    else
+      $this->array = json_decode($rdfOrArray->serialise('jsonld'), true);
+    // die ("<pre>$this</pre>\n"); // affichage du JSON-LD
+  }
+  
+  function __toString(): string { return YamlDump($this->array, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK); }
+  
+  function compact(): self {
+    $compacted = ML\JsonLD\JsonLD::compact(
+      json_encode($this->array),
+      json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
+    $compacted = json_decode(json_encode($compacted), true);
+    $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
+    //$compacted = $this->improve()
+    return new self($compacted);
   }
 };
 
@@ -691,9 +740,8 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           file_put_contents(__DIR__."/idx/$idxname", serialize($rpNames));
           die("FIN\n");
         }
-        case 'mdDateStat': {
+        case 'mdDateStat': { // affiche le nbre de mdDate / mois ainsi que la moyenne
           $mds = new MDs($id, $id, 1);
-          $server = new CswServer($id, $id);
           $mdDates = [];
           foreach ($mds as $no => $record) {
             if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
@@ -720,6 +768,22 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
             $nb++; 
           }
           echo "moyenne: ",$sum/$nb,"\n";
+          die("FIN\n");
+        }
+        case 'mdQualStat' : { // afiche sur cheque fiche un indicateur de qualité
+          $mds = new MDs($id, $id, 1);
+          $maxQual = 0;
+          foreach ($mds as $no => $brief) {
+            if (in_array($brief->dc_type, ['FeatureCatalogue','service'])) continue;
+            $fullgmd = $server->getRecordById('gmd', 'full', (string)$brief->dc_identifier);
+            $fullgmd = IsoMd::convert($fullgmd);
+            $qual = IsoMd::quality($fullgmd);
+            if ($qual > $maxQual) {
+              $maxQual = $qual;
+              $bestId = (string)$brief->dc_identifier;
+            }
+          }
+          echo "$bestId -> $maxQual\n";
           die("FIN\n");
         }
       }
@@ -823,6 +887,8 @@ else { // utilisation en mode web
       if ($nbreLignes > NBRE_MAX_LIGNES)
         echo "<a href='?server=$id&action=$_GET[action]&startPosition=$no'>",
               "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a> / \n";
+      else
+        echo "$startPosition -> ",$mds->numberOfRecordsMatched()," / \n";
       echo "<a href='?server=$id&action=listDatasets'>Retour au 1er</a> / \n";
       echo "<a href='?server=$id'>Retour à l'accueil</a></p>";
       die();
@@ -866,50 +932,18 @@ else { // utilisation en mode web
         }
         case 'dcat-ttl': {
           echo $menu;
-          $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
-          $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
-          $xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
-          $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
-          //echo "<pre>",str_replace('<','&lt;', $xml2);
-          $rdf = new \EasyRdf\Graph($url);
-          try {
-            $rdf->parse($xml2, 'rdf', $url);
-          }
-          catch (EasyRdf\Parser\Exception $e) {
-            die("Erreur sur le parse RDF: ".$e->getMessage());
-          }
-          $turtle = $rdf->serialise('turtle');
-          //echo "<pre>",str_replace('<', '&lt;', $turtle),"</pre>\n";
-          echo "<pre>",Turtle::html($turtle),"</pre>\n";
+          $rdf = $server->getFullDcatById($_GET['id']);
+          $turtle = new Turtle($rdf);
+          echo "<pre>$turtle</pre>\n";
           die();
         }
         case 'dcat-yamlld-c': { // Yaml-LD compacté avec le contexte context.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
-          
-          $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
-          $xml = $server->getRecordById('dcat', 'full', $_GET['id']);
-          $xml2 = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
-          $xml2 = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml2);
-          //echo "<pre>",str_replace('<','&lt;', $xml2);
-          $rdf = new \EasyRdf\Graph($url);
-          try {
-            $rdf->parse($xml2, 'rdf', $url);
-          }
-          catch (EasyRdf\Parser\Exception $e) {
-            die("Erreur sur le parse RDF: ".$e->getMessage());
-          }
-          if (0) { // @phpstan-ignore-line // affichage du JSON-LD
-            $jsonld = json_decode($rdf->serialise('jsonld'), true);
-            echo "<pre>",Yaml::dump($jsonld),"</pre>\n";
-            die();
-          }
-          $compacted = ML\JsonLD\JsonLD::compact(
-            $rdf->serialise('jsonld'),
-            json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
-          $compacted = json_decode(json_encode($compacted), true);
-          $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
-          echo "<pre>",YamlDump($compacted, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
+          $rdf = $server->getFullDcatById($_GET['id']);
+          $yamlld = new YamlLD($rdf);
+          $compacted = $yamlld->compact();
+          echo "<pre>$compacted</pre>\n";
           die();
         }
         case 'dcat-xml': {
@@ -930,10 +964,11 @@ else { // utilisation en mode web
           die();
         }
         case 'double': {
+          $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
           echo "
     <frameset cols='50%,50%' >
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&startPosition=$_GET[startPosition]' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlld-c&startPosition=$_GET[startPosition]' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]$startPosition' name='left'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlld-c$startPosition' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
@@ -991,6 +1026,7 @@ else { // utilisation en mode web
     }
     case 'doc': { // doc
       echo HTML_HEADER,"<b>Docs</b><ul>";
+      echo "<li><a href='https://github.com/benoitdavidfr/gndcat'>Source du projet sur Github</a></li>\n";
       echo "<li><a href='https://portal.ogc.org/files/80534'>",
         "OpenGIS® Catalogue Services Specification 2.0.2 - ISO Metadata Application Profile: Corrigendum</a></li>\n";
       echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130'>",
@@ -999,6 +1035,9 @@ else { // utilisation en mode web
       die();
     }
     case 'misc': {
+      echo "<a href='?server=gide/gn-pds&action=viewRecord",
+            "&id=fr-120066022-ldd-4bc9b901-1e48-4afd-a01a-cc80e40c35b8&fmt=double'>",
+            "Exemple de fiche de données bien remplie</a><br>\n";
       echo "<a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
             "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a><br>\n";
       die();
