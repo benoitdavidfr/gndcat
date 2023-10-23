@@ -10,11 +10,20 @@ L'outil de test est disponible sur https://geoapi.fr/gndcat/read.php.
 Pour effectuer ces tests un certain nombre de catalogues sont recensés dans l'outil
 dans le fichier [servers.yaml](servers.yaml).
 
-L'affichage des MD ISO est effectué après une conversion en JSON définie dans [mdvars2.inc.php](mdvars2.inc.php)
-et [isomd.inc.php](isomd.inc.php). Cette conversion est **partielle**.
+Pour afficher une fiche de MD:
 
-L'affichage des MD DCAT est effectué d'une part en [Turtle](https://www.w3.org/TR/turtle/)
-et, d'autre part, en [YAML-LD](https://json-ld.github.io/yaml-ld/spec/)
+  - cliquer sur un catalogue
+  - cliquer sur "Liste des dataset (en utilisant MDs)"
+  - cliquer sur le titre d'une des fiches ou passer àa la page suivante
+  
+On peut ensuite choisir le format d'affichage en haut avec la possibilité d'en afficher 2 côte-à-côte.
+
+L'affichage ISO des MD est effectué soit en XML, soit après une conversion en JSON définie
+dans [mdvars2.inc.php](mdvars2.inc.php) et [isomd.inc.php](isomd.inc.php).
+Cette conversion en JSON est **partielle**.
+
+L'affichage DCAT des MD est effectué soit en XML, soit en [Turtle](https://www.w3.org/TR/turtle/),
+soit en [YAML-LD](https://json-ld.github.io/yaml-ld/spec/)
 (YAML-LD ressemble à du JSON-LD en étant plus lisible) compacté.
 Le mécanisme de compactage en JSON-LD/YAML-LD permet de faciliter la lecture d'un document en appliquant un contexte ;
 le contexte utilisé ici est défini dans [context.yaml](context.yaml).  
