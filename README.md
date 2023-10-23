@@ -23,7 +23,7 @@ Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
 Le résultat de ces derniers tests est plutôt négatif car les libellés des organisations responsables sont assez hétérogènes.
 A titre d'info la liste des libellés des organisations avec pour chacune le nombre de jeux de données associés est fourni
-dans [geoide.org.yaml](geoide.org.yaml).
+dans [geoide.orga.yaml](geoide.orga.yaml).
 
 Lors des requêtes aux catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
