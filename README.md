@@ -20,7 +20,7 @@ le contexte utilisé ici est défini dans [context.yaml](context.yaml).
 
 Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
-
 Le résultat à ces derniers tests est plutôt négatif car le libéllé des organisations responsables est assez hétérogène.
 
-
+Lors des requêtes aux catalogues les résultats sont mis en cache.
+Un message est affiché lorsque cette mise en cache est effectuée.

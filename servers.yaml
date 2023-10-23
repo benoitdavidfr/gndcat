@@ -199,7 +199,7 @@ servers:
                 - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
 
   gide01:50:
-    title: Géo-IDE généré D01->D50
+    title: Géo-IDE généré D01->D50 (TESTS)
     vars:
       '01': DDT 01
       '02': DDT 02
@@ -262,7 +262,7 @@ servers:
                 - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
       
   gide51:95:
-    title: Géo-IDE généré D51->D74
+    title: Géo-IDE généré D51->D74 (TESTS)
     vars:
       51: DDT 51
       52: DDT 52
