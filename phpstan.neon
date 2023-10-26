@@ -5,3 +5,5 @@ parameters:
     - read.php
     - http.inc.php
     - isomd.inc.php
+    - ficheckan.php
+    - frame.inc.php

@@ -1,0 +1,469 @@
+{
+  "@context": {
+    "adms": "http://www.w3.org/ns/adms#",
+    "brick": "https://brickschema.org/schema/Brick#",
+    "cnt": "http://www.w3.org/2011/content#",
+    "csvw": "http://www.w3.org/ns/csvw#",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "dcam": "http://purl.org/dc/dcam/",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcatap": "http://data.europa.eu/r5r/",
+    "dcmitype": "http://purl.org/dc/dcmitype/",
+    "dct": "http://purl.org/dc/terms/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "dctype": "http://purl.org/dc/dcmitype/",
+    "doap": "http://usefulinc.com/ns/doap#",
+    "dqv": "http://www.w3.org/ns/dqv#",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "geodcat": "http://data.europa.eu/930/",
+    "gsp": "http://www.opengis.net/ont/geosparql#",
+    "locn": "http://www.w3.org/ns/locn#",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "org": "http://www.w3.org/ns/org#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "prof": "http://www.w3.org/ns/dx/prof/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "qb": "http://purl.org/linked-data/cube#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "https://schema.org/",
+    "sdo": "http://schema.org/",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sosa": "http://www.w3.org/ns/sosa/",
+    "ssn": "http://www.w3.org/ns/ssn/",
+    "time": "http://www.w3.org/2006/time#",
+    "vann": "http://purl.org/vocab/vann/",
+    "vcard": "http://www.w3.org/2006/vcard/ns#",
+    "void": "http://rdfs.org/ns/void#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@graph": [
+    {
+      "@id": "http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/fre/catalog.search#/metadata/fr-120066022-ldd-74c656c0-3868-4bfa-89d6-5985ce1e8d59",
+      "@type": [
+        "dcat:DatasetSeries",
+        "dcat:Dataset"
+      ],
+      "dcat:contactPoint": {
+        "@id": "_:Nb07d4514e75942248d0e240669346821"
+      },
+      "dcat:distribution": [
+        {
+          "@id": "_:N66f9796e54444a808bd5294be7d0fde9"
+        },
+        {
+          "@id": "_:Nfbadc11a605b4657a11a351bc58b4f39"
+        },
+        {
+          "@id": "_:Nc577b427360049aa9d4c04f3b6d2fc7f"
+        },
+        {
+          "@id": "_:N884434917b0542f99f889a04aea541c8"
+        },
+        {
+          "@id": "_:N22020856d4fb4b1cae9d9afc76fb2243"
+        },
+        {
+          "@id": "_:Nd43695c1d2de41bd9187ec0b5e98f7e1"
+        }
+      ],
+      "dcat:keyword": [
+        {
+          "@language": "fr",
+          "@value": "usage des sols"
+        },
+        {
+          "@language": "fr",
+          "@value": "Aménagement Urbanisme/Zonages Planification"
+        },
+        {
+          "@language": "fr",
+          "@value": "fort mahon plage"
+        },
+        {
+          "@language": "fr",
+          "@value": "Usage des sols"
+        },
+        {
+          "@language": "fr",
+          "@value": "plu"
+        },
+        {
+          "@language": "fr",
+          "@value": "document d'urbanisme"
+        },
+        {
+          "@language": "fr",
+          "@value": "données ouvertes"
+        }
+      ],
+      "dcat:landingPage": {
+        "@id": "http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/fre/catalog.search#/metadata/fr-120066022-ldd-74c656c0-3868-4bfa-89d6-5985ce1e8d59"
+      },
+      "dcat:seriesMember": {
+        "@id": "http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/fre/catalog.search#/metadata/fr-120066022-jdd-0e327a08-841f-4931-a67f-da793106c966"
+      },
+      "dcat:theme": [
+        {
+          "@id": "http://registre.data.developpement-durable.gouv.fr/ecospheres/themes-ecospheres/planification"
+        },
+        {
+          "@id": "http://inspire.ec.europa.eu/theme/lu"
+        },
+        {
+          "@id": "http://inspire.ec.europa.eu/metadata-codelist/TopicCategory/planningCadastre"
+        }
+      ],
+      "dct:accessRights": [
+        {
+          "@id": "_:N3e32e11427994cc79d11a20f5fb87bd9"
+        },
+        {
+          "@id": "_:N8c5922eb0c8d45f9ac2a38d1df0dd685"
+        }
+      ],
+      "dct:conformsTo": {
+        "@id": "http://www.opengis.net/def/crs/EPSG/0/2154"
+      },
+      "dct:created": {
+        "@type": "xsd:date",
+        "@value": "2009-02-10"
+      },
+      "dct:description": {
+        "@language": "fr",
+        "@value": "Le présent standard de données COVADIS concerne les documents de plans locaux d'urbanisme (PLU) et les plans d'occupation des sols (POS qui valent PLU). Ce standard de données offre un cadre technique décrivant en détail la façon de dématérialiser ces documents d'urbanisme en une base de données géographiques qui soit exploitable par un outil SIG et interopérable. Ce standard de données concerne aussi bien les plans graphiques de zonage, les prescriptions s'y superposant que les règlements s'appliquant à chaque type de zone.Ce standard de données COVADIS a été élaboré à partir du cahier des charges pour la dématérialisation des documents d'urbanisme mis à jour en 2012 par le CNIG, lui même basé sur la version consolidée du code de l'urbanisme en date du 16 mars 2012. Les recommandations de ces deux documents sont cohérentes même si leur objet n'est pas le même. Le standard de données COVADIS propose des définitions et une structure pour organiser et ranger dans une infrastructure les données géographiques de PLU/POS existant sous forme numérique tandis que le cahier des charges du CNIG sert à encadrer la numérisation de ces données. La partie 'Structure des données' présentée dans ce standard COVADIS donne des recommandations complémentaires en matière de stockage des fichiers de données (cf. partie C). Il s'agit de choix spécifiques à l'infrastructure de données du MAA et du MEDDE qui ne s'appliquent pas en dehors de leur contexte.Les cartes communales font l'objet d'un autre standard de données COVADIS."
+      },
+      "dct:issued": {
+        "@type": "xsd:date",
+        "@value": "2017-10-07"
+      },
+      "dct:language": {
+        "@id": "http://publications.europa.eu/resource/authority/language/FRA"
+      },
+      "dct:provenance": {
+        "@id": "_:N718d5fbe686846c49a674cbf8f9adb0d"
+      },
+      "dct:spatial": {
+        "@id": "_:Na230f5ada50a41be80748cbddfff40fb"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Plan local d'urbanisme de la commune de Fort Mahon Plage"
+      },
+      "foaf:isPrimaryTopicOf": {
+        "@id": "_:Nb1fc239f221b482281b182a3893ee4cf"
+      },
+      "foaf:page": {
+        "@id": "http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/fre/catalog.search#/metadata/fr-120066022-ldd-74c656c0-3868-4bfa-89d6-5985ce1e8d59"
+      }
+    },
+    {
+      "@id": "_:N66f9796e54444a808bd5294be7d0fde9",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:N873b798a5f914aa8b6ef76b9d702123b"
+      },
+      "dcat:accessURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-ldd-9acf7f5f-edfa-4fc7-82a7-85aabb9650e7&datasetAggregate=true"
+      },
+      "dcat:downloadURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-ldd-9acf7f5f-edfa-4fc7-82a7-85aabb9650e7&datasetAggregate=true"
+      },
+      "dct:format": {
+        "@id": "_:N6184eb8fdbb5487681cd976b5c9d6de4"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Téléchargement direct du lot et des documents associés"
+      }
+    },
+    {
+      "@id": "_:N873b798a5f914aa8b6ef76b9d702123b",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:N6184eb8fdbb5487681cd976b5c9d6de4",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:Nfbadc11a605b4657a11a351bc58b4f39",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:N3ca3cd3ae4874f88b8a6eb33c70a8c9e"
+      },
+      "dcat:accessURL": {
+        "@id": "https://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-orphan-residentifier-faf61382-c661-4ccb-bdf4-704241174ca1&dataType=datasetAggregate"
+      },
+      "dcat:downloadURL": {
+        "@id": "https://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-orphan-residentifier-faf61382-c661-4ccb-bdf4-704241174ca1&dataType=datasetAggregate"
+      },
+      "dct:format": {
+        "@id": "_:N71998ac505f14d5487cce41dd5503ea7"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Téléchargement simple (Atom) du lot et des documents associés via internet"
+      }
+    },
+    {
+      "@id": "_:N71998ac505f14d5487cce41dd5503ea7",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:N3ca3cd3ae4874f88b8a6eb33c70a8c9e",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:Nc577b427360049aa9d4c04f3b6d2fc7f",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:N0f3fa5ab2f274f29836309abcb641236"
+      },
+      "dcat:accessURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomMetadata/GetResourceDescription?id=fr-120066022-orphan-residentifier-f05dc5c6-3a6f-4169-9980-40e6e31d0557&scope=INTERNET"
+      },
+      "dcat:downloadURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomMetadata/GetResourceDescription?id=fr-120066022-orphan-residentifier-f05dc5c6-3a6f-4169-9980-40e6e31d0557&scope=INTERNET"
+      },
+      "dct:format": {
+        "@id": "_:Ne8cc354972b74f998e2a675160b7a687"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Service de téléchargement associé"
+      }
+    },
+    {
+      "@id": "_:N0f3fa5ab2f274f29836309abcb641236",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:Ne8cc354972b74f998e2a675160b7a687",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:N884434917b0542f99f889a04aea541c8",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:N07e61f6bdfa248dcbc8d95a329b5240b"
+      },
+      "dcat:accessURL": {
+        "@id": "https://atom.geo-ide.e2.rie.gouv.fr/atomArchive/GetResource?id=fr-120066022-orphan-residentifier-faf61382-c661-4ccb-bdf4-704241174ca1&dataType=datasetAggregate"
+      },
+      "dcat:downloadURL": {
+        "@id": "https://atom.geo-ide.e2.rie.gouv.fr/atomArchive/GetResource?id=fr-120066022-orphan-residentifier-faf61382-c661-4ccb-bdf4-704241174ca1&dataType=datasetAggregate"
+      },
+      "dct:format": {
+        "@id": "_:N15d6ab197ba642a9939ab424380a5487"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Téléchargement simple (Atom) du lot et des documents associés via intranet"
+      }
+    },
+    {
+      "@id": "_:N15d6ab197ba642a9939ab424380a5487",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:N07e61f6bdfa248dcbc8d95a329b5240b",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:N22020856d4fb4b1cae9d9afc76fb2243",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:Nb0295f2a081543139b7286a0d25facad"
+      },
+      "dcat:accessURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomMetadata/GetResourceDescription?id=fr-120066022-orphan-residentifier-8f174fa7-7fcc-4784-b062-dccdd30c9f2e&scope=INTERNET"
+      },
+      "dcat:downloadURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomMetadata/GetResourceDescription?id=fr-120066022-orphan-residentifier-8f174fa7-7fcc-4784-b062-dccdd30c9f2e&scope=INTERNET"
+      },
+      "dct:format": {
+        "@id": "_:N6d98e37cf43a4e3da117d634e4c338c0"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Service de téléchargement associé"
+      }
+    },
+    {
+      "@id": "_:Nb0295f2a081543139b7286a0d25facad",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:N6d98e37cf43a4e3da117d634e4c338c0",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:Nd43695c1d2de41bd9187ec0b5e98f7e1",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": {
+        "@id": "_:Ne8b77e620fef4e39bbd37436d81c1d96"
+      },
+      "dcat:accessURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-ldd-cab63273-b3ae-4e8a-ae1c-6192e45faa94&datasetAggregate=true"
+      },
+      "dcat:downloadURL": {
+        "@id": "http://atom.geo-ide.developpement-durable.gouv.fr/atomArchive/GetResource?id=fr-120066022-ldd-cab63273-b3ae-4e8a-ae1c-6192e45faa94&datasetAggregate=true"
+      },
+      "dct:format": {
+        "@id": "_:Nf3ac4ec4e3254dd098c71f65aeea83d6"
+      },
+      "dct:license": {
+        "@id": "https://spdx.org/licenses/etalab-2.0"
+      },
+      "dct:title": {
+        "@language": "fr",
+        "@value": "Téléchargement direct du lot et des documents associés"
+      }
+    },
+    {
+      "@id": "_:Nf3ac4ec4e3254dd098c71f65aeea83d6",
+      "@type": "dct:MediaTypeOrExtent",
+      "rdfs:label": {
+        "@type": "rdf:langString",
+        "@value": "MapInfo TAB"
+      }
+    },
+    {
+      "@id": "_:Ne8b77e620fef4e39bbd37436d81c1d96",
+      "@type": "dcat:DataService",
+      "dct:conformsTo": {
+        "@id": "https://tools.ietf.org/html/rfc4287"
+      }
+    },
+    {
+      "@id": "_:Na230f5ada50a41be80748cbddfff40fb",
+      "@type": "dct:Location",
+      "dcat:bbox": {
+        "@type": "gsp:wktLiteral",
+        "@value": "POLYGON((3.28133559 50.48188019,3.28133559 49.38547516,1.31279111 49.38547516,1.31279111 50.48188019,3.28133559 50.48188019))"
+      }
+    },
+    {
+      "@id": "_:N3e32e11427994cc79d11a20f5fb87bd9",
+      "@type": "dct:RightsStatement",
+      "rdfs:label": {
+        "@language": "fr",
+        "@value": "Aucun des articles de la loi ne peut être invoqué pour justifier d'une restriction d'accès public."
+      }
+    },
+    {
+      "@id": "_:N8c5922eb0c8d45f9ac2a38d1df0dd685",
+      "@type": "dct:RightsStatement",
+      "rdfs:label": {
+        "@language": "fr",
+        "@value": "Pas de restriction d'accès public selon INSPIRE"
+      }
+    },
+    {
+      "@id": "_:N718d5fbe686846c49a674cbf8f9adb0d",
+      "@type": "dct:ProvenanceStatement",
+      "rdfs:label": {
+        "@language": "fr",
+        "@value": "Les données standardisées visent principalement trois objectifs complémentaires :- Faciliter la dématérialisation des documents d'urbanisme, en particulier leurs documents graphiques, afin qu'ils s'intègrent au mieux à un logiciel d'aide à l'instruction ADS.(application du droit des sols)- Permettre la généralisation des documents d'urbanisme pour leur suivi national et des études d'occupation du sol, d'étalement urbain et de maitrise de l'urbanisation.- Permettre de répondre aux objectifs du Grenelle de l'environnement :« Art. L121-1 Les schémas de cohérence territoriale, les plans locaux d'urbanisme et les cartes communales déterminent les conditions permettant d'assurer, dans le respect des objectifs du développement durable :1° L'équilibre entre :a) Le renouvellement urbain, le développement urbain maîtrisé, la restructuration des espaces urbanisés, la revitalisation des centres urbains et ruraux ;b) L'utilisation économe des espaces naturels, la préservation des espaces affectés aux activités agricoles et forestières, et la protection des sites, des milieux et paysages naturels ;c) La sauvegarde des ensembles urbains et du patrimoine bâti remarquables ;1° bis La qualité urbaine, architecturale et paysagère des entrées de ville ;2° La diversité des fonctions urbaines et rurales et la mixité sociale dans l'habitat, en prévoyant des capacités de construction et de réhabilitation suffisantes pour la satisfaction, sans discrimination, des besoins présents et futurs en matière d'habitat, d'activités économiques, touristiques, sportives, culturelles et d'intérêt général ainsi que d'équipements publics et d'équipement commercial, en tenant compte en particulier des objectifs de répartition géographiquement équilibrée entre emploi, habitat, commerces et services, d'amélioration des performances énergétiques, de développement des communications électroniques, de diminution des obligations de déplacements et de développement des transports collectifs ;"
+      }
+    },
+    {
+      "@id": "_:Nb1fc239f221b482281b182a3893ee4cf",
+      "@type": "dcat:CatalogRecord",
+      "dcat:contactPoint": {
+        "@id": "_:Na28bd8a64c9648d088d338b4b314898f"
+      },
+      "dcat:inCatalog": {
+        "@id": "_:Na53811aec01f4a1a82ee1e184bb7bb85"
+      },
+      "dct:identifier": "fr-120066022-ldd-74c656c0-3868-4bfa-89d6-5985ce1e8d59",
+      "dct:language": {
+        "@id": "http://publications.europa.eu/resource/authority/language/FRA"
+      },
+      "dct:modified": {
+        "@type": "xsd:dateTime",
+        "@value": "2019-03-25T21:58:12.000356"
+      }
+    },
+    {
+      "@id": "_:Na53811aec01f4a1a82ee1e184bb7bb85",
+      "@type": "dcat:Catalog",
+      "dct:title": {
+        "@language": "fr",
+        "@value": "GéoIDE Catalogue"
+      },
+      "foaf:homepage": {
+        "@id": "http://catalogue.geo-ide.developpement-durable.gouv.fr"
+      }
+    },
+    {
+      "@id": "_:Na28bd8a64c9648d088d338b4b314898f",
+      "@type": "vcard:Kind",
+      "vcard:hasEmail": {
+        "@id": "ddtm-sap-bsig@somme.gouv.fr"
+      }
+    },
+    {
+      "@id": "_:Nb07d4514e75942248d0e240669346821",
+      "@type": "vcard:Kind",
+      "vcard:fn": {
+        "@language": "fr",
+        "@value": "DDTM 80 (Direction Départementale des Territoires et de la Mer de la Somme)"
+      },
+      "vcard:hasEmail": {
+        "@id": "ddtm-sap-bsig@somme.gouv.fr"
+      }
+    }
+  ]
+}

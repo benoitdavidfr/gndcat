@@ -135,7 +135,7 @@ servers:
   # nationaux
   # Géo-IDE
   gide:
-    title: Géo-IDE global
+    title: Géo-IDE global (GN 3.2.3)
     servers:
       gn:
         title: Géo-IDE-GN en GET
@@ -301,8 +301,9 @@ servers:
                 - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
       
   sextant:
-    title: Sextant (Ifremer)
+    title: Sextant (Ifremer) (GeoNetwork 4.2.5)
     cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
+    ogcApiRecordsUrl: https://sextant.ifremer.fr/geonetwork/api/collections/
   sandre:
     title: Sandre (EauFrance)
     cswUrl: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw
@@ -319,7 +320,7 @@ servers:
     title: Cerema Data
     cswUrl: https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata
   sas:
-    title: GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers
+    title: GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers (GN 3.8.3)
     cswUrl: https://geosas.fr/geonetwork/srv/fre/csw
     www: https://geosas.fr/
     rdfSearchUrl: https://geosas.fr/geonetwork/srv/fre/rdf.search
@@ -337,10 +338,10 @@ servers:
     title: sigloire
     cswUrl: https://catalogue.sigloire.fr/geonetwork/srv/fr/csw-sigloire
   sigena:
-    title: Sigena - Nouvelle-Aquitaine - Dreal
+    title: Sigena - Nouvelle-Aquitaine - Dreal (GeoNetwork 3.10.4.0)
     cswUrl: https://www.sigena.fr/geonetwork/srv/fre/csw
   pigma:
-    title: PIGMA - Nouvelle-Aquitaine - Région
+    title: PIGMA - Nouvelle-Aquitaine - Région (GeoNetwork 3.10.6.0)
     cswUrl: https://www.pigma.org/geonetwork/srv/fre/csw
   picto:
     title: Picto Occitanie

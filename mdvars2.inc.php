@@ -654,17 +654,22 @@ journal: |
   21/9/2015: Prise en compte de l'utilisation ou nom du prefix csw:
 */
   static function extract($xmlstring) {
-//    echo str_replace('<','&lt;', $xmlstring),"<br>\n";
+    //echo str_replace('<','&lt;', $xmlstring),"<br>\n";
+    if (!$xmlstring) {
+      echo "Erreur XML vide dans Mdvars::extract()<br>\n";
+      return [];
+    }
     try {
       $md = new SimpleXMLElement($xmlstring);
     }
-    catch (Exception $e) { 
+    catch (Exception $e) {
+      echo $xmlstring;
       throw new Exception("Erreur sur new SimpleXMLElement");
     }
     $nameSpaces = self::setNameSpaces($md);
     
     $mdrecord = [];
-// calcul des valeurs à partir des xpath
+    // calcul des valeurs à partir des xpath
     foreach (self::$mdvars as $varname => $vardef) {
 //      if ($varname <> 'keyword') continue;
 //      echo "<pre>varname=$varname\nvardef="; print_r($vardef); echo "</pre>\n";

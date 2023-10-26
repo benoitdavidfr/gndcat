@@ -70,7 +70,7 @@ De plus:
   - le fichier [http.inc.php](http.inc.php) définit la classe Http qui simplifie la réalisation de requêtes Http.
   - le fichier [mdvars2.inc.php](mdvars2.inc.php) a été repris de projets précédents,
     il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire
-    et effectue la conversion en JSON d'une fiche de MD.
+    et effectue la conversion en JSON d'une fiche de MD en utilisant les XPath définis par le CNIG.
   - la classe IsoMd définie dans le fichier [isomd.inc.php](isomd.inc.php) complète Mdvars
     et simplifie la structure JSON retournée.
     

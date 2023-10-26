@@ -13,6 +13,8 @@ require_once __DIR__.'/isomd.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+const VERSION = "25/10/2023";
+
 /** supprime les - suivis d'un retour à la ligne dans Yaml::dump() et ajoute par défaut l'option DUMP_MULTI_LINE_LITERAL_BLOCK
  * @param mixed $data
  */
@@ -81,12 +83,14 @@ EOT;
   die($filreXml);
 }
 
+/** Charge le fichier FILE_PATH  et l'utilise pour standardiser les noms des organismes */
 class OrgRef {
+  const FILE_PATH = __DIR__.'/orgref.yaml';
   static array $ref=[]; // [(altLabel|prefLabel) -> prefLabel]
   
   static function init(): void {
-    if (is_file(__DIR__.'/orgref.yaml'))
-    $ref = Yaml::parseFile(__DIR__.'/orgref.yaml')['réf'];
+    if (is_file(self::FILE_PATH))
+    $ref = Yaml::parseFile(self::FILE_PATH)['réf'];
     foreach ($ref as $concept) {
       self::$ref[strtolower($concept['prefLabel'])] = $concept['prefLabel'];
       foreach ($concept['altLabel'] ?? [] as $label)
@@ -221,39 +225,42 @@ class Cache {
   }
 };
 
+/** Facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW et en effectuant les requêtes
+ * au travers du cache associé au serveur.
+ */
 class CswServer {
-  /** Paramètres du GetRecords en fonction du type de retour souhaité */
-  const GETRECORDS_PARAMS = [
+  /** Paramètres du GetRecords et GetRecordById en fonction du modèle de métadonnées */
+  const MODEL_PARAMS = [
     'dc'=> [
       'OutputSchema' => 'http://www.opengis.net/cat/csw/2.0.2',
       'namespace' => 'xmlns(csw=http://www.opengis.net/cat/csw)',
       'TypeNames' => 'csw:Record',
-    ],
+    ], // Dublin Core
     'gmd'=> [
       'OutputSchema' => 'http://www.isotc211.org/2005/gmd',
       'namespace' => 'xmlns(gmd=http://www.isotc211.org/2005/gmd)',
       'TypeNames' => 'gmd:MD_Metadata',
-    ],
+    ], // ISO 19115/19139
     'mdb'=> [
       'OutputSchema' => 'http://standards.iso.org/iso/19115/-3/mdb/2.0',
       'namespace' => 'xmlns(mdb=http://standards.iso.org/iso/19115/-3/mdb/2.0)',
       'TypeNames' => 'mdb:MD_Metadata',
-    ],
+    ], // Metadata Base (MDB) ??
     'dcat'=> [
       'OutputSchema' => 'http://www.w3.org/ns/dcat#',
       'namespace' => 'xmlns(dcat=http://www.w3.org/ns/dcat#)',
       'TypeNames' => 'dcat',
-    ],
+    ], // DCAT
     'dcat-ap'=> [
       'OutputSchema' => 'http://data.europa.eu/930/',
       'namespace' => 'xmlns(dcat-ap=http://data.europa.eu/930/)',
       'TypeNames' => 'dcat-ap',
-    ],
+    ], // DCAT-AP ???
     'gfc'=> [
       'OutputSchema' => 'http://www.isotc211.org/2005/gfc',
       'namespace' => 'xmlns(gfc=http://www.isotc211.org/2005/gfc)',
       'TypeNames' => 'gfc:FC_FeatureCatalogue',
-    ],
+    ], // FeatureCatalogue
   ];
   
   /** dictionnaire des caractéristiques des serveurs .
@@ -348,9 +355,9 @@ class CswServer {
   
   /** Retourne l'URL du GetRecords en GET */
   function getRecordsUrl(string $type, string $ElementSetName, int $startPosition): string {
-    $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
-    $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
-    $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
+    $OutputSchema = urlencode(self::MODEL_PARAMS[$type]['OutputSchema']);
+    $namespace = urlencode(self::MODEL_PARAMS[$type]['namespace']);
+    $TypeNames = self::MODEL_PARAMS[$type]['TypeNames'];
 
     return $this->cswUrl
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecords&ElementSetName=$ElementSetName"
@@ -387,9 +394,9 @@ class CswServer {
   
   /** Réalise un GetRecords en POST */
   private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition): string|false {
-    $OutputSchema = self::GETRECORDS_PARAMS[$type]['OutputSchema'];
-    $namespace = self::GETRECORDS_PARAMS[$type]['namespace'];
-    $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
+    $OutputSchema = self::MODEL_PARAMS[$type]['OutputSchema'];
+    $namespace = self::MODEL_PARAMS[$type]['namespace'];
+    $TypeNames = self::MODEL_PARAMS[$type]['TypeNames'];
     
     $filter = $this->post['filter'] ?? [];
     $query = '<?xml version="1.0" encoding="utf-8"?>'."\n"
@@ -421,9 +428,9 @@ class CswServer {
   
   /** Retourne l'URL d'un GetRecordById */
   function getRecordByIdUrl(string $type, string $ElementSetName, string $id): string {
-    $OutputSchema = urlencode(self::GETRECORDS_PARAMS[$type]['OutputSchema']);
-    $namespace = urlencode(self::GETRECORDS_PARAMS[$type]['namespace']);
-    $TypeNames = self::GETRECORDS_PARAMS[$type]['TypeNames'];
+    $OutputSchema = urlencode(self::MODEL_PARAMS[$type]['OutputSchema']);
+    $namespace = urlencode(self::MODEL_PARAMS[$type]['namespace']);
+    $TypeNames = self::MODEL_PARAMS[$type]['TypeNames'];
     return $this->cswUrl
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecordById&ElementSetName=$ElementSetName"
       .'&ResultType=results&OutputFormat=application/xml'
@@ -504,7 +511,7 @@ class Turtle {
   }
 };
 
-/** Manipulation de YamlLD */
+/** Manipulation de Yaml-LD */
 class YamlLD {
   readonly public array $array; // stockage comme array
   
@@ -519,12 +526,16 @@ class YamlLD {
   
   function __toString(): string { return YamlDump($this->array, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK); }
   
+  function improve(): self {
+    
+  }
+  
   function compact(): self {
     $compacted = ML\JsonLD\JsonLD::compact(
       json_encode($this->array),
-      json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
+      json_encode(Yaml::parseFile(__DIR__.'/contextnl.yaml')));
     $compacted = json_decode(json_encode($compacted), true);
-    $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
+    $compacted['@context'] = 'https://geoapi.fr/gndcat/contextnl.yaml';
     //$compacted = $this->improve()
     return new self($compacted);
   }
@@ -633,7 +644,7 @@ class RdfServer {
   }
 };
 
-/** Balaie le catalogue indiqué et retour un array [responsibleParty.name][dataset.id] => 1 */
+/** Balaie le catalogue indiqué et retourne un array [responsibleParty.name][dataset.id] => 1 */
 function responsibleParties(string $id, string $cacheDir, callable $stdOrgName): array {
   $mds = new MDs($id, $cacheDir, 1);
   $server = new CswServer($id, $cacheDir);
@@ -663,7 +674,7 @@ function responsibleParties(string $id, string $cacheDir, callable $stdOrgName):
 }
   
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>gndcat</title></head><body>\n";
-const NBRE_MAX_LIGNES = 38;
+const NBRE_MAX_LIGNES = 35; // nbre d'enregistrements affichchés par page pour GetRecords
 
 if (php_sapi_name() == 'cli') { // utilisation en CLI
   //echo "argc=$argc\n";
@@ -776,7 +787,7 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           echo "moyenne: ",$sum/$nb,"\n";
           die("FIN\n");
         }
-        case 'mdQualStat' : { // afiche sur cheque fiche un indicateur de qualité
+        case 'mdQualStat' : { // affiche sur cheque fiche un indicateur de qualité
           $mds = new MDs($id, $id, 1);
           $maxQual = 0;
           foreach ($mds as $no => $brief) {
@@ -804,6 +815,7 @@ else { // utilisation en mode web
     }
     echo "</ul><a href='?server=error&action=doc'>doc</a><br>\n";
     echo "<a href='?server=error&action=misc'>divers</a></p>\n";
+    echo "--<br>version: ",VERSION,"</p>\n";
     die();
   }
 
@@ -833,7 +845,7 @@ else { // utilisation en mode web
       }
       if (isset(CswServer::exists($id)['ogcApiRecordsUrl'])) {
         $url = CswServer::exists($id)['ogcApiRecordsUrl'];
-        echo "<li><a href='$url'>ogcApiRecordsUrl</a></li>\n";
+        echo "<li><a href='$url' target='_blank'>Lien vers le point /collections OGC ApiRecords</a></li>\n";
       }
       echo "</ul><a href='?'>Retour à la liste des catalogues.</a></p>\n";
       die();
@@ -900,23 +912,31 @@ else { // utilisation en mode web
       die();
     }
     case 'viewRecord': {
-      $fmt = $_GET['fmt'] ?? 'iso-yaml';
+      $fmt = $_GET['fmt'] ?? 'iso-yaml'; // modèle et format
       $menu = HTML_HEADER;
       $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
       $url = "?server=$id&action=viewRecord&id=$_GET[id]$startPosition";
       $menu .= "<table border=1><tr>";
-      foreach (['iso-yaml','iso-xml','dcat-ttl','dcat-yamlld-c','dcat-xml','double'] as $f) {
+      foreach ([
+         'iso-yaml'=> 'ISO 19139 Inspire formatté en Yaml',
+         'iso-xml'=> 'ISO 19139 complet formatté en XML',
+         'dcat-ttl'=> 'DCAT formatté en Turtle',
+         'dcat-yamlLd-c'=> "DCAT formatté en Yaml-LD compacté avec le contexte",
+         'dcat-yamlLd'=> "DCAT formatté en Yaml-LD non compacté",
+         'dcat-xml'=> "DCAT formatté en RDF/XML",
+         'double'=> "double affichage",
+          ] as $f => $title) {
         if ($f == $fmt)
-          $menu .= "<td><b>$f</b></td>";
+          $menu .= "<td><b><div title='$title'>$f</div></b></td>";
         else
-          $menu .= "<td><a href='$url&fmt=$f'>$f</a></td>";
+          $menu .= "<td><a href='$url&fmt=$f' title='$title'>$f</a></td>";
       }
       if ($startPosition)
         $menu .= "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>";
       $menu .= "</table>\n";
-      
+          
       switch ($fmt) {
-        case 'iso-yaml': {
+        case 'iso-yaml': { // ISO 19139 formatté en Yaml
           echo $menu;
           $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
           $record = IsoMd::convert($xml);
@@ -943,7 +963,15 @@ else { // utilisation en mode web
           echo "<pre>$turtle</pre>\n";
           die();
         }
-        case 'dcat-yamlld-c': { // Yaml-LD compacté avec le contexte context.yaml
+        case 'dcat-yamlLd': {
+          echo $menu;
+          $rdf = $server->getFullDcatById($_GET['id']);
+          $yamlld = new YamlLD($rdf);
+          //$compacted = $yamlld->compact();
+          echo "<pre>$yamlld</pre>\n";
+          die();
+        }
+        case 'dcat-yamlLd-c': { // Yaml-LD compacté avec le contexte contextnl.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $server->getFullDcatById($_GET['id']);
@@ -974,7 +1002,7 @@ else { // utilisation en mode web
           echo "
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]$startPosition' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlld-c$startPosition' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlLd-c$startPosition' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
@@ -1028,21 +1056,38 @@ else { // utilisation en mode web
       die();
     }
     case 'doc': { // doc
-      echo HTML_HEADER,"<b>Docs</b><ul>";
-      echo "<li><a href='https://github.com/benoitdavidfr/gndcat'>Source du projet sur Github</a></li>\n";
-      echo "<li><a href='https://portal.ogc.org/files/80534'>",
+      echo HTML_HEADER,"<h2>Docs</h2><ul>";
+      echo "<li><b>Docs du projet</b></li><ul>\n";
+      echo "<li><a href='contextnl.yaml'>Contexte utilisé dans le format DCAT Yaml-LD compacté (dcat-yamlLd-c)</a></li>\n";
+      echo "<li><a href='mdvars2.inc.php'>Noms des éléments de MD utilisés dans le format",
+        " \"ISO 19139 Inspire formatté en Yaml\" (iso-yaml)</a></li>\n";
+      // Docs de réf.
+      echo "</ul><li><b>Spécifications de référence</b></li><ul>\n";
+      echo "<li><a href='https://github.com/benoitdavidfr/gndcat' target='_blank'>Source du projet sur Github</a></li>\n";
+      echo "<li><a href='https://eur-lex.europa.eu/legal-content/FR/TXT/ELI/?eliuri=eli:reg:2008:1205:oj' target='_blank'>",
+        "Règlement (CE) no 1205/2008 de la Commission du 3 décembre 2008 portant modalités d'application",
+        " de la directive 2007/2/CE en ce qui concerne les métadonnées</a></li>\n";
+      echo "<li><a href='https://portal.ogc.org/files/80534 target='_blank''>",
         "OpenGIS® Catalogue Services Specification 2.0.2 - ISO Metadata Application Profile: Corrigendum</a></li>\n";
-      echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130'>",
-        "OpenGIS ® Filter Encoding Implementation Specification</a></li>\n";
-      echo "</ul>\n";
+      echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130 target='_blank''>",
+        "OpenGIS ® Filter Encoding Implementation Specification, version 1.1.0, 3 May 2005</a></li>\n";
+      // GN
+      echo "</ul><li><b>GeoNetwork</b></li><ul>\n";
+      echo "<li><a href='https://geonetwork-opensource.org/manuals/4.0.x/en/' target='_blank'>",
+        "Manuel GeoNrtwork v 4</a></li>\n";
+      echo "<li><a href='https://github.com/geonetwork/core-geonetwork/pull/6635' target='_blank'>",
+        "Pull Request #6635 : CSW / Improve DCAT support (21/10/2022) (version GN 4.2.2)</a></li>\n";
+      echo "</ul></ul>\n";
       die();
     }
     case 'misc': {
-      echo "<a href='?server=gide/gn-pds&action=viewRecord",
+      echo HTML_HEADER,"<h2>Divers</h2><ul>";
+      echo "<li><a href='?server=gide/gn-pds&action=viewRecord",
             "&id=fr-120066022-ldd-4bc9b901-1e48-4afd-a01a-cc80e40c35b8&fmt=double'>",
-            "Exemple de fiche de données bien remplie</a><br>\n";
-      echo "<a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
-            "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a><br>\n";
+            "Exemple de fiche de métadonnées Géo-IDE bien remplie</a></li>\n";
+      echo "<li><a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
+            "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a></li>\n";
+            echo "</ul>\n";
       die();
     }
     default: die("Action $_GET[action] inconnue");
