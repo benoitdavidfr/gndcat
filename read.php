@@ -375,7 +375,7 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
               $maxQual = $qual;
               $bestId = (string)$brief->dc_identifier;
             }
-            echo "$no/",$mds->numberOfRecordsMatched(),"\n";
+            //echo "$no/",$mds->numberOfRecordsMatched(),"\n";
           }
           echo "$bestId -> $maxQual\n";
           die("FIN\n");

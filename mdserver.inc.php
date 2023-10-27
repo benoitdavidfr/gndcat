@@ -339,7 +339,7 @@ class CswServer {
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecordById&ElementSetName=$ElementSetName"
       .'&ResultType=results&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
-      ."&id=".$id;
+      ."&id=".urlencode($id);
   }
   
   /** Retourne le GetRecordById comme chaine XML */
