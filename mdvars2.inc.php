@@ -1,103 +1,99 @@
 <?php
-/*PhpDoc:
-name:  mdvars2.inc.php
-title: mdvars2.inc.php - classe statique Mdvars décrivant la liste des variables des éléments de MD et des traitements associés
-classes:
-doc: |
-  Ce script remplace le script mdvars.inc.php en intégrant la liste des variables dans une classe avec des traitements associés.
-*/
+/** classe statique Mdvars décrivant la liste des variables des éléments de MD et des traitements associés.
+ * journal:
+ * - 27/10/2023:
+ *   - restructuration de la doc
+ *   - simplification en supprimant la fonction de standardisation
+ *   - correction pour se conformer à PhpStan
+ * - 23/10/2023:
+ *   - ajout des adresse email dans responsibleParty et mdContact afin d'intégrer les éléments définis
+ *     par le règlement Inspire métadonnées.
+ * - 26/9/2015 :
+ *   - correction d'un bug sur les xpath des 2 langues
+ *   - ajout de la lecture d'un éventuel codeSpace d'un URI encodé avec un RS_Identifier
+ * - 21/9/2015 : correction d'un bug sur les espaces de noms XML dans la méthode extract()
+ * - 8/7/2015 : ajout du champ aggregationInfo
+ * 1/7/2015 : correction d'un bug sur les espaces de noms XML, voir la méthode setNameSpaces()
+ * 30/6/2015 : première version béta utilisée dans load2.php
+ */
 
-/*PhpDoc: classes
-name:  Mdvars
-title: Mdvars - classe statique contenant la description des variables des éléments de MD et l'utilisant pour certains traitements
-pubproperties:
-methods:
-journal: |
-  23/10/2023:
-    - ajout des adresse email dans responsibleParty et mdContact afin d'intégrer les éléments définis par le règlement
-      Inspire métadonnées.
-  26/9/2015 :
-  - correction d'un bug sur les xpath des 2 langues
-  - ajout de la lecture d'un éventuel codeSpace d'un URI encodé avec un RS_Identifier
-  21/9/2015 : correction d'un bug sur les espaces de noms XML dans la méthode extract()
-  8/7/2015 : ajout du champ aggregationInfo
-  1/7/2015 : correction d'un bug sur les espaces de noms XML, voir la méthode setNameSpaces()
-  30/6/2015 : première version béta utilisée dans load2.php
-doc: |
-  La propriété publique statique mdvars définit la correspondance entre les fiches de MD ISO 19139 et la base de données geocat3. 
-  La méthode extract() utilise mdvars pour extraire d'un fragment XML ISO19139 les valeurs pour les différents champs.
-  La méthode show() permet de visualiser les données retournées par extract().
-*/
+/** classe statique associant les éléments de MD un nom de champ.
+ *
+ * La propriété publique statique mdvars définit la correspondance entre les fiches de MD ISO 19139
+ * et l'enregistrement mdrecord. 
+ * La méthode extract() utilise mdvars pour extraire d'un fragment XML ISO 19139 les valeurs pour chacun
+ * des champs.
+ * La méthode show() permet de visualiser les données retournées par extract().
+ */
 class Mdvars {
-// les prefix et espaces de noms utilisés dans les xpath des variables sous la forme namespace -> prefix
-  static private $namespaces = [
+  /** les prefix et espaces de noms utilisés dans les xpath des variables sous la forme namespace -> prefix */
+  const NAMESPACES = [
     'http://www.isotc211.org/2005/gmd' => 'gmd',
     'http://www.isotc211.org/2005/gco' => 'gco',
     'http://www.isotc211.org/2005/srv' => 'srv',
     'http://www.w3.org/1999/xlink' => 'xlink',
   ];
   
-/*PhpDoc: pubproperties
-name:  mdvars
-title: static $mdvars - variable statique publique contenant la description des variables des éléments de MD
-doc: |
-  La variable statique mdvars définit la correspondance entre les fiches de MD ISO 19139 et la base de données geocat3.
-  Elle est fondée sur:
-  - le règlement Inspire métadonnées en français et en anglais pour les titres des variables
-  - le guide CNIG des métadonnées, v 1.1.1, juillet 2014
-  - la pratique des MD disponibles dans le Géocatalogue
-
-  Une fiche de métadonnées est composée d'éléments de métadonnées, chacun correspondant à une variable pouvant être simple ou complexe.
-  Une variable simple correspond à une valeur atomique, une variable complexe correspond à un n-uplet.
-  Pour une fiche de métadonnées peut contenir plusieurs éléments correspondant à la même variable.
-  Chaque élément de métadonnées correspondra dans la base geocat3 à un enregistrement de mdelement.
-
-  Le tableau mdvars liste les variables avec comme clé un nom court et pour chacune les champs suivants:
-   - title-fr : titre de la variable en français
-   - title-en : titre de la variable en anglais
-   - xpath : xpath ISO 19139 de la valeur pour une variable simple ou du fragment XML correspondant au n-uplet pour une variable complexe
-  En outre, pour une variable complexe, l'entrée du tableau comporte:
-   - les champs svar et au moins un des champs svar0, svar2 ou svar3 qui contiennent chacun:
-     - le sous-champ name contenant le nom de la sous-variable,
-     - le sous-champ xpath contenant le xpath ISO 19139 de la valeur correspondant dans le fragment XML défini ci-dessus
-  Enfin :
-  - le champ text signale une variable texte pour laquelle un affichage particulier HTML est effectué
-  - le champ stdFunc indique soit le nom de la fonction de standardisation des valeurs
-    soit true si cette valeur est standardisée sans appel d'une telle fonction
-  - le champ multiplicity comprend potentiellement deux sous-champs data et service indiquant la cardinalité définie par le règlement
-    si le champ est absent, cela signifie que la variable n'est pas pertinente pour data ou service
-    la valeur peut être 1, '0..1', '0..*' ou '1..*' 
-  - valueDomain fournit la liste des valeurs autorisées mais n'est pas utilisé à ce stade
-
-  mdvars: [ varname => [
-    'title-fr' => titre en français,
-    'title-en' => titre en anglais,
-    'xpath' => xpath,
-    { 'svar' =>  [ 'name' => name, 'xpath' => xpath ], }
-    { 'svar0' => [ 'name' => name, 'xpath' => xpath ], }
-    { 'svar2' => [ 'name' => name, 'xpath' => xpath ], }
-    { 'svar3' => [ 'name' => name, 'xpath' => xpath ], }
-    { 'stdFunc' => nom de la fonction de standardisation ou true }
-    { 'text' => true }
-  ] ]
-  La numérotation et les titres en commentaires sont ceux du règlement métadonnées
-*/
-  static $mdvars = [
-// fileIdentifier (hors règlement INSPIRE)
+  /** constante contenant la description des variables des éléments de MD
+   *
+   * La variable statique mdvars définit la correspondance entre les fiches de MD ISO 19139 et les champs 
+   * Elle est fondée sur:
+   *  - le règlement Inspire métadonnées en français et en anglais pour les titres des variables
+   *  - le guide CNIG des métadonnées, v 1.1.1, juillet 2014
+   *  - la pratique des MD disponibles dans le Géocatalogue
+   *
+   * Une fiche de métadonnées est composée d'éléments de métadonnées, chacun correspondant à une variable
+   * pouvant être simple ou complexe.
+   * Une variable simple correspond à une valeur atomique, une variable complexe correspond à un n-uplet.
+   * Pour une fiche de métadonnées peut contenir plusieurs éléments correspondant à la même variable.
+   *
+   * Le tableau mdvars liste les variables avec comme clé un nom court et pour chacune les champs suivants:
+   *  - title-fr : titre de la variable en français
+   *  - title-en : titre de la variable en anglais
+   *  - xpath : xpath ISO 19139 de la valeur pour une variable simple ou du fragment XML correspondant
+   *    au n-uplet pour une variable complexe
+   * En outre, pour une variable complexe, l'entrée du tableau comporte:
+   *  - les champs svar et au moins un des champs svar0, svar2 ou svar3 qui contiennent chacun:
+   *    - le sous-champ name contenant le nom de la sous-variable,
+   *    - le sous-champ xpath contenant le xpath ISO 19139 de la valeur correspondant dans le fragment XML
+   *      défini ci-dessus
+   * Enfin :
+   * - le champ text signale une variable texte pour laquelle un affichage particulier HTML est effectué
+   * - le champ multiplicity comprend potentiellement deux sous-champs data et service indiquant la cardinalité
+   *   définie par le règlement
+   *   si le champ est absent, cela signifie que la variable n'est pas pertinente pour data ou service
+   *   la valeur peut être 1, '0..1', '0..*' ou '1..*' 
+   * - valueDomain fournit la liste des valeurs autorisées mais n'est pas utilisé à ce stade
+   *
+   * mdvars: [ varname => [
+   *   'title-fr' => titre en français,
+   *   'title-en' => titre en anglais,
+   *   'xpath' => xpath,
+   *   { 'svar' =>  [ 'name' => name, 'xpath' => xpath ], }
+   *   { 'svar0' => [ 'name' => name, 'xpath' => xpath ], }
+   *   { 'svar2' => [ 'name' => name, 'xpath' => xpath ], }
+   *   { 'svar3' => [ 'name' => name, 'xpath' => xpath ], }
+   *   { 'text' => true }
+   * ] ]
+   * La numérotation et les titres en commentaires sont ceux du règlement métadonnées.
+   * @var array<string,mixed> MDVARS
+   */
+  const MDVARS = [
+    // fileIdentifier (hors règlement INSPIRE)
     'fileIdentifier' => [
       'title-fr' => "Identificateur du fichier",
       'title-en' => "File identifier",
       'xpath' => '//gmd:MD_Metadata/gmd:fileIdentifier/*',
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
-// parentIdentifier (hors règlement INSPIRE)
+    // parentIdentifier (hors règlement INSPIRE)
     'parentIdentifier' => [
       'title-fr' => "Identificateur d'un parent",
       'title-en' => "Parent identifier",
       'xpath' => '//gmd:MD_Metadata/gmd:parentIdentifier/*',
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// aggregationInfo (hors règlement INSPIRE)
+    // aggregationInfo (hors règlement INSPIRE)
     'aggregationInfo' =>  [
       'title-fr' => "métadonnées agrégées",
       'title-en' => "aggregated metadata",
@@ -116,21 +112,21 @@ doc: |
       ],
       'multiplicity' => [ 'data' => '0..*' ],
     ],
-// 1.1. Intitulé de la ressource - 1.1. Resource title
+    // 1.1. Intitulé de la ressource - 1.1. Resource title
     'title' => [
       'title-fr' => "Intitulé de la ressource",
       'title-en' => "Resource title",
       'xpath' => '//gmd:identificationInfo/*/gmd:citation/*/gmd:title/gco:CharacterString',
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
-// alternateTitle (hors règlement INSPIRE)
+    // alternateTitle (hors règlement INSPIRE)
     'alternateTitle' => [
       'title-fr' => "Intitulé alternatif de la ressource",
       'title-en' => "Alternate resource title",
       'xpath' => '//gmd:identificationInfo/*/gmd:citation/*/gmd:alternateTitle/gco:CharacterString',
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// 1.2. Résumé de la ressource - 1.2. Resource abstract
+    // 1.2. Résumé de la ressource - 1.2. Resource abstract
     'abstract' => [
       'title-fr' => "Résumé de la ressource",
       'title-en' => "Resource abstract",
@@ -138,7 +134,7 @@ doc: |
       'text' => 1,
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
-// 1.3. Type de la ressource - 1.3. Resource type
+    // 1.3. Type de la ressource - 1.3. Resource type
     'type' => [
       'title-fr' => "Type de la ressource",
       'title-en' => "Resource type",
@@ -146,8 +142,7 @@ doc: |
       'valueDomain' => ['series','dataset','services'],
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
-// 1.4. Localisateur de la ressource - 1.4. Resource locator
-//  'locator' => '//gmd:distributionInfo/*/gmd:transferOptions/*/gmd:onLine/*/gmd:linkage/gmd:URL',
+    // 1.4. Localisateur de la ressource - 1.4. Resource locator
     'locator'=> [
       'title-fr' => "Localisateur de la ressource",
       'title-en' => "Resource locator",
@@ -166,7 +161,7 @@ doc: |
       ],
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// 1.5. Identificateur de ressource unique - 1.5. Unique resource identifier
+    // 1.5. Identificateur de ressource unique - 1.5. Unique resource identifier
     'uri' => [
       'title-fr' => "Identificateur de ressource unique",
       'title-en' => "Unique resource identifier",
@@ -183,7 +178,7 @@ doc: |
       ],
       'multiplicity' => [ 'data' => '1..*' ],
     ],
-// 1.6.  Ressource Couplée (service) - 1.6. Coupled resource
+    // 1.6.  Ressource Couplée (service) - 1.6. Coupled resource
     'operatesOn' => [
       'title-fr' => "Ressource Couplée",
       'title-en' => "Coupled resource",
@@ -198,7 +193,7 @@ doc: |
       ],
       'multiplicity' => [ 'service' => '0..*' ],
     ],
-// 1.7. Langue de la ressource - 1.7. Resource language
+    // 1.7. Langue de la ressource - 1.7. Resource language
     'language' => [
       'title-fr' => "Langue de la ressource",
       'title-en' => "Resource language",
@@ -207,7 +202,7 @@ doc: |
       'xpath' => '//gmd:identificationInfo/*/gmd:language/gmd:LanguageCode',
       'multiplicity' => [ 'data' => '0..*' ],
     ],
-// Encodage (hors règlement INSPIRE)
+    // Encodage (hors règlement INSPIRE)
     'distributionFormat' => [
       'title-fr' => "Encodage",
       'title-en' => "Distribution format",
@@ -222,14 +217,14 @@ doc: |
       ],
       'multiplicity' => [ 'data' => '1..*' ],
     ],
-// Encodage des caractères (hors règlement INSPIRE)
+    // Encodage des caractères (hors règlement INSPIRE)
     'characterSet' => [
       'title-fr' => "Encodage des caractères",
       'title-en' => "Character set",
       'xpath' => '//gmd:identificationInfo/*/gmd:characterSet/gmd:MD_CharacterSetCode/@codeListValue',
       'multiplicity' => [ 'data' => '0..1' ],
     ],
-// Type de représentation géographique (hors règlement INSPIRE)
+    // Type de représentation géographique (hors règlement INSPIRE)
     'spatialRepresentationType' => [
       'title-fr' => "Type de représentation géographique",
       'title-en' => "Spatial representation type",
@@ -237,8 +232,8 @@ doc: |
       'multiplicity' => [ 'data' => '1..*' ],
     ],
   
-// 2. CLASSIFICATION DES DONNÉES ET SERVICES GÉOGRAPHIQUES
-// 2.1. Catégorie thématique - 2.1. Topic category
+    // 2. CLASSIFICATION DES DONNÉES ET SERVICES GÉOGRAPHIQUES
+    // 2.1. Catégorie thématique - 2.1. Topic category
     'topicCategory' => [
       'title-fr' => "Catégorie thématique",
       'title-en' => "Topic category",
@@ -250,7 +245,7 @@ doc: |
           'location','oceans','planningCadastre','society','structure','transportation','utilitiesCommunication'
       ],
     ],
-// 2.2.  Type de service de données géographiques (service) - 2.2. Spatial data service type
+    // 2.2.  Type de service de données géographiques (service) - 2.2. Spatial data service type
     'serviceType' => [
       'title-fr' => "Type de service de données géographiques",
       'title-en' => "Spatial data service type",
@@ -259,9 +254,9 @@ doc: |
       'valueDomain' => ['discovery','view','download','transformation','invoke','other']
     ],
   
-// 3. MOT CLÉ - KEYWORD
-// 3.1. Valeur du mot clé - Keyword value
-// 3.2. Vocabulaire contrôlé d’origine - Originating controlled vocabulary
+    // 3. MOT CLÉ - KEYWORD
+    // 3.1. Valeur du mot clé - Keyword value
+    // 3.2. Vocabulaire contrôlé d’origine - Originating controlled vocabulary
     'keyword' => [
       'title-fr' => "Mot-clé",
       'title-en' => "Keyword",
@@ -277,9 +272,9 @@ doc: |
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
   
-// 4. SITUATION GÉOGRAPHIQUE - 4. GEOGRAPHIC LOCATION
-// 4.1. Rectangle de délimitation géographique - 4.1. Geographic bounding box
-// revoir le path pour les services
+    // 4. SITUATION GÉOGRAPHIQUE - 4. GEOGRAPHIC LOCATION
+    // 4.1. Rectangle de délimitation géographique - 4.1. Geographic bounding box
+    // revoir le path pour les services
     'bbox' => [
       'title-fr' => "Rectangle de délimitation géographique",
       'title-en' => "Geographic bounding box",
@@ -303,15 +298,15 @@ doc: |
       'multiplicity' => [ 'data' => '1..*', 'service' => '0..*' ],
     ],
   
-// 5. RÉFÉRENCE TEMPORELLE
-// 5.1. Étendue temporelle - 5.1. Temporal extent
+    // 5. RÉFÉRENCE TEMPORELLE
+    // 5.1. Étendue temporelle - 5.1. Temporal extent
     'temporalExtent' => [
       'title-fr' => "Étendue temporelle",
       'title-en' => "Temporal extent",
       'xpath' => '//gmd:identificationInfo/*/gmd:extent/*/gmd:temporalElement',
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// 5.2. Date de publication - 5.2. Date of publication
+    // 5.2. Date de publication - 5.2. Date of publication
     'dateOfPublication' => [
       'title-fr' => "Date de publication",
       'title-en' => "Date of publication",
@@ -319,7 +314,7 @@ doc: |
       'xpath' => "//gmd:identificationInfo/*/gmd:citation/*/gmd:date[./gmd:CI_Date/gmd:dateType/*/@codeListValue='publication']/gmd:CI_Date/gmd:date/gco:Date",
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// 5.3. Date de dernière révision - 5.3. Date of last revision
+    // 5.3. Date de dernière révision - 5.3. Date of last revision
     'dateOfLastRevision' => [
       'title-fr' => "Date de dernière révision",
       'title-en' => "Date of last revision",
@@ -327,7 +322,7 @@ doc: |
       'xpath' => "//gmd:identificationInfo/*/gmd:citation/*/gmd:date[./gmd:CI_Date/gmd:dateType/*/@codeListValue='revision']/gmd:CI_Date/gmd:date/gco:Date",
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
-// 5.4. Date de création - 5.4. Date of creation
+    // 5.4. Date de création - 5.4. Date of creation
     'dateOfCreation' => [
       'title-fr' => "Date de création",
       'title-en' => "Date of creation",
@@ -336,8 +331,8 @@ doc: |
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
 
-// 6. QUALITÉ ET VALIDITÉ - 6. QUALITY AND VALIDITY
-// 6.1. Généalogie - 6.1. Lineage
+    // 6. QUALITÉ ET VALIDITÉ - 6. QUALITY AND VALIDITY
+    // 6.1. Généalogie - 6.1. Lineage
     'lineage' => [
       'title-fr' => "Généalogie",
       'title-en' => "Lineage",
@@ -345,7 +340,7 @@ doc: |
       'text' => 1,
       'multiplicity' => [ 'data' => 1 ],
     ],
-// 6.2. Résolution spatiale - 6.2. Spatial resolution
+    // 6.2. Résolution spatiale - 6.2. Spatial resolution
     'spatialResolutionScaleDenominator' => [
       'title-fr' => "Résolution spatiale : dénominateur de l'échelle",
       'title-en' => "Spatial resolution: scale denominator",
@@ -367,9 +362,9 @@ doc: |
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
 
-// 7. CONFORMITÉ - 7. CONFORMITY
-// 7.1. Spécification - 7.1. Specification
-// dataQualityInfo/*/report/*/result/*/specification
+    // 7. CONFORMITÉ - 7. CONFORMITY
+    // 7.1. Spécification - 7.1. Specification
+    // dataQualityInfo/*/report/*/result/*/specification
     'conformity' => [
       'title-fr' => "Spécification",
       'title-en' => "Specification",
@@ -391,8 +386,8 @@ doc: |
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
 
-// 8. CONTRAINTES EN MATIÈRE D’ACCÈS ET D’UTILISATION - 8. CONSTRAINT RELATED TO ACCESS AND USE
-// 8.1. Conditions applicables à l’accès et à l’utilisation - 8.1. Conditions applying to access and use
+    // 8. CONTRAINTES EN MATIÈRE D’ACCÈS ET D’UTILISATION - 8. CONSTRAINT RELATED TO ACCESS AND USE
+    // 8.1. Conditions applicables à l’accès et à l’utilisation - 8.1. Conditions applying to access and use
     'useLimitation' => [
       'title-fr' => "Conditions d'utilisation",
       'title-en' => "Use conditions",
@@ -401,53 +396,37 @@ doc: |
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
   
-// 8.2. Restrictions concernant l’accès public - 8.2. Limitations on public access
-// ajout des champs de cette sous-section le 14/3/2015 EN TEST
-// identificationInfo[1]/*/resourceConstraints/*/accessConstraints
-// structuration d'accessConstraints en 2 parties
+    // 8.2. Restrictions concernant l’accès public - 8.2. Limitations on public access
+    // identificationInfo[1]/*/resourceConstraints/*/accessConstraints
+    // structuration d'accessConstraints en 2 parties
     'accessConstraints' => [
       'title-fr' => "Restrictions concernant l’accès public",
       'title-en' => "Limitations on public access",
       'xpath' => '//gmd:identificationInfo/*/gmd:resourceConstraints/gmd:MD_LegalConstraints',
-// identificationInfo[1]/*/resourceConstraints/*/accessConstraints
       'svar'=> [
         'name' => 'code',
         'xpath' => '//gmd:MD_LegalConstraints/gmd:accessConstraints/gmd:MD_RestrictionCode/@codeListValue',
       ],
-// identificationInfo[1]/*/resourceConstraints/*/otherConstraints
       'svar2'=> [
         'name' => 'others',
         'xpath' => '//gmd:MD_LegalConstraints/gmd:otherConstraints/gco:CharacterString',
       ],
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
-/*
-  'accessConstraints' => [
-    'title-fr' => "Restrictions concernant l’accès public",
-    'title-en' => "Limitations on public access",
-    'xpath' => '//gmd:identificationInfo/*x/gmd:resourceConstraints/*x/gmd:accessConstraints/gmd:MD_RestrictionCode/@codeListValue',
-    'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
-  ],
-// identificationInfo[1]/*x/resourceConstraints/*x/otherConstraints
-  'otherConstraints' => [
-    'title-fr' => "Restrictions concernant l’accès public (autres)",
-    'title-en' => "Limitations on public access (others)",
-    'xpath' => '//gmd:identificationInfo/*x/gmd:resourceConstraints/*x/gmd:otherConstraints/gco:CharacterString',
-    'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
-  ],
-*/
-// identificationInfo[1]/*/resourceConstraints/*/classification
+    // identificationInfo[1]/*/resourceConstraints/*/classification
     'classification' => [
       'title-fr' => "Contrainte de sécurité intéressant la Défense nationale",
       'title-en' => "Classification",
-      'xpath' => '//gmd:identificationInfo/*/gmd:resourceConstraints/*/gmd:classification/gmd:MD_ClassificationCode/@codeListValue',
+      'xpath' => '//gmd:identificationInfo/*/gmd:resourceConstraints/*/gmd:classification'
+        .'/gmd:MD_ClassificationCode/@codeListValue',
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
 
-
-// 9. ORGANISATIONS RESPONSABLES DE L’ÉTABLISSEMENT, DE LA GESTION, DE LA MAINTENANCE ET DE LA DIFFUSION DES SÉRIES ET DES SERVICES DE DONNÉES GÉOGRAPHIQUES
-// 9. ORGANISATIONS RESPONSIBLE FOR THE ESTABLISHMENT, MANAGEMENT, MAINTENANCE AND DISTRIBUTION OF SPATIAL DATA SETS AND SERVICE
-// 9.1. Partie responsable - 9.1. Responsible party
+    // 9. ORGANISATIONS RESPONSABLES DE L’ÉTABLISSEMENT, DE LA GESTION, DE LA MAINTENANCE ET DE LA DIFFUSION
+    //    DES SÉRIES ET DES SERVICES DE DONNÉES GÉOGRAPHIQUES
+    // 9. ORGANISATIONS RESPONSIBLE FOR THE ESTABLISHMENT, MANAGEMENT, MAINTENANCE AND DISTRIBUTION OF SPATIAL
+    //    DATA SETS AND SERVICE
+    // 9.1. Partie responsable - 9.1. Responsible party
     'responsibleParty' => [
       'title-fr' => "Partie responsable",
       'title-en' => "Responsible party",
@@ -455,25 +434,22 @@ doc: |
       'svar' => [
         'name' => 'name',
         'xpath' => '//gmd:pointOfContact/*/gmd:organisationName/gco:CharacterString',
-        'stdFunc' => 'stdOrganisationName',
       ],
       // Ajout email le 23/10/2023
       'svar2' => [
         'name' => 'email',
         'xpath' => '//gmd:pointOfContact/*/gmd:contactInfo/*/gmd:address/*/gmd:electronicMailAddress/gco:CharacterString',
-        'stdFunc' => true,
       ],
 // 9.2. Rôle de la partie responsable - 9.2. Responsible party role
       'svar3' => [
         'name' => 'role',
         'xpath' => '//gmd:pointOfContact/*/gmd:role/gmd:CI_RoleCode/@codeListValue',
-        'stdFunc' => true,
       ],
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
   
-// 10. Métadonnées concernant les métadonnées - METADATA ON METADATA
-// 10.1. Point de contact des métadonnées - 10.1. Metadata point of contact
+    // 10. Métadonnées concernant les métadonnées - METADATA ON METADATA
+    // 10.1. Point de contact des métadonnées - 10.1. Metadata point of contact
     'mdContact' => [
       'title-fr' => "Point de contact des métadonnées",
       'title-en' => "Metadata point of contact",
@@ -482,126 +458,106 @@ doc: |
       'svar' => [
         'name' => 'name',
         'xpath' => '//gmd:contact/*/gmd:organisationName/gco:CharacterString',
-        'stdFunc' => 'stdOrganisationName',
       ],
       'svar2' => [
         'name' => 'email',
         'xpath' => '//gmd:contact/*/gmd:contactInfo/*/gmd:address/*/gmd:electronicMailAddress/gco:CharacterString',
-        'stdFunc' => true,
       ],
       'multiplicity' => [ 'data' => '1..*', 'service' => '1..*' ],
     ],
-// 10.2. Date des métadonnées - 10.2. Metadata date
+    // 10.2. Date des métadonnées - 10.2. Metadata date
     'mdDate' => [
       'title-fr' => "Date des métadonnées",
       'title-en' => "Metadata date",
       'xpath' => '//gmd:dateStamp/gco:DateTime',
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
-// 10.3. Langue des métadonnées - 10.3. Metadata language
+    // 10.3. Langue des métadonnées - 10.3. Metadata language
     'mdLanguage' => [
       'title-fr' => "Langue des métadonnées",
       'title-en' => "Metadata language",
-//      'xpath' => '//gmd:language/gco:CharacterString',
-// Erreur corrigée le 26/9/2015 8:25
       'xpath' => '//gmd:language/gmd:LanguageCode',
       'multiplicity' => [ 'data' => 1, 'service' => 1 ],
     ],
   ];
-/* Variables déduites complémentaires:
-  attributedTo : sélection de responsibleParty selon la méthode définie dans geocat3.txt
-      et implémentée par la fonction generateAttributedTo()
-  mainParty : premier responsibleParty rencontré, généré dans post-process
-*/
-// liste des variables correspondant à un fileId sous la forme 'nom de la variable' => 'nom du sous-champ'
-  static private $fileIdVariables = [
+  
+  /* liste des variables correspondant à un fileId sous la forme 'nom de la variable' => 'nom du sous-champ'
+   * @var array<string,string FILEID_VARIABLES */
+  const FILEID_VARIABLES = [
     'aggregationInfo' => 'val',
     'operatesOn' => 'val',
   ];
-
-/*PhpDoc: methods
-  name: stdOrganisationName
-  title: function stdOrganisationName($val) - Fonction de standardisation des noms d'organisme
-*/
-  static function stdOrganisationName($val) {
-    $std = str_replace(["\n","\r","\t","\v","\e","\f"],['\n','\r','\t','\v','\e','\f'], $val);
-    $std = preg_replace('! +!',' ', $std);
-    $std = OrgRegister::getOrigPrefLabel($std);
-  //  echo "stdOrganisationName($val) -> $std<br>\n";
-    return $std;
-  }
   
-/*PhpDoc: methods
-  name: setNameSpaces
-  title: function setNameSpaces($md) - definit les espaces de noms
-  doc: |
-    Retourne la table des espaces de noms définis dans le XML.
-    SimpleXML nécessite d'enregistrer les espaces de noms avant d'effectuer un xpath. A priori, il faut enregistrer tous les espaces de nom utilisés dans le XML.
-    Dans la plupart des cas les prefix et espaces de noms sont identiques car standardisés.
-    Il peut cependant arriver qu'un prefix soit remplacé par le prefix vide.
-    Dans ce cas, SimpleXML impose d'enregistrer un prefix non vide.
-    Pour gérer ces cas, j'ai défini les (prefix,espaces de noms) utilisés dans les xpath dans la variable statique namespaces et lorsque pour un espace de nom le prefix n'est pas celui que j'utilise alors je force le prefix que j'utilise.
-*/
-  static function setNameSpaces($md) {
+  /** definit les espaces de noms.
+   * Retourne la table des espaces de noms définis dans le XML.
+   * SimpleXML nécessite d'enregistrer les espaces de noms avant d'effectuer un xpath.
+   * A priori, il faut enregistrer tous les espaces de nom utilisés dans le XML.
+   * Dans la plupart des cas les prefix et espaces de noms sont identiques car standardisés.
+   * Il peut cependant arriver qu'un prefix soit remplacé par le prefix vide.
+   * Dans ce cas, SimpleXML impose d'enregistrer un prefix non vide.
+   * Pour gérer ces cas, j'ai défini les (prefix,espaces de noms) utilisés dans les xpath dans la variable
+   * statique namespaces et lorsque pour un espace de nom le prefix n'est pas celui que j'utilise alors je force
+   * le prefix que j'utilise.
+   * @return array<string,string>
+   */
+  static function setNameSpaces(SimpleXmlElement $md): array {
+    $nameSpaces = [];
     foreach ($md->getDocNamespaces(true) as $prefix => $namespace) {
-//      echo "namespace '$prefix' '$namespace'<br>\n";
       $nameSpaces[$prefix] = $namespace;
-      if (!isset(self::$namespaces[$namespace]) or ($prefix == self::$namespaces[$namespace]))
+      if (!isset(self::NAMESPACES[$namespace]) or ($prefix == self::NAMESPACES[$namespace]))
         $md->registerXPathNamespace ($prefix, $namespace);
       else {
-//        echo "Pour $namespace prefix '$prefix' changé en '",self::$namespaces[$namespace],"'<br>\n";
-        $md->registerXPathNamespace (self::$namespaces[$namespace], $namespace);
+        $md->registerXPathNamespace (self::NAMESPACES[$namespace], $namespace);
       }
     }
     return $nameSpaces;
   }
 
-/*PhpDoc: methods
-name:  extractComplexValue
-title: function extractComplexValue($vardef, $xmlstring) - extrait les éléments pour une variable complexe
-resultType:
-  noelt (int):
-    'svar': nom de la sous-variable principale (optionnel)
-    'val': valeur principale
-    'origval': valeur principale d'origine (optionnel)
-    'svar0': nom de la sous-variable 0 (optionnel)
-    'sval0': valeur pour la sous-variable 0 (optionnel)
-    'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
-    'svar2': nom de la sous-variable 2 (optionnel) 
-    'sval2': valeur pour la sous-variable 2 (optionnel)
-    'svar3': nom de la sous-variable 3 (optionnel)
-    'sval3': valeur pour la sous-variable 3 (optionnel)
-doc: |
-  Extrait du fragment XML les valeurs correspondant à une variable complexe et structure le résultat sous la forme d'une liste d'éléments
-  En cas d'erreur sur la structure XML, l'exception envoyée par new SimpleXMLElement() n'est pas interceptée.
-*/
-  static function extractComplexValue($vardef, $xmlstring) {
-//    echo "<pre>"; throw new Exception("erreur");
-//    echo str_replace('<','&lt;',$xmlstring);
+  /** extrait les éléments pour une variable complexe.
+   * resultType:
+   *   noelt (int):
+   *     'svar': nom de la sous-variable principale (optionnel)
+   *     'val': valeur principale
+   *     'origval': valeur principale d'origine (optionnel)
+   *     'svar0': nom de la sous-variable 0 (optionnel)
+   *     'sval0': valeur pour la sous-variable 0 (optionnel)
+   *     'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
+   *     'svar2': nom de la sous-variable 2 (optionnel) 
+   *     'sval2': valeur pour la sous-variable 2 (optionnel)
+   *     'svar3': nom de la sous-variable 3 (optionnel)
+   *     'sval3': valeur pour la sous-variable 3 (optionnel)
+   *
+   * Extrait du fragment XML les valeurs correspondant à une variable complexe et structure le résultat
+   * sous la forme d'une liste d'éléments
+   *  En cas d'erreur sur la structure XML, l'exception envoyée par new SimpleXMLElement() n'est pas interceptée.
+   * @param array<mixed> $vardef
+   * @return MdElt
+   */
+  static function extractComplexValue(array $vardef, string $xmlstring): array {
+    //echo "<pre>"; throw new Exception("erreur");
+    //echo str_replace('<','&lt;',$xmlstring);
     $subsxe = new SimpleXMLElement($xmlstring);
     self::setNameSpaces($subsxe);
     $vals = []; // [ svari => [ orig => std ] ]
     foreach (['svar0','svar','svar2','svar3'] as $svari) {
       if (isset($vardef[$svari])) {
-//        echo "sous-variable $svari (",$vardef[$svari]['name'],") définie<br>\n";
+        //echo "sous-variable $svari (",$vardef[$svari]['name'],") définie<br>\n";
         foreach ($subsxe->xpath($vardef[$svari]['xpath']) as $val) {
           $val = trim($val);
-//          echo "val=$val<br>\n";
+          //echo "val=$val<br>\n";
           if (!$val)
             continue;
           if (isset($vals[$svari]) and array_key_exists($val, $vals[$svari]))
             continue;
           $origval = $val;
-          if (isset($vardef[$svari]['stdFunc']) and ($vardef[$svari]['stdFunc']!==true))
-            $val = $vardef[$svari]['stdFunc']($val);
           $vals[$svari][$origval] = $val;
-//          echo "Ajout de origval=$origval, val=$val<br>\n";
+          //echo "Ajout de origval=$origval, val=$val<br>\n";
         }
       }
       if (!isset($vals[$svari]))
         $vals[$svari][null] = null;
     }
-//    echo "<pre>vals="; print_r($vals); echo "</pre>\n";
+    //echo "<pre>vals="; print_r($vals); echo "</pre>\n";
     
     $mdelements = [];
     foreach ($vals['svar0'] as $origsval0 => $sval0)
@@ -622,38 +578,33 @@ doc: |
             }
             $mdelements[] = $mdelement;
           }
-//    echo "<pre>mdelements="; print_r($mdelements); echo "</pre>\n";
+    //echo "<pre>mdelements="; print_r($mdelements); echo "</pre>\n";
     return $mdelements;
   }
   
-/*PhpDoc: methods
-name:  extract
-title: function extract($xml) - construit à partir d'un fragment XML la fiche sous la forme d'un mdrecord
-resultType:
-  varname (string) :
-    noelt (int):
-      'svar': nom de la sous-variable principale (optionnel)
-      'val': valeur principale
-      'origval': valeur principale d'origine (optionnel)
-      'svar0': nom de la sous-variable 0 (optionnel)
-      'sval0': valeur pour la sous-variable 0 (optionnel)
-      'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
-      'svar2': nom de la sous-variable 2 (optionnel) 
-      'sval2': valeur pour la sous-variable 2 (optionnel)
-      'svar3': nom de la sous-variable 3 (optionnel)
-      'sval3': valeur pour la sous-variable 3 (optionnel)
-doc: |
-  Extrait du fragment XML les valeurs qui sont structurées sous la forme d'un mdrecord dont le type est défini par le type du
-  résultat de la méthode en fonction de mdvars.
-  Dans le résultat:
-  - les noms de sous-variables sont renseignés ssi ils sont définis dans mdvars,
-  - origval est définie si val a été standardisée et que la valeur résultante est différente de la valeur initiale, idem pour origsval0
-  - les sous-valeurs sont définies si (i) les sous-variables sont définies dans mdvars et (ii) une valeur correpond dans le XML
-  En cas d'erreur sur la structure XML, l'exception envoyée par new SimpleXMLElement() est transmise.
-journal: |
-  21/9/2015: Prise en compte de l'utilisation ou nom du prefix csw:
-*/
-  static function extract($xmlstring) {
+  /** construit à partir d'un fragment XML la fiche sous la forme d'un mdrecord
+   * resultType:
+   * varname (string) :
+   *   noelt (int):
+   *     'svar': nom de la sous-variable principale (optionnel)
+   *     'val': valeur principale
+   *     'svar0': nom de la sous-variable 0 (optionnel)
+   *     'sval0': valeur pour la sous-variable 0 (optionnel)
+   *     'svar2': nom de la sous-variable 2 (optionnel) 
+   *     'sval2': valeur pour la sous-variable 2 (optionnel)
+   *     'svar3': nom de la sous-variable 3 (optionnel)
+   *     'sval3': valeur pour la sous-variable 3 (optionnel)
+   *
+   * Extrait du fragment XML les valeurs qui sont structurées sous la forme d'un mdrecord dont le type est défini
+   * par le type du résultat de la méthode en fonction de mdvars.
+   * Dans le résultat:
+   *  - les noms de sous-variables sont renseignés ssi ils sont définis dans mdvars,
+   * - les sous-valeurs sont définies si (i) les sous-variables sont définies dans mdvars et (ii) une valeur
+   *   correpond dans le XML
+   * En cas d'erreur sur la structure XML, l'exception envoyée par new SimpleXMLElement() est transmise.
+   * @return MdRecord
+   */
+  static function extract(string $xmlstring): array {
     //echo str_replace('<','&lt;', $xmlstring),"<br>\n";
     if (!$xmlstring) {
       echo "Erreur XML vide dans Mdvars::extract()<br>\n";
@@ -670,16 +621,16 @@ journal: |
     
     $mdrecord = [];
     // calcul des valeurs à partir des xpath
-    foreach (self::$mdvars as $varname => $vardef) {
-//      if ($varname <> 'keyword') continue;
-//      echo "<pre>varname=$varname\nvardef="; print_r($vardef); echo "</pre>\n";
+    foreach (self::MDVARS as $varname => $vardef) {
+      //if ($varname <> 'keyword') continue;
+      //echo "<pre>varname=$varname\nvardef="; print_r($vardef); echo "</pre>\n";
       if (!array_key_exists('svar', $vardef)) { // c'est une variable simple
         $vals = []; // ensemble de valeurs pour cette variable
         $xpatheval = @$md->xpath($vardef['xpath']);
         if ($xpatheval)
           foreach ($xpatheval as $val) {
             $val = trim($val);
-//            echo "$varname -> $val<br>\n";
+            //echo "$varname -> $val<br>\n";
             if (!$val)
               continue;
             if (in_array($val, $vals))
@@ -688,28 +639,22 @@ journal: |
             if (!isset($mdrecord[$varname]))
               $mdrecord[$varname] = [];
             $stdval = null;
-            if (isset($vardef['stdFunc']) and is_string($vardef['stdFunc']))
-              $stdval = $vardef['stdFunc']($val);
-            if (($stdval<>null) and ($stdval<>$val))
-              $mdrecord[$varname][] = [ 'val'=>$stdval, 'origval'=>$val ];
-            else
-              $mdrecord[$varname][] = [ 'val'=>$val ];
+            $mdrecord[$varname][] = [ 'val'=>$val ];
           }
       } else {   // sinon c'est une variable complexe
-//        echo "$varname est une variable complexe<br>\n";
+        //echo "$varname est une variable complexe<br>\n";
         $xpatheval = @$md->xpath($vardef['xpath']);
         if ($xpatheval) {
-//          echo "<pre>xpatheval="; print_r($xpatheval); echo "</pre>\n";
-//          echo "<pre>nameSpaces="; print_r($nameSpaces); echo "</pre>\n";
-// 21/9/2015: Prise en compte de l'utilisation ou nom du prefix csw:
+          //echo "<pre>xpatheval="; print_r($xpatheval); echo "</pre>\n";
+          //echo "<pre>nameSpaces="; print_r($nameSpaces); echo "</pre>\n";
           foreach ($xpatheval as $val) {
             $xmlsubstring = (isset($nameSpaces['csw'])? "<csw:Value" : "<Value");
             foreach ($nameSpaces as $k=>$v)
               $xmlsubstring .= ' xmlns'.($k?':'.$k:'')."=\"$v\"\n";
             $xmlsubstring .= '>'.$val->asXML() . (isset($nameSpaces['csw'])? "</csw:Value>" : "</Value>");
-//            echo "xmlsubstring=",str_replace('<','&lt;',$xmlsubstring),"<br>\n";
+            //echo "xmlsubstring=",str_replace('<','&lt;',$xmlsubstring),"<br>\n";
             $mdelements = self::extractComplexValue($vardef, $xmlsubstring);
-//            echo "<pre>mdelements="; print_r($mdelements); echo "</pre>\n";
+            //echo "<pre>mdelements="; print_r($mdelements); echo "</pre>\n";
             if ($mdelements) {
               if (isset($mdrecord[$varname]))
                 $mdrecord[$varname] = array_merge($mdrecord[$varname], $mdelements);
@@ -719,110 +664,40 @@ journal: |
           }
         }
       }
-//      echo "mdrecord=<pre>"; print_r($mdrecord); echo "</pre>\n";
+      //echo "mdrecord=<pre>"; print_r($mdrecord); echo "</pre>\n";
     }
     return $mdrecord;
   }
   
-/*PhpDoc: methods
-name:  read
-title: function read($database, $harvest, $idType, $id) - lit dans la base de données la fiche définie par les paramètres et renvoie un mdrecord
-parameters:
-  - name: database
-    title: "database: nom de la base, en général 'std'"
-  - name: harvest
-    title: "harvest: nom de la moisson"
-  - name: idType
-    title: "idType: type d'id (recordid ou fileId)"
-  - name: id
-    title: "id: id de la fiche du type défini par idType"
-resultType:
-  varname (string) :
-    noelt (int):
-      'svar': nom de la sous-variable principale (optionnel)
-      'val': valeur principale
-      'origval': valeur principale d'origine (optionnel)
-      'svar0': nom de la sous-variable 0 (optionnel)
-      'sval0': valeur pour la sous-variable 0 (optionnel)
-      'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
-      'svar2': nom de la sous-variable 2 (optionnel) 
-      'sval2': valeur pour la sous-variable 2 (optionnel)
-      'svar3': nom de la sous-variable 3 (optionnel)
-      'sval3': valeur pour la sous-variable 3 (optionnel)
-doc: |
-  Lit dans la base de données la fiche définie par les paramètres et renvoie un mdrecord dont le type est défini par le type du
-  résultat de la méthode.
-  Ajoute au mdrecord une pseudo variable recordid pour renvoyer le recordid.
-  Utilise la variable globale $mysqli qui doit correspondre à la base MySQL.
-*/
-  static function read($database, $harvest, $idType, $id) {
-    global $mysqli;
-    if ($idType=='recordid')
-      $sql = "select recordid,var,noelt,svar,val,origval,svar0,sval0,origsval0,svar2,sval2,svar3,sval3,longval
-              from mdelement where recordid='$id'";
-    elseif ($idType=='fileId')
-      $sql = "select recordid,var,noelt,svar,val,origval,svar0,sval0,origsval0,svar2,sval2,svar3,sval3,longval
-              from mdelement where recordid=
-                (select recordid from harvestrecord where harvest='$harvest' and fileId='$id')";
-    else
-      throw new Exception("Ligne ".__LINE__.", idType=$idType non reconnu");
-//    echo "<pre>$sql</pre>\n";
-    if (!($result = $mysqli->query($sql)))
-      throw new Exception("Ligne ".__LINE__.", Req. \"$sql\" invalide: ".$mysqli->error);
-    $mdrecord = [];
-    while ($tuple = $result->fetch_array(MYSQLI_ASSOC)) {
-      $mdrecord['recordid'][0]['val'] = $tuple['recordid'];
-      if ($tuple['longval'])
-        $tuple['val'] = $tuple['longval'];
-      $mdelement = ['val' => $tuple['val']];
-      if ($tuple['svar'])
-        $mdelement['svar'] = $tuple['svar'];
-      foreach([0,2,3] as $i)
-        if ($tuple["svar$i"]) {
-          $mdelement["svar$i"] = $tuple["svar$i"];
-          $mdelement["sval$i"] = $tuple["sval$i"];
-        }
-      foreach (['origval','origsval0'] as $origv)
-        if ($tuple[$origv])
-          $mdelement[$origv] = $tuple[$origv];
-      $mdrecord[$tuple['var']][$tuple['noelt']] = $mdelement;
-    }
-  //  echo "<pre>"; print_r($mdrecord); echo "</pre>";
-    if (!$mdrecord) {
-      echo "<pre>";
-      throw new Exception("Aucune fiche ne correspond à l'identifiant '$idType' '$id'");
-    }
-    return $mdrecord;
-  }
-  
-/*PhpDoc: methods
-name:  show
-title: function show($mdrecord, $hreffid=null) - affiche le mdrecord
-parameters:
-  - name: mdrecord
-    type:
-      varname (string) :
-        noelt (int):
-          'svar': nom de la sous-variable principale (optionnel)
-          'val': valeur principale
-          'origval': valeur principale d'origine (optionnel)
-          'svar0': nom de la sous-variable 0 (optionnel)
-          'sval0': valeur pour la sous-variable 0 (optionnel)
-          'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
-          'svar2': nom de la sous-variable 2 (optionnel) 
-          'sval2': valeur pour la sous-variable 2 (optionnel)
-          'svar3': nom de la sous-variable 3 (optionnel)
-          'sval3': valeur pour la sous-variable 3 (optionnel)
-  - name: hreffid
-    type: string
-doc: |
-  Affiche une fiche de MD structurée sous la forme d'un mdrecord.
-  Si hreffid est défini, les champs correspondant à un fid sont remplacés par <a href='${hreffid}${fid}'>$fid</a>
-*/
-  static function show($mdrecord, $hreffid=null) {
-//    echo "<pre>"; print_r($mdrecord); echo "</pre>\n";
+
+  /** affiche le mdrecord.
+   * parameters:
+   *  - name: mdrecord
+   *   type:
+   *     varname (string) :
+   *       noelt (int):
+   *         'svar': nom de la sous-variable principale (optionnel)
+   *         'val': valeur principale
+   *         'origval': valeur principale d'origine (optionnel)
+   *         'svar0': nom de la sous-variable 0 (optionnel)
+   *         'sval0': valeur pour la sous-variable 0 (optionnel)
+   *         'origsval0': valeur d'origine pour la sous-variable 0 (optionnel)
+   *         'svar2': nom de la sous-variable 2 (optionnel) 
+   *         'sval2': valeur pour la sous-variable 2 (optionnel)
+   *         'svar3': nom de la sous-variable 3 (optionnel)
+   *         'sval3': valeur pour la sous-variable 3 (optionnel)
+   * - name: hreffid
+   *   type: string
+   *
+   * Affiche une fiche de MD structurée sous la forme d'un mdrecord.
+   * Si hreffid est défini, les champs correspondant à un fid sont remplacés par
+   *   <a href='${hreffid}${fid}'>$fid</a>
+   * @param MdRecord $mdrecord
+   */
+  static function show(array $mdrecord, ?string $hreffid=null): void {
+    //echo "<pre>"; print_r($mdrecord); echo "</pre>\n";
     if ($hreffid) {
-      foreach (self::$fileIdVariables as $var => $val)
+      foreach (self::FILEID_VARIABLES as $var => $val)
         if (isset($mdrecord[$var])) {
           foreach ($mdrecord[$var] as $num => $mdelt) {
             $url = $hreffid.urlencode($mdelt[$val]);
@@ -838,35 +713,34 @@ doc: |
     }
     $mdtype = $mdrecord['type'][0]['val'];
     echo "<table border=1>\n";
-// la liste des variables est constituée en premier des variables de mdvars complétée par les autres variables trouvées dans mdrecord
-    $varnames = array_keys(self::$mdvars);
+    // la liste des variables est constituée en premier des variables de mdvars complétée
+    // par les autres variables trouvées dans mdrecord
+    $varnames = array_keys(self::MDVARS);
     foreach (array_keys($mdrecord) as $varname)
       if (!in_array($varname, $varnames))
         $varnames[] = $varname;
     foreach ($varnames as $varname) {
       $multiplicity = null;
-      if (isset(self::$mdvars[$varname]['multiplicity'][($mdtype=='service'?'service':'data')]))
-        $multiplicity = self::$mdvars[$varname]['multiplicity'][($mdtype=='service'?'service':'data')];
-// j'affiche une ligne ssi soit varname est définie dans mdrecord soit la variable est obligatoire dans mdvars
+      if (isset(self::MDVARS[$varname]['multiplicity'][($mdtype=='service'?'service':'data')]))
+        $multiplicity = self::MDVARS[$varname]['multiplicity'][($mdtype=='service'?'service':'data')];
+      // j'affiche une ligne ssi soit varname est définie dans mdrecord soit la variable est obligatoire dans mdvars
       if (isset($mdrecord[$varname]) or in_array($multiplicity,[1,'1..*'])) {
         echo "<tr><td>$varname",($multiplicity ? " ($multiplicity)" : ''),"</td><td>\n";
-        if (isset($mdrecord[$varname]) and (count($mdrecord[$varname])==1) and !isset($mdrecord[$varname][0]['svar'])) {
-// valeur simple mono-valuée
-          if (isset(self::$mdvars[$varname]['texte'])) {
+        if (isset($mdrecord[$varname]) 
+         && (count($mdrecord[$varname])==1) and !isset($mdrecord[$varname][0]['svar'])) {
+          // valeur simple mono-valuée
+          if (isset(self::MDVARS[$varname]['texte'])) {
             echo str_replace("\n","<br>\n",$mdrecord[$varname][0]['val']);
-          } elseif (isset($mdrecord[$varname][0]['origval'])) {
-            echo "<u>",$mdrecord[$varname][0]['val'],"</u>",
-                 '<strike>',$mdrecord[$varname][0]['origval'],'</strike>';
           } else
             echo $mdrecord[$varname][0]['val'];
         } elseif (isset($mdrecord[$varname]) and !isset($mdrecord[$varname][0]['svar'])) {
-// valeur simple multi-valuée
+          // valeur simple multi-valuée
           echo "<table border=1>";
           foreach ($mdrecord[$varname] as $mdelement)
             echo "<tr><td>$mdelement[val]</td></tr>";
           echo "</table>";
         } elseif (isset($mdrecord[$varname])) {
-// valeur complexe avec plusieurs sous-valeurs
+          // valeur complexe avec plusieurs sous-valeurs
           $svar = [isset($mdrecord[$varname][0]['svar0']) ? $mdrecord[$varname][0]['svar0'] : null,
                    isset($mdrecord[$varname][0]['svar'])  ? $mdrecord[$varname][0]['svar']  : null,
                    isset($mdrecord[$varname][0]['svar2']) ? $mdrecord[$varname][0]['svar2'] : null,
@@ -879,17 +753,12 @@ doc: |
           foreach ($mdrecord[$varname] as $mdelement) {
             echo "<tr>";
             if ($svar[0]) {
-              if (isset($mdelement['origsval0']))
-                echo "<td><u>",$mdelement['sval0'],'</u><strike>',$mdelement['origsval0'],'</strike>',"</td>";
-              elseif (isset($mdelement['sval0']))
+              if (isset($mdelement['sval0']))
                 echo "<td>",$mdelement['sval0'],"</td>";
               else
                 echo "<td>","</td>";
             }
-            if (isset($mdelement['origval']))
-              echo "<td><u>",$mdelement['val'],'</u><strike>',$mdelement['origval'],'</strike>',"</td>";
-            else
-              echo "<td>",$mdelement['val'],"</td>";
+            echo "<td>",$mdelement['val'],"</td>";
             if (isset($mdelement['sval2']))
               echo "<td>".$mdelement['sval2']."</td>";
             if (isset($mdelement['sval3']))
@@ -906,13 +775,12 @@ doc: |
   }
 };
 
-// le code suivant n'est exécuté que si ce fichier est directement appelé dans un browser
-if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
 
-echo <<<EOT
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>mdvars</title></head><body>\n
-EOT;
+if (basename(__FILE__) <> basename($_SERVER['PHP_SELF'])) return;
+// le code suivant n'est exécuté que si ce fichier est directement appelé dans un browser
+
+
+echo "<!DOCTYPE><html><head><title>mdvars</title></head><body>\n";
 
 // showmdvars - affichage de la liste des variables de mdvars
 
@@ -932,7 +800,7 @@ spatialRepresentationType.
 </p>
 <table border=1><th>nom</th><th>titre fr</th><th>titre en</th><th>m d</th><th>m s</th>\n",
        (isset($_GET['withxpath'])? "<th><tt>xpath</tt></th>" : '');
-foreach (Mdvars::$mdvars as $varname => $mdvar) {
+foreach (Mdvars::MDVARS as $varname => $mdvar) {
   echo "<tr><td>$varname</td><td>",$mdvar['title-fr'],"</td><td>",$mdvar['title-en'],"</td>",
        "<td>",(isset($mdvar['multiplicity']['data'])?$mdvar['multiplicity']['data']:''),"</td>",
        "<td>",(isset($mdvar['multiplicity']['service'])?$mdvar['multiplicity']['service']:''),"</td>",

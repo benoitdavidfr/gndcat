@@ -7,7 +7,7 @@ require_once __DIR__.'/mdvars2.inc.php';
 use Symfony\Component\Yaml\Yaml;
 
 // fonction nécessaire dans mdvars2.inc.php pour standardiser les organisations
-function stdOrganisationName(string $val): string { return $val; }
+//function stdOrganisationName(string $val): string { return $val; }
 
 class InspireMd {
   static function val(string $val): string|float|int {
@@ -47,7 +47,7 @@ class InspireMd {
   }
 
   /** Transforme un mdrecord en array de type JSON.
-   * @param array<string,mixed> $mdrecord
+   * @param MdRecord $mdrecord
    * @return array<string,mixed>
    */
   static function mdrecord2array(array $mdrecord): array {
@@ -67,7 +67,7 @@ class InspireMd {
   /** convertit une chaine XML en un array type JSON
    * @return array<string,mixed> */
   static function convert(string $xml): array {
-    $record = Mdvars::extract($xml); // @phpstan-ignore-line
+    $record = Mdvars::extract($xml);
     //echo '<pre>',Yaml::dump($record,4),"</pre>\n";
     return self::mdrecord2array($record);
   }

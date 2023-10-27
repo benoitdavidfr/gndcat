@@ -388,7 +388,7 @@ class CswServer {
 };
 
 /** Abstraction d'un CswServer par un itérateur de MDs et des méthodes complémentaires sur la MD courante.
- * Définit:
+ * La classe définit au dessus de la classe CswServer:
  *  - un itérateur sur les fiches de métadonnées en DC brief,
  *  - 2 méthodes retournant la fiche courante complète:
  *    - getFullGmd()  en XML ISO 19139

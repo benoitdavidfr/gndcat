@@ -1,5 +1,5 @@
 <?php
-/** Lecture des MD d'un serveur CSW en ISO ou en DCAT.
+/** Lecture des MD d'un serveur CSW en ISO ou en DCAT et affichage dans différents formats.
  *
  * La classe CswServer implémente les méthodees d'appel à un serveur CSW.
  * Elle utilise un dictionnaire de serveurs définis dans le fichier servers.yaml.

@@ -1,10 +1,26 @@
 parameters:
   level: 6
   #level: 2
+  typeAliases:
+    MdRecord: "array<string,MdElt>"
+    MdElt: '''
+      array<int,array{
+        svar?: string,
+        val: string,
+        svar0?: string,
+        sval0?: string,
+        svar2?: string,
+        sval2?: string,
+        svar3?: string,
+        sval3?: string
+      }>
+      '''
+
   paths:
     - read.php
     - http.inc.php
     - inspiremd.inc.php
+    - mdvars2.inc.php
     - mdserver.inc.php
     - ficheckan.php
     - frame.inc.php
