@@ -4,6 +4,7 @@ parameters:
   paths:
     - read.php
     - http.inc.php
-    - isomd.inc.php
+    - inspiremd.inc.php
+    - mdserver.inc.php
     - ficheckan.php
     - frame.inc.php

@@ -102,7 +102,7 @@ class Http {
       }
         
       // si $http_response_header est non vide <=> erreur <> timeout => on sort de la boucle pour retourner le résultat
-      if (isset($http_response_header) && (count($http_response_header) != 0)) {
+      if (isset($http_response_header) && (count($http_response_header) != 0)) { // @phpstan-ignore-line
         //echo "sortie de boucle sur http_response_header est non vide<br>\n";
         break;
       }

@@ -1,12 +1,15 @@
 <?php
+/** Structuration comme array d'une fiche de MD Inspire à partir d'une fiche ISO 19139
+ * en sélectionnant les champs Inspire */
 require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/mdvars2.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+// fonction nécessaire dans mdvars2.inc.php pour standardiser les organisations
 function stdOrganisationName(string $val): string { return $val; }
 
-class IsoMd {
+class InspireMd {
   static function val(string $val): string|float|int {
   if (ctype_digit($val))
     return intval($val);
@@ -69,16 +72,18 @@ class IsoMd {
     return self::mdrecord2array($record);
   }
   
-  /** indicateur qualité */
+  /** indicateur qualité basique
+   * @param array<string,mixed> $record */
   static function quality(array $record): float {
-    return count($record) / count(Mdvars::$mdvars);
+    return count($record) / count(Mdvars::$mdvars); // @phpstan-ignore-line
   }
 };
 
 
 if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
 
+
 $xml = file_get_contents('ficheexample.xml');
-$record = IsoMd::convert($xml);
+$record = InspireMd::convert($xml);
 echo '<pre>',Yaml::dump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
 //var_dump(mdrecord2array($record));

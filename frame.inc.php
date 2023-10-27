@@ -1,8 +1,11 @@
 <?php
+namespace rdf;
 /** Imbrication d'un graphe RDF.
  * La méthode Resource::frameGraph() prend en entrée un graphe aplani et l'imbrique (frame).
- * Cela consiste à identifier les ressources qui ne sont pas référencées par d'autre ressource du graphe
- * et à remplacer dans ces ressources les références par les ressources référencées.
+ * Dans ce script cela consiste à:
+ *  - identifier les ressources qui ne sont pas référencées par d'autre ressource du graphe,
+ *  - remplacer dans ces ressources les références par les ressources référencées (ressources imbriquées),
+ *  - retourner la ou les ressources initialement identifiées aisni modifiées.
  * Les identifiants des ressources imbriquées correspondant à des noeuds blancs sont supprimés.
  * Le graphe ne doit pas comporter de boucle car s'il en comporte soit elles sont ignorées, soit elles génèreent
  * une exception.
@@ -28,7 +31,7 @@ abstract class PObject {
     elseif (!self::ONLY_FLATTEN_GRAPH) // @phpstan-ignore-line
       return new Resource($object);
     else
-      throw new Exception('Graphe non aplani');
+      throw new \Exception('Graphe non aplani');
   }
   
   abstract function updateCounter(): void;
@@ -131,7 +134,7 @@ class Resource {
   /** Fabrique un nouvel objet en remplacant chaque référence par la ressource référencée */
   function frame(int $depth=0): self {
     if ($depth >= self::DEPTH_MAX)
-      throw new Exception("depth > DEPTH_MAX");
+      throw new \Exception("depth > DEPTH_MAX");
     $propObjs = [];
     //print_r($this->propObjs);
     foreach ($this->propObjs as $prop => $objs) {
@@ -167,27 +170,31 @@ class Resource {
     else
       return array_merge(['$id'=> $this->id], $propObjs);
   }
-  
-  /** Imbrique un graphe aplani défini comme array avec 2 propriétés @context et @graph.
-   * Dans le résultat ne sont conservés à la racine que les ressources qui ne sont pas référencées dans le graphe.
+};
+
+/** Classe exposant les méthodes sur un graphe */
+class Graph {
+  /** Imbrique un graphe aplani défini comme array ayant 2 propriétés @context et @graph.
+   * Dans le résultat ne sont conservées à la racine que les ressources qui ne sont pas référencées dans le graphe.
+   * Si le graphe ne contient qu'une seule ressource alors elle est retournée sans la propriété @graph
    * @param array<string,mixed> $graph ; le graphe aplani en entrée
    * @return array<string,mixed> le graphe imbriqué en retour
    */
-  static function frameGraph(array $graph): array {
-    // chargement du graphe dans self::$graph
+  static function frame(array $graph): array {
+    // chargement du graphe dans Resource::$graph
     if (!isset($graph['@graph']))
-      throw new Exception("Erreur champ '@graph' absent");
+      throw new \Exception("Erreur champ '@graph' absent");
     foreach ($graph['@graph'] as $resource) {
-      self::$graph[$resource['$id']] = new self($resource);
+      Resource::$graph[$resource['$id']] = new Resource($resource);
     }
     $graph['@graph'] = [];
-    foreach (self::$graph as $id => $resource) {
+    foreach (Resource::$graph as $id => $resource) {
       $resource->updateCounter();
     }
     
     // imbrication des resources en ne conservant que les ressources qui ne sont pas référencées dans le graphe
     // et transformation de ces ressources imbriqués en array
-    foreach (self::$graph as $resource) {
+    foreach (Resource::$graph as $resource) {
       if ($resource->getCounter() == 0) {
         $graph['@graph'][] = $resource->frame()->asArray();
       }
@@ -196,10 +203,10 @@ class Resource {
     // Retour du graphe en ne conservant le champ @graph que s'il existe plus d'une ressource
     if (count($graph['@graph']) <> 1)
       return $graph;
-    $result = ['@context'=> $graph['@context']];
+    $resource = ['@context'=> $graph['@context']];
     foreach ($graph['@graph'][0] as $p => $objs)
-      $result[$p] = $objs;
-    return $result;
+      $resource[$p] = $objs;
+    return $resource;
   }
 };
 
@@ -275,11 +282,11 @@ switch($_GET['action'] ?? null) {
         ],
       ],
     ];
-    $framed = Resource::frameGraph($graph);
+    $framed = Graph::frame($graph);
     echo '<pre>frameGraph = '; print_r($framed);
     $graph = ['@context'=> '', '@graph'=> [$framed]];
     break;
   }
   default: die("action $_GET[action] inconnue\n");
 }
-echo '<pre>frameGraph = '; print_r(Resource::frameGraph($graph));
+echo '<pre>frameGraph = '; print_r(Graph::frame($graph));
