@@ -156,7 +156,7 @@ class YamlLD {
   }
   
   function __toString(): string {
-    if (count($this->graph['@graph'])==1) {
+    if (count($this->graph['@graph'] ?? [])==1) {
       $graph = ['@context' => self::CONTEXT_URI];
       foreach ($this->graph['@graph'][0] as $p => $o)
         $graph[$p] = $o;
@@ -363,21 +363,23 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           echo "moyenne: ",$sum/$nb,"\n";
           die("FIN\n");
         }
-        case 'mdQualStat' : { // itère sur les fiches pour afficher celle ayant la meilleure qualité
+        case 'mdQualStat' : { // itère sur les fiches pour afficher celles ayant la meilleure qualité
           $mds = new MdServer($id, $id, 1);
-          $maxQual = 0;
-          $bestId = 'undef';
+          $quals = []; // [{kqual} => [{id} => {qual}]]
           foreach ($mds as $no => $brief) {
             if (in_array($brief->dc_type, ['FeatureCatalogue','service'])) continue;
             $insmd = InspireMd::convert($mds->getFullGmd());
             $qual = InspireMd::quality($insmd);
-            if ($qual > $maxQual) {
-              $maxQual = $qual;
-              $bestId = (string)$brief->dc_identifier;
-            }
+            $key = (int)round($qual * 1_000);
+            $value = [(string)$brief->dc_identifier => $qual];
+            if (!isset($quals[$key]))
+              $quals[$key] = [$value];
+            else
+              $quals[$key][] = $value;
             //echo "$no/",$mds->numberOfRecordsMatched(),"\n";
           }
-          echo "$bestId -> $maxQual\n";
+          ksort($quals);
+          echo Yaml::dump($quals);
           die("FIN\n");
         }
       }
@@ -489,17 +491,17 @@ else { // utilisation en mode web
       die();
     }
     case 'viewRecord': {
-      $fmt = $_GET['fmt'] ?? 'iso-yaml'; // modèle et format
+      $fmt = $_GET['fmt'] ?? 'ins-yaml'; // modèle et format
       $menu = HTML_HEADER;
       $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
       $url = "?server=$id&action=viewRecord&id=$_GET[id]$startPosition";
       $menu .= "<table border=1><tr>";
       foreach ([
-         'iso-yaml'=> 'ISO 19139 Inspire formatté en Yaml',
+         'ins-yaml'=> 'Inspire formatté en Yaml',
          'iso-xml'=> 'ISO 19139 complet formatté en XML',
          'dcat-ttl'=> 'DCAT formatté en Turtle',
-         'dcat-yamlLd-c'=> "DCAT formatté en Yaml-LD compacté avec le contexte",
-         'dcat-yamlLd'=> "DCAT formatté en Yaml-LD non compacté",
+         'dcat-yamlLd'=> "DCAT formatté en Yaml-LD imbriqué avec le contexte",
+         //'dcat-yamlLd'=> "DCAT formatté en Yaml-LD non compacté",
          'dcat-xml'=> "DCAT formatté en RDF/XML",
          'double'=> "double affichage",
           ] as $f => $title) {
@@ -513,7 +515,7 @@ else { // utilisation en mode web
       $menu .= "</table>\n";
           
       switch ($fmt) {
-        case 'iso-yaml': { // ISO 19139 formatté en Yaml
+        case 'ins-yaml': { // InspireMd formatté en Yaml
           echo $menu;
           $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
           $record = InspireMd::convert($xml);
@@ -533,15 +535,15 @@ else { // utilisation en mode web
           echo "<pre>$turtle</pre>\n";
           die();
         }
-        case 'dcat-yamlLd': {
+        /*case 'dcat-yamlLd': {
           echo $menu;
           $rdf = $server->getFullDcatById($_GET['id']);
           $yamlld = new YamlLD($rdf);
           //$compacted = $yamlld->compact();
           echo "<pre>$yamlld</pre>\n";
           die();
-        }
-        case 'dcat-yamlLd-c': { // Yaml-LD compacté avec le contexte contextnl.yaml
+        }*/
+        case 'dcat-yamlLd': { // Yaml-LD imbriqué avec le contexte contextnl.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $server->getFullDcatById($_GET['id']);
@@ -561,7 +563,7 @@ else { // utilisation en mode web
           echo "
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]$startPosition' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlLd-c$startPosition' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlLd$startPosition' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
@@ -641,12 +643,16 @@ else { // utilisation en mode web
     }
     case 'misc': {
       echo HTML_HEADER,"<h2>Divers</h2><ul>";
+      echo "<li>Exemples de fiches de métadonnées bien remplies:<ul>\n";
       echo "<li><a href='?server=gide/gn-pds&action=viewRecord",
-            "&id=fr-120066022-ldd-4bc9b901-1e48-4afd-a01a-cc80e40c35b8&fmt=double'>",
-            "Exemple de fiche de métadonnées Géo-IDE bien remplie</a></li>\n";
+            "&id=fr-120066022-ldd-4bc9b901-1e48-4afd-a01a-cc80e40c35b8'>",
+            "sur Géo-IDE</a></li>\n";
+      echo "<li><a href='?server=sextant&action=viewRecord&id=34c8d98c-9aea-4bd6-bdf4-9e1041bda08a'>",
+           "sur Sextant (GN 4)</a></li>\n";
+      echo "</ul>\n";
       echo "<li><a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
             "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a></li>\n";
-            echo "</ul>\n";
+      echo "</ul>\n";
       die();
     }
     default: die("Action $_GET[action] inconnue");
