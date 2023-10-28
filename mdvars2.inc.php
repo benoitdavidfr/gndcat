@@ -1,10 +1,15 @@
 <?php
 /** classe statique Mdvars décrivant la liste des variables des éléments de MD et des traitements associés.
+ * Ce script a été conçu il y a plusieurs années et la structure de l'array retourné par extract, défini
+ * dans phpstan.neon sous le nom MdRecord, a été conçue pour un stockage en BD relationnelle.
+ * Elle a été conservée afin de limiter les modifications de ce script.
+ *
  * journal:
  * - 27/10/2023:
  *   - restructuration de la doc
+ *   - passage de NAMESPACES et MDVARS en constantes
  *   - simplification en supprimant la fonction de standardisation
- *   - correction pour se conformer à PhpStan
+ *   - corrections pour se conformer à PhpStan
  * - 23/10/2023:
  *   - ajout des adresse email dans responsibleParty et mdContact afin d'intégrer les éléments définis
  *     par le règlement Inspire métadonnées.
@@ -13,8 +18,8 @@
  *   - ajout de la lecture d'un éventuel codeSpace d'un URI encodé avec un RS_Identifier
  * - 21/9/2015 : correction d'un bug sur les espaces de noms XML dans la méthode extract()
  * - 8/7/2015 : ajout du champ aggregationInfo
- * 1/7/2015 : correction d'un bug sur les espaces de noms XML, voir la méthode setNameSpaces()
- * 30/6/2015 : première version béta utilisée dans load2.php
+ * - 1/7/2015 : correction d'un bug sur les espaces de noms XML, voir la méthode setNameSpaces()
+ * - 30/6/2015 : première version béta utilisée dans load2.php
  */
 
 /** classe statique associant les éléments de MD un nom de champ.
@@ -785,7 +790,7 @@ echo "<!DOCTYPE><html><head><title>mdvars</title></head><body>\n";
 // showmdvars - affichage de la liste des variables de mdvars
 
 echo "<h2>Eléments de MD</h2>
-Champs de métadonnées INSPIRE/ISO 19139 utilisés dans geocat.<br>
+Champs de métadonnées INSPIRE/ISO 19139 utilisés dans mdvars.<br>
 Dans le tableau ci-dessous:
 <ul>
 <li><b>nom</b> est le nom court utilisé dans l'affichage des fiches,
@@ -795,7 +800,8 @@ Dans le tableau ci-dessous:
 <li><b>m s</b> est la cardinalité du champ pour les fiches de métadonnées de service,
 <li><b>xpath</b> est le xpath utilisé pour extraire les champs des fiches ISO 19139 moissonnées dans les catalogues.
 </ul>
-Les champs suivants ont été ajoutés aux champs Inspire : fileIdentifier, parentIdentifier, distributionFormat, characterSet,
+Les champs suivants ont été ajoutés aux champs Inspire : fileIdentifier, parentIdentifier, aggregationInfo,
+alternateTitle, distributionFormat, characterSet,
 spatialRepresentationType.
 </p>
 <table border=1><th>nom</th><th>titre fr</th><th>titre en</th><th>m d</th><th>m s</th>\n",
@@ -813,10 +819,6 @@ foreach (Mdvars::MDVARS as $varname => $mdvar) {
            "</tr>\n";
 }
 echo "</table>
-<br>Des champs complémentaires peuvent apparaître dans les fiches, ils sont calculés a posteriori. Il s'agit principalement des champs suivants :
-<ul>
-<li>attributedTo : sélection de responsibleParty selon <a href='attrto.html'>les principes d'affectation d'une ressource</a>.
-</ul>
-<a href='?withxpath=1'>avec xpath</a>
+</p><a href='?withxpath=1'>avec xpath</a>
 </body></html>\n";
 ?>

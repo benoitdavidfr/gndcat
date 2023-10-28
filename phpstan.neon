@@ -2,6 +2,7 @@ parameters:
   level: 6
   #level: 2
   typeAliases:
+    # Type utilisé dans mdvars2.inc.php
     MdRecord: "array<string,MdElt>"
     MdElt: '''
       array<int,array{
