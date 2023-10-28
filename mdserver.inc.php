@@ -17,6 +17,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Cache {
   readonly public string $cachedir; // répertoire de stockage des fichiers du cache, '' si pas de cache
+  readonly public string $fileExt; // extension à utiliser pour les fichiers du cache
   protected bool $lastResultComesFromTheCache = true; // indique si la dernière opération effectuée a utilisé ou non le cache
   /** @var list<string> $lastHeaders */
   protected array $lastHeaders = []; // headers du dernier appel à Http::get()
@@ -27,7 +28,9 @@ class Cache {
   function lastHeaders(): array { return $this->lastHeaders; }
   function lastCachepathReturned(): string { return $this->lastCachepathReturned; }
 
-  function __construct(string $cachedir) {
+  function __construct(string $cachedir, string $fileExt='.xml') {
+    $this->fileExt = $fileExt;
+    
     if (!$cachedir) {
       $this->cachedir = '';
       return;
@@ -39,6 +42,7 @@ class Cache {
     if (!is_dir($cachedir))
       mkdir($cachedir);
     $this->cachedir = $cachedir;
+    
   }
   
   /** Retourne le chemin du fichier de cache pour une URL donnée */
@@ -82,13 +86,14 @@ class Cache {
       if (in_array($key, ['Accept','Accept-Language','content']))
         $docCache[$key] = $value;
     }
-    if (!$docCache) { // si aucune option n'est concerné o  n'utilise que l'url pour définir la clé de cache
-      $cachepath = $this->cachedir.'/'.md5($url).'.xml';
+    
+    if (!$docCache) { // si aucune option n'est concerné on n'utilise que l'url pour définir la clé de cache
+      $cachepath = $this->cachedir.'/'.md5($url).$this->fileExt;
       // permet ainsi de garder une compatibilité avec la ersion précédente
     }
     else {
-      $docCache['cswUrl'] = $url; // l'URL a un impact ur le contenu du résultat retourné 
-      $cachepath = $this->cachedir.'/'.md5(json_encode($docCache)).'.xml';
+      $docCache['cswUrl'] = $url; // l'URL a un impact sur le contenu du résultat retourné 
+      $cachepath = $this->cachedir.'/'.md5(json_encode($docCache)).$this->fileExt;
     }
     if (is_file($cachepath)) { // si l'URL est en cache
       $this->lastResultComesFromTheCache = true;
@@ -129,55 +134,10 @@ class Cache {
   }
 };
 
-/** Facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW et en effectuant les requêtes
- * au travers du cache associé au serveur.
- */
-class CswServer {
-  /** Paramètres du GetRecords et GetRecordById en fonction du modèle de métadonnées */
-  const MODEL_PARAMS = [
-    'dc'=> [
-      'OutputSchema' => 'http://www.opengis.net/cat/csw/2.0.2',
-      'namespace' => 'xmlns(csw=http://www.opengis.net/cat/csw)',
-      'TypeNames' => 'csw:Record',
-    ], // Dublin Core
-    'gmd'=> [
-      'OutputSchema' => 'http://www.isotc211.org/2005/gmd',
-      'namespace' => 'xmlns(gmd=http://www.isotc211.org/2005/gmd)',
-      'TypeNames' => 'gmd:MD_Metadata',
-    ], // ISO 19115/19139
-    'mdb'=> [
-      'OutputSchema' => 'http://standards.iso.org/iso/19115/-3/mdb/2.0',
-      'namespace' => 'xmlns(mdb=http://standards.iso.org/iso/19115/-3/mdb/2.0)',
-      'TypeNames' => 'mdb:MD_Metadata',
-    ], // Metadata Base (MDB) ??
-    'dcat'=> [
-      'OutputSchema' => 'http://www.w3.org/ns/dcat#',
-      'namespace' => 'xmlns(dcat=http://www.w3.org/ns/dcat#)',
-      'TypeNames' => 'dcat',
-    ], // DCAT
-    'dcat-ap'=> [
-      'OutputSchema' => 'http://data.europa.eu/930/',
-      'namespace' => 'xmlns(dcat-ap=http://data.europa.eu/930/)',
-      'TypeNames' => 'dcat-ap',
-    ], // DCAT-AP ???
-    'gfc'=> [
-      'OutputSchema' => 'http://www.isotc211.org/2005/gfc',
-      'namespace' => 'xmlns(gfc=http://www.isotc211.org/2005/gfc)',
-      'TypeNames' => 'gfc:FC_FeatureCatalogue',
-    ], // FeatureCatalogue
-  ];
-  
+class Server {
   /** dictionnaire des caractéristiques des serveurs .
    * @var array<string,mixed> */
   static array $servers;
-  readonly public string $serverId;
-  readonly public string $cswUrl;
-  readonly public string $title;
-  /** @var array<mixed> */
-  readonly public array $post;
-  /** @var array<string,string|int|number> $httpOptions */
-  readonly public array $httpOptions;
-  readonly public Cache $cache;
   
   /** génère un dictionnaire de serveurs à la place des définitions de groupe générique.
    * @param array<string,mixed> $servers // le dictionnaire en entrée contenant possiblement des groupes généras
@@ -226,20 +186,62 @@ class CswServer {
     $groupeId = array_shift($serverIds);
     return self::exists(implode('/', $serverIds), $servers[$groupeId]['servers']);
   }
+};
+
+/** Facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW et en effectuant les requêtes
+ * au travers du cache associé au serveur.
+ */
+class CswServer {
+  /** Paramètres du GetRecords et GetRecordById en fonction du modèle de métadonnées */
+  const MODEL_PARAMS = [
+    'dc'=> [
+      'OutputSchema' => 'http://www.opengis.net/cat/csw/2.0.2',
+      'namespace' => 'xmlns(csw=http://www.opengis.net/cat/csw)',
+      'TypeNames' => 'csw:Record',
+    ], // Dublin Core
+    'gmd'=> [
+      'OutputSchema' => 'http://www.isotc211.org/2005/gmd',
+      'namespace' => 'xmlns(gmd=http://www.isotc211.org/2005/gmd)',
+      'TypeNames' => 'gmd:MD_Metadata',
+    ], // ISO 19115/19139
+    'mdb'=> [
+      'OutputSchema' => 'http://standards.iso.org/iso/19115/-3/mdb/2.0',
+      'namespace' => 'xmlns(mdb=http://standards.iso.org/iso/19115/-3/mdb/2.0)',
+      'TypeNames' => 'mdb:MD_Metadata',
+    ], // Metadata Base (MDB) ??
+    'dcat'=> [
+      'OutputSchema' => 'http://www.w3.org/ns/dcat#',
+      'namespace' => 'xmlns(dcat=http://www.w3.org/ns/dcat#)',
+      'TypeNames' => 'dcat',
+    ], // DCAT
+    'dcat-ap'=> [
+      'OutputSchema' => 'http://data.europa.eu/930/',
+      'namespace' => 'xmlns(dcat-ap=http://data.europa.eu/930/)',
+      'TypeNames' => 'dcat-ap',
+    ], // DCAT-AP ???
+    'gfc'=> [
+      'OutputSchema' => 'http://www.isotc211.org/2005/gfc',
+      'namespace' => 'xmlns(gfc=http://www.isotc211.org/2005/gfc)',
+      'TypeNames' => 'gfc:FC_FeatureCatalogue',
+    ], // FeatureCatalogue
+  ];
+  
+  readonly public string $serverId;
+  readonly public string $cswUrl;
+  readonly public string $title;
+  /** @var array<mixed> */
+  readonly public array $post;
+  /** @var array<string,string|int|number> $httpOptions */
+  readonly public array $httpOptions;
+  readonly public Cache $cache;
   
   function __construct(string $serverId, string $cachedir) {
-    if (!($server = self::exists($serverId)))
+    if (!($server = Server::exists($serverId)))
       throw new Exception("Erreur, serveur $serverId inexistant");
     $this->serverId = $serverId;
     $this->cswUrl = $server['cswUrl'];
     $this->title = $server['title'];
-    $this->post = $server['post'] ?? [];
-    
-    /*$filter = $this->post['filter'] ?? [];
-    $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
-    header('Content-type: application/xml');
-    die($filreXml);*/
-    
+    $this->post = $server['cswPost'] ?? [];
     $this->httpOptions = $server['httpOptions'] ?? [];
     $this->cache = new Cache(str_replace('/','-',$cachedir));
   }
@@ -374,7 +376,7 @@ class CswServer {
     //echo "sleep()\n";
     if ($this->cache->lastResultComesFromTheCache())
       return;
-    $delay = self::exists($this->serverId)['delay'] ?? 0;
+    $delay = Server::exists($this->serverId)['delay'] ?? 0;
     if ($delay >= 1) {
       //echo "sleep($delay)\n";
       sleep($delay);

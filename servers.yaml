@@ -1,6 +1,6 @@
 title: liste de serveurs CSW connus
 $schema:
-  $id: http://geoapi.fr/gndcat/servers.yaml#schema
+  $id: http://geoapi.fr/gndcat/servers.yaml#$schema
   definitions:
     ogcFilter:
       description: |
@@ -21,7 +21,7 @@ $schema:
                   type: string
                 Literal:
                   type: string
-    post:
+    cswPost:
       description: structure de paramétrage de l'appel GetRecords en POST au serveurs CSW
       type: object
       additionalProperties: false
@@ -37,45 +37,64 @@ $schema:
         max-retries:
           description: nbre de relances à faire en cas de timeout, défaut 0 <=> un seul appel
           type: integer
+        throw-on-error:
+          description: lance une exception en cas d'erreur'
         timeout:
           description: Délai maximal d'attente pour la lecture, sous la forme d'un nombre décimal (e.g. 10.5)
           type: number
+        Accept:
+          description: liste des types MIME demandés, ex 'application/json,application/geo+json'
+          type: string
+        
     server:
-      description: description d'un serveur CSW et d'éventuels points complémentaires
-      type: object
-      additionalProperties: false
-      required: [title, cswUrl]
-      properties:
-        title:
-          type: string
-          description: titre du serveur
-        cswUrl:
-          type: string
-          description: URL CSW sans les paramètres CSW
-        www:
-          type: string
-          description: URL du site HTML du catalogue ou de la plateforme
-        rdfSearchUrl:
-          type: string
-          description: URL du point rdf.search
-        ogcApiRecordsUrl:
-          type: string
-          description: URL du point OpenAPI Records
-        delay:
-          type: number
-          description: délai d'attente en secondes entre 2 appels lors du moissonnage en cli
-        httpOptions:
-          description: options à utiliser dans les appels HTTP GetRecords au serveur
-          $ref: '#/definitions/httpOptions'
-        post:
-          description: indique que le serveur CSW doit être appelé en POST pour les GetRecords et fournit le filtre à utiliser
-          $ref: '#/definitions/post'
+      description: |
+        description d'un serveur CSW ou API Records.
+        Doit au moins définir soit un point CSW, soit un point API Records.
+      allOf:
+        - description: liste des champs autorisés
+          type: object
+          additionalProperties: false
+          required: [title]
+          properties:
+            title:
+              type: string
+              description: titre du serveur
+            cswUrl:
+              type: string
+              description: URL CSW sans les paramètres CSW
+            cswPost:
+              description: |
+                indique que le serveur CSW doit être appelé en POST pour les GetRecords et fournit le filtre à utiliser
+              $ref: '#/definitions/cswPost'
+            homepage:
+              type: string
+              description: URL du site HTML du catalogue ou de la plateforme
+            rdfSearchUrl:
+              type: string
+              description: URL du point rdf.search
+            apiRecordsUrl:
+              type: string
+              description: URL du point OpenAPI Records
+            delay:
+              type: number
+              description: délai d'attente en secondes entre 2 appels lors du moissonnage en cli
+            httpOptions:
+              description: options à utiliser dans les appels HTTP GetRecords au serveur CSW
+              $ref: '#/definitions/httpOptions'
+        - description: ajoute les contraintes pour un point CSW ou un point API Records
+          anyOf:
+            - description: un serveur CSW doit définir avoir au moins l'URL de ce serveur
+              type: object
+              required: [cswUrl]
+            - description: un point API Records doit définir avoir au moins l'URL de ce point
+              type: object
+              required: [apiRecordsUrl]
     servers:
       description: dictionnaire de serveurs ou de groupes de serveurs.
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-z0-9$]*$:
+        ^[-a-zA-Z0-9éè:$]*$:
           oneOf:
             - description: Description d'un serveur.
               $ref: '#/definitions/server'
@@ -93,8 +112,8 @@ $schema:
             - description: |
                 Définition d'un groupe généré.
                 Le champ vars contient un dictionnaire [key => value].
-                Le chmap pattern contient le modèle de définition d'un serveur dans laquelle les champs $key ey $value
-                doivent être remplacées respectivement par la clé et la valeur de vars.
+                Le chmap pattern contient le modèle de définition d'un serveur dans laquelle les champs $key
+                et $value doivent être remplacées respectivement par la clé et la valeur de vars.
               type: object
               additionalProperties: false
               required: [title, vars, pattern]
@@ -107,7 +126,7 @@ $schema:
                   type: object
                   additionalProperties: false
                   patternProperties:
-                    ^[-a-z0-9]*$:
+                    ^[-a-zA-Z0-9]*$:
                       description: la valeur associée à la clé
                       type: string
                 pattern:
@@ -127,11 +146,17 @@ $schema:
       
 servers:
   # logiciels
+  apiRec:
+    title: Serveurs API Records mentionnés dans la page implémentations du standard
+    servers:
+      cubewerx:
+        title: CubeWerx Inc.
+        apiRecordsUrl: https://atlas.pvretano.com/cubewerx/cubeserv/default/ogcapi/catalogues/
   georchestra:
     title: Démo geOrchestra
     cswUrl: https://demo.georchestra.org/geonetwork/srv/fre/csw
     rdfSearchUrl: https://demo.georchestra.org/geonetwork/srv/fre/rdf.search
-    ogcApiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
+    apiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
   # nationaux
   # Géo-IDE
   gide:
@@ -146,7 +171,7 @@ servers:
       gn-pds:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               PropertyIsEqualTo:
@@ -155,7 +180,7 @@ servers:
       gn-pds37:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like 'DDT 37'
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -164,7 +189,7 @@ servers:
       gn-pdsCharente:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & (OrganisationName like 'DDT 16' or (OrganisationName like 'DDT' and OrganisationName like 'Charente'))
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -177,7 +202,7 @@ servers:
       gn-Vendée:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)"
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -191,7 +216,7 @@ servers:
       sp37:
         title: Géo-IDE, point spécifique, post, dataset DDT 37 - NE MARCHE PAS
         cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -254,7 +279,7 @@ servers:
       gn-pds$key:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -293,7 +318,7 @@ servers:
       gn-pds$key:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        post:
+        cswPost:
           filter:
             Filter:
               And:
@@ -303,7 +328,14 @@ servers:
   sextant:
     title: Sextant (Ifremer) (GeoNetwork 4.2.5)
     cswUrl: https://sextant.ifremer.fr/geonetwork/srv/fre/csw
-    ogcApiRecordsUrl: https://sextant.ifremer.fr/geonetwork/api/collections/
+    apiRecordsUrl: https://sextant.ifremer.fr/geonetwork/api/
+  sextant-oar:
+    title: Sextant (Ifremer) OGC API Records (GeoNetwork 4.2.5)
+    apiRecordsUrl: https://sextant.ifremer.fr/geonetwork/api/
+    httpOptions:
+      max-retries: 3
+      Accept: application/json,application/geo+json
+      throw-on-error: true
   sandre:
     title: Sandre (EauFrance)
     cswUrl: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw
@@ -322,7 +354,7 @@ servers:
   sas:
     title: GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers (GN 3.8.3)
     cswUrl: https://geosas.fr/geonetwork/srv/fre/csw
-    www: https://geosas.fr/
+    homepage: https://geosas.fr/
     rdfSearchUrl: https://geosas.fr/geonetwork/srv/fre/rdf.search
   geo2france:
     title: Géo2France
@@ -349,7 +381,7 @@ servers:
   bfc:
     title: IDéO BFC
     cswUrl: https://inspire.ternum-bfc.fr/geonetwork/srv/fre/csw
-    www: https://ideo.ternum-bfc.fr/
+    homepage: https://ideo.ternum-bfc.fr/
   odd-corse:
     title: Observatoire du Développement Durable de Corse (DREAL Corse)
     cswUrl: https://georchestra.ac-corse.fr/geonetwork/srv/fre/csw

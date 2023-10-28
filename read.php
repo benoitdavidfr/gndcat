@@ -1,11 +1,6 @@
 <?php
-/** Lecture des MD d'un serveur CSW en ISO ou en DCAT et affichage dans différents formats.
+/** Lecture de MD dans différents serveurs et affichage dans différents formats.
  *
- * La classe CswServer implémente les méthodees d'appel à un serveur CSW.
- * Elle utilise un dictionnaire de serveurs définis dans le fichier servers.yaml.
- * La classe MdServer implémente un itérateur sur GetRecords afin d'afficher une liste de métadonnées
- * plus indépendamment des appels GetRecords.
- * La classe Cache implémente un cache pour les appels Http effectués par le serveur CSW.
  */
 require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/http.inc.php';
@@ -198,17 +193,17 @@ class RdfServer {
   readonly public string $title;
   readonly public Cache $cache;
   
-  static function exists(string $serverId): bool { return isset(CswServer::exists($serverId)['rdfSearchUrl']); }
+  static function exists(string $serverId): bool { return isset(Server::exists($serverId)['rdfSearchUrl']); }
     
   function __construct(string $serverId, string $cachedir) {
     if (!self::exists($serverId))
       throw new Exception("Erreur, serveur $serverId inexistant");
     $this->serverId = $serverId;
     $this->cache = new Cache("rdf-$cachedir");
-    $this->title = CswServer::exists($serverId)['title'];
+    $this->title = Server::exists($serverId)['title'];
   }
   
-  function rdfSearchUrl(): ?string { return CswServer::exists($this->serverId)['rdfSearchUrl'] ?? null; }
+  function rdfSearchUrl(): ?string { return Server::exists($this->serverId)['rdfSearchUrl'] ?? null; }
 
   function rdfSearch(): \EasyRdf\Graph {
     $url = $this->rdfSearchUrl();
@@ -218,6 +213,72 @@ class RdfServer {
     return $rdf;
   }
 };
+
+// utilisation d'un point API Records */
+class ApiRecordsServer {
+  readonly public string $serverId;
+  readonly public string $baseUrl;
+  /** @var array<string,string|int|number> $httpOptions */
+  readonly public array $httpOptions;
+  readonly public Cache $cache;
+  
+  function __construct(string $serverId, string $cachedir) {
+    if (!($server = Server::exists($serverId)))
+      throw new Exception("Erreur, serveur $serverId inexistant");
+    if (!($server['apiRecordsUrl'] ?? null))
+      throw new Exception("Erreur, pas de point OGC API Records pour $serverId");
+    $this->serverId = $serverId;
+    $this->baseUrl = $server['apiRecordsUrl'];
+    $this->httpOptions = $server['httpOptions'] ?? [];
+    $this->cache = new Cache(str_replace('/', '-', $cachedir), '.json');
+    //$this->cache = new Cache('');
+  }
+  
+  function getHome(): string {
+    return $this->cache->get($this->baseUrl, $this->httpOptions);
+  }
+  
+  function collections(): string {
+    $url = $this->baseUrl.'collections/?f=json';
+    echo "<a href='$url'>$url</a><br>\n";
+    $result = $this->cache->get($url, $this->httpOptions);
+    if ($result === false) {
+      var_dump(Http::$lastHeaders);
+      
+      var_dump(Http::$lastErrorBody);
+      throw new Exception("Résultat en erreur");
+    }
+    var_dump($result);
+    return $result;
+  }
+};
+
+/** Affiche les MDs sauf ceux de $typesToSkip
+ * @param list<string> $typesToSkip */
+function listRecords(string $action, string $id, string $cacheDir, int $startPosition, array $typesToSkip): void {
+  $mds = new MdServer($id, $cacheDir, $startPosition);
+  $nbreLignes = 0;
+  $no = 0;
+  echo "<table border=1>\n";
+  foreach ($mds as $no => $record) {
+    if (in_array($record->dc_type, $typesToSkip)) continue;
+    if (++$nbreLignes > NBRE_MAX_LIGNES) break;
+    $url = "?server=$id&action=viewRecord&id=".$record->dc_identifier."&startPosition=$startPosition";
+    echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td></tr>\n";
+  }
+  echo "</table>\n";
+  //echo "numberOfRecordsMatched=",$mds->numberOfRecordsMatched(),"<br>\n";
+  //echo "no=$no<br>\n";
+  //echo "nbre=$nbre<br>\n";
+  if ($nbreLignes > NBRE_MAX_LIGNES)
+    echo "<a href='?server=$id&action=$action&startPosition=$no'>",
+          "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a> / \n";
+  else
+    echo "$startPosition -> ",$mds->numberOfRecordsMatched()," / \n";
+  echo "<a href='?server=$id&action=$action'>Retour au 1er</a> / \n";
+  echo "<a href='?server=$id'>Retour à l'accueil</a></p>";
+  die();
+}
 
 /** Balaie le catalogue indiqué et retourne un array [responsibleParty.name][dataset.id] => 1
  * @return array<string,array<string,1>>
@@ -259,13 +320,13 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
     case 1: {
       echo "usage: php $argv[0] {catalog} {action}\n";
       echo "Liste des serveurs:\n";
-      foreach (CswServer::servers() as $id => $server)
+      foreach (Server::servers() as $id => $server)
         echo " - $id : $server[title]\n";
       die();
     }
     case 2: {
       $id = $argv[1];
-      if (!CswServer::exists($id))
+      if (!Server::exists($id))
         die("Erreur le serveur $id n'est pas défini\n");
       echo "Liste des actions:\n";
       echo " - getRecords - lit les enregistrements en brief DC\n";
@@ -389,7 +450,7 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
 else { // utilisation en mode web
   if (!isset($_GET['server'])) { // choix d'un des catalogues
     echo HTML_HEADER,"<h2>Choix d'un des catalogues connus</h2><ul>\n";
-    foreach (CswServer::servers() as $id => $server) {
+    foreach (Server::servers() as $id => $server) {
       echo "<li><a href='?server=$id'>$server[title]</a></li>\n";
     }
     echo "</ul><a href='?server=error&action=doc'>doc</a><br>\n";
@@ -399,8 +460,8 @@ else { // utilisation en mode web
   }
 
   $id = $_GET['server'];
-  $server = CswServer::exists($id);
-  if ($server && !isset($server['cswUrl'])) {
+  $server = Server::exists($id);
+  if ($server && isset($server['servers'])) {
     echo HTML_HEADER,"<h2>Choix d'un des catalogues connus de \"$server[title]\"</h2><ul>\n";
     foreach ($server['servers'] as $id2 => $server) {
       echo "<li><a href='?server=$id/$id2'>$server[title]</a></li>\n";
@@ -409,37 +470,41 @@ else { // utilisation en mode web
     die();
   }
   
-  $server = new CswServer($id, $id);
+  $cswServer = isset($server['cswUrl']) ? new CswServer($id, $id) : null;
   $rdfServer = RdfServer::exists($id) ? new RdfServer($id, $id) : null;
   switch ($_GET['action'] ?? null) { // en fonction de l'action
     case null: { // menu
-      echo HTML_HEADER,"<h2>Choix d'une action pour \"$server->title\"</h2><ul>\n";
-      echo "<li><a href='",$server->getCapabilitiesUrl(),"'>Lien vers les GetCapabilities</a></li>\n";
-      echo "<li><a href='?server=$id&action=GetCapabilities'>GetCapabilities@cache</a></li>\n";
-      echo "<li><a href='?server=$id&action=GetRecords'>GetRecords sans utiliser MdServer</a></li>\n";
-      echo "<li><a href='?server=$id&action=listDatasets'>Liste des dataset (en utilisant MdServer)</a></li>\n";
+      echo HTML_HEADER,"<h2>Choix d'une action pour \"$server[title]\"</h2><ul>\n";
+      if ($cswServer) {
+        echo "<li><a href='",$cswServer->getCapabilitiesUrl(),"'>Lien vers les GetCapabilities</a></li>\n";
+        echo "<li><a href='?server=$id&action=GetCapabilities'>GetCapabilities@cache</a></li>\n";
+        echo "<li><a href='?server=$id&action=listDatasets'>Liste des dataset (en utilisant MdServer)</a></li>\n";
+        echo "<li><a href='?server=$id&action=listServices'>Liste des services (en utilisant MdServer)</a></li>\n";
+        echo "<li><a href='?server=$id&action=GetRecords'>GetRecords sans utiliser MdServer pour tests</a></li>\n";
+      }
       if ($rdfServer) {
         echo "<li><a href='",$rdfServer->rdfSearchUrl(),"'>Lien vers le point rdf.search</a></li>\n";
         echo "<li><a href='?server=$id&action=rdf'>Affichage du RDF en Turtle</a></li>\n";
       }
-      if (isset(CswServer::exists($id)['ogcApiRecordsUrl'])) {
-        $url = CswServer::exists($id)['ogcApiRecordsUrl'];
-        echo "<li><a href='$url' target='_blank'>Lien vers le point /collections OGC ApiRecords</a></li>\n";
+      if (isset(Server::exists($id)['apiRecordsUrl'])) {
+        $url = Server::exists($id)['apiRecordsUrl'];
+        echo "<li><a href='$url' target='_blank'>Lien vers la landingPage API Records</a></li>\n";
+        echo "<li><a href='?server=$id&action=collections'>Liste des collections API Records</a></li>\n";
       }
       echo "</ul><a href='?'>Retour à la liste des catalogues.</a></p>\n";
       die();
     }
     case 'GetCapabilities': {
-      $xml = $server->getCapabilities();
+      $xml = $cswServer->getCapabilities();
       echo HTML_HEADER,'<pre>',str_replace('<','&lt;', $xml);
       die();
     }
     case 'GetRecords': { // liste les métadonnées n'utilisant pas MdServer
       //$server = new CswServer($id, '');
       $startPosition = $_GET['startPosition'] ?? 1;
-      $url = $server->getRecordsUrl('dc', 'brief', $startPosition);
+      $url = $cswServer->getRecordsUrl('dc', 'brief', $startPosition);
       echo "<a href='$url'>GetRecords@dc</a></p>\n";
-      $results = $server->getRecords('dc', 'brief', $startPosition);
+      $results = $cswServer->getRecords('dc', 'brief', $startPosition);
       echo '<pre>',str_replace('<','&lt;',$results),"</pre>\n";
       $results = str_replace(['csw:','dc:'],['csw_','dc_'], $results);
       $results = new SimpleXMLElement($results);
@@ -459,35 +524,21 @@ else { // utilisation en mode web
     
       echo "<table border=1>\n";
       foreach ($results->csw_SearchResults->csw_BriefRecord as $record) {
-        $url = $server->getRecordByIdUrl('dcat', 'full', $record->dc_identifier);
+        $url = $cswServer->getRecordByIdUrl('dcat', 'full', $record->dc_identifier);
         echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td><td>$url</td></tr>\n";
       }
       echo "</table>\n";
       die();
     }
     case 'listDatasets': {  // GetRecords des dataset en utilisant MdServer
-      $startPosition = $_GET['startPosition'] ?? 1;
-      $mds = new MdServer($id, $id, $startPosition);
-      $nbreLignes = 0;
-      $no = 0;
-      echo "<table border=1>\n";
-      foreach ($mds as $no => $record) {
-        if (in_array($record->dc_type, ['FeatureCatalogue','service'])) continue;
-        if (++$nbreLignes > NBRE_MAX_LIGNES) break;
-        $url = "?server=$id&action=viewRecord&id=".$record->dc_identifier."&startPosition=$startPosition";
-        echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td></tr>\n";
-      }
-      echo "</table>\n";
-      //echo "numberOfRecordsMatched=",$mds->numberOfRecordsMatched(),"<br>\n";
-      //echo "no=$no<br>\n";
-      //echo "nbre=$nbre<br>\n";
-      if ($nbreLignes > NBRE_MAX_LIGNES)
-        echo "<a href='?server=$id&action=$_GET[action]&startPosition=$no'>",
-              "suivant ($no / ",$mds->numberOfRecordsMatched(),")</a> / \n";
-      else
-        echo "$startPosition -> ",$mds->numberOfRecordsMatched()," / \n";
-      echo "<a href='?server=$id&action=listDatasets'>Retour au 1er</a> / \n";
-      echo "<a href='?server=$id'>Retour à l'accueil</a></p>";
+      listRecords($_GET['action'], $id, $id, $_GET['startPosition'] ?? 1, ['FeatureCatalogue','service']);
+      die();
+    }
+    case 'listServices': {  // GetRecords des service en utilisant MdServer
+      listRecords(
+        $_GET['action'], $id, $id, $_GET['startPosition'] ?? 1,
+        ['FeatureCatalogue','dataset','series','document','nonGeographicDataset',
+         'publication','initiative','software','application','map','repository','']);
       die();
     }
     case 'viewRecord': {
@@ -500,8 +551,8 @@ else { // utilisation en mode web
          'ins-yaml'=> 'Inspire formatté en Yaml',
          'iso-xml'=> 'ISO 19139 complet formatté en XML',
          'dcat-ttl'=> 'DCAT formatté en Turtle',
-         'dcat-yamlLd'=> "DCAT formatté en Yaml-LD imbriqué avec le contexte",
-         //'dcat-yamlLd'=> "DCAT formatté en Yaml-LD non compacté",
+         'dcat-yamlLdi'=> "DCAT formatté en Yaml-LD imbriqué avec le contexte",
+         'dcat-yamlLd'=> "DCAT formatté en Yaml-LD non imbriqué et non compacté",
          'dcat-xml'=> "DCAT formatté en RDF/XML",
          'double'=> "double affichage",
           ] as $f => $title) {
@@ -517,43 +568,43 @@ else { // utilisation en mode web
       switch ($fmt) {
         case 'ins-yaml': { // InspireMd formatté en Yaml
           echo $menu;
-          $xml = $server->getRecordById('gmd', 'full', $_GET['id']);
+          $xml = $cswServer->getRecordById('gmd', 'full', $_GET['id']);
           $record = InspireMd::convert($xml);
           echo '<pre>',YamlDump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
           die();
         }
         case 'iso-xml': {
-          $url = $server->getRecordByIdUrl('gmd', 'full', $_GET['id']);
+          $url = $cswServer->getRecordByIdUrl('gmd', 'full', $_GET['id']);
           header('HTTP/1.1 302 Moved Temporarily');
           header("Location: $url");
           die();
         }
         case 'dcat-ttl': {
           echo $menu;
-          $rdf = $server->getFullDcatById($_GET['id']);
+          $rdf = $cswServer->getFullDcatById($_GET['id']);
           $turtle = new Turtle($rdf);
           echo "<pre>$turtle</pre>\n";
           die();
         }
-        /*case 'dcat-yamlLd': {
+        case 'dcat-yamlLd': {
           echo $menu;
-          $rdf = $server->getFullDcatById($_GET['id']);
+          $rdf = $cswServer->getFullDcatById($_GET['id']);
           $yamlld = new YamlLD($rdf);
           //$compacted = $yamlld->compact();
           echo "<pre>$yamlld</pre>\n";
           die();
-        }*/
-        case 'dcat-yamlLd': { // Yaml-LD imbriqué avec le contexte contextnl.yaml
+        }
+        case 'dcat-yamlLdi': { // Yaml-LD imbriqué avec le contexte contextnl.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
-          $rdf = $server->getFullDcatById($_GET['id']);
+          $rdf = $cswServer->getFullDcatById($_GET['id']);
           $yamlld = new YamlLD($rdf);
           $compacted = $yamlld->frame();
           echo "<pre>$compacted</pre>\n";
           die();
         }
         case 'dcat-xml': {
-          $url = $server->getRecordByIdUrl('dcat', 'full', $_GET['id']);
+          $url = $cswServer->getRecordByIdUrl('dcat', 'full', $_GET['id']);
           header('HTTP/1.1 302 Moved Temporarily');
           header("Location: $url");
           die();
@@ -614,6 +665,17 @@ else { // utilisation en mode web
       foreach (array_keys($rpNames[$_GET['respParty']]) as $dsid) {
         echo "<a href='?server=$id&action=viewRecord&id=$dsid'>$dsid</a><br>\n";
       }
+      die();
+    }
+    case 'collections': {
+      echo HTML_HEADER,'<pre>';
+      $server = new ApiRecordsServer($id, $id);
+      /*
+      $home = $server->getHome();
+      var_dump($home);
+      */
+      $colls = $server->collections();
+      var_dump($colls);
       die();
     }
     case 'doc': { // doc

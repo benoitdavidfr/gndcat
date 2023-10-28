@@ -4,6 +4,8 @@
  * Code simplifié par rapport à httpreqst.inc.php
  *
  * journal:
+ * - 28/10/2023
+ *   - ajout possibilité de demander de lancer une exception en cas d'erreur
  * - 20/10/2023
  *   - ajout tests unitaires en mode web
  *   - ajout traitement du timeout, si appel avec ignore_errors, requelt() ne lance jamais d'exception
@@ -15,6 +17,30 @@
  * - 15/2/2021:
  *   - création
  */
+
+/*class MyException extends Exception {
+    // Redéfini l'exception pour que le message ne soit pas facultatif.
+    public function __construct($message, $code = 0, Throwable $previous = null) {
+        // du code
+
+        // s'assurer que tout est correctement assigné
+        parent::__construct($message, $code, $previous);
+    }
+
+    // Représentation personnalisée de l'objet sous forme de chaîne de caractères.
+    public function __toString() {
+        return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
+    }
+
+    public function customFunction() {
+        echo "Une fonction personnalisée pour ce type d'exception\n";
+    }
+};*/
+/*class HttpException extends Exception {
+  public function __construct($message, $code, Throwable $previous = null) {
+    parent::__construct($message, $code, $previous);
+  }
+};*/
 
 /** gestion des requêtes Http avec les options, version 2.
  *
@@ -59,21 +85,23 @@ class Http {
     return stream_context_create(['http'=> $httpOptions]);
   }
   
-  /** Exécute un appel HTTP et retourne false en cas d'erreur ou sinon le body de la réponse.
+  /** Exécute un appel HTTP et retourne le body de la réponse.
    *
    * Dans tous les cas les headers de retour sont enregistrés dans la variable statique $lastHeaders,
    * qui peut ainsi être consultée après le retour de l'appel.
-   * En cas d'erreur, le body est enregistré dans la variable statique $lastErrorBody,
-   * ce qui permet de ne pas perdre ce body en cas d'erreur.'
+   * En cas d'erreur:
+   *  - le body est enregistré dans la variable statique $lastErrorBody.
+   *  - si l'option throw-on-error est définie alors lance une exception avec comme message le body retourné
+   *    et comme code le code Http retourné, sinon retourne false.
    *
    * L'option 'ignore_errors' est systématiquement forcée dans un souci de simplicité.
    *
-   * Le timeout est géré de manière particulière car Php ne retourne alors pas de headers.
-   * Pour que ce soit transparent pour l'utilisateur, dans ce cas une erreur 'HTTP/1.1 504 Time-out' est génèrée
-   * qui peut être analysée comme les autres erreurs.
+   * En cas de timeout, Php ne retournant pas de headers, pour faciliter l'usage de la classe,
+   * une erreur 'HTTP/1.1 504 Time-out' est génèrée qui peut être traitée comme les autres erreurs.
    *
    * Les options possibles sont:
-   *   'max-retries' => nbre de relances à afire en cas de timeout, 0 <=> un seul appel, défaut 0
+   *   'max-retries' => nbre de relances à faire en cas de timeout, 0 <=> un seul appel, défaut 0
+   *   'throw-on-error' => si défini et true alors lance une exception en cas d'erreur, défaut pas défini
    *   'method'=> méthode HTTP à utiliser, par défaut 'GET'
    *   'referer'=> referer à utiliser, par défaut aucun
    *   'timeout'=> Délai maximal d'attente pour la lecture, sous la forme d'un nombre décimal (e.g. 10.5)
@@ -92,6 +120,8 @@ class Http {
     $nbretries = $options['max-retries'] ?? 0; // nombre de relances à effectuer en cas d'erreur de timeout
     //echo "nbretries=$nbretries<br>\n";
     unset($options['max-retries']); // l'option 'max-retries' est retirée car ce n'est pas une option de buildHttpContext()
+    $throwOnError = $options['throw-on-error'] ?? false;
+    unset($options['throw-on-error']);
     $options['ignore_errors'] = true; // l'option ignore_errors est forcée
     $sleep_duration = 1; // durée d'attente avant de renvoyer un nouvel appel, multiplié par 2 à chaque itération
     while (true) {
@@ -124,7 +154,9 @@ class Http {
         'Content-Type: text/plain; charset=UTF-8',
       ];
       self::$lastErrorBody = 'Timeout';
-      return false;
+      if (!$throwOnError)
+        return false;
+      throw new Exception(self::$lastErrorBody, 504);
     }
     
     self::$lastHeaders = $http_response_header;
@@ -133,7 +165,9 @@ class Http {
     
     // erreur <> timeout
     self::$lastErrorBody = $body;
-    return false;
+    if (!$throwOnError)
+      return false;
+    throw new Exception($body, self::errorCode());
   }
   
   /** analyse les dernières en-têtes et retourne le code d'erreur HTTP ou -2 si ce code n'est pas trouvé.
