@@ -65,6 +65,7 @@ format: dct:format
 IMT: dct:IMT # DCMI Metadata Terms - The set of media types specified by the Internet Assigned Numbers Authority.
 issued: {'@id': dct:issued, '@type': xsd:date} # défini comme date
 issuedT: {'@id': dct:issued, '@type': xsd:dateTime} # défini comme dateTime
+issuedL: dct:issued # défini comme littéral
 modified: {'@id': dct:modified, '@type': xsd:date} # défini comme date
 modifiedT: {'@id': dct:modified, '@type': xsd:dateTime} # défini comme dateTime
 created: {'@id': dct:created, '@type': xsd:date} # défini comme date
@@ -86,11 +87,13 @@ spatial: dct:spatial
 Organization: foaf:Organization
 name: foaf:name
 mbox: {'@id': foaf:mbox, '@type': '@id'}
+phone: foaf:phone
 workplaceHomepage: {'@id': foaf:workplaceHomepage, '@type': '@id'}
 homepage: {'@id': foaf:homepage, '@type': '@id'}
 page: {'@id': foaf:page, '@type': '@id'}
 isPrimaryTopicOf: foaf:isPrimaryTopicOf
 primaryTopic: foaf:primaryTopic
+member: foaf:member
 
 # vCARD
 VCard: vcard:Kind

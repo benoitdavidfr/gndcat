@@ -4,14 +4,14 @@
  *  - imbrication des ressources et suppression des noeuds blancs
  */
 require_once __DIR__.'/vendor/autoload.php';
-require_once __DIR__.'/frame.inc.php';
+require_once __DIR__.'/rdfgraph.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use ML\JsonLD\JsonLD;
 
 switch ($_GET['action'] ?? null) {
   case null: {
-    echo "<a href='?action=Graph'>Utilisation de Graph::frame</a><br>\n";
+    //echo "<a href='?action=Graph'>Utilisation de Graph::frame</a><br>\n";
     echo "<a href='?action=JsonLD'>Utilisation de JsonLD::frame</a><br>\n";
     die();
   }
@@ -35,7 +35,7 @@ switch ($_GET['action'] ?? null) {
     //print_r($compacted);
     die();
   }
-  case 'JsonLD': { // Test de l'utilisation de JsonLD::frame(()
+  case 'JsonLD': { // utilisation de JsonLD::frame(()
     $frame = [
       '@context'=> Yaml::parseFile(__DIR__.'/context.yaml'),
       '@type'=> 'Dataset',

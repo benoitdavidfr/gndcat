@@ -6,6 +6,7 @@ require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/http.inc.php';
 require_once __DIR__.'/inspiremd.inc.php';
 require_once __DIR__.'/mdserver.inc.php';
+require_once __DIR__.'/rdfgraph.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use ML\JsonLD\JsonLD;
@@ -132,11 +133,12 @@ class Turtle {
   }
 };
 
-/** Gestion d'un document Yaml-LD contextualisé */
+/** Gestion d'un graphe Yaml-LD contextualisé */
 class YamlLD {
   const CONTEXT_PATH = __DIR__.'/contextnl.yaml';
   const CONTEXT_URI = 'https://geoapi.fr/gndcat/contextnl.yaml';
-  /** @var array<mixed> $graph  stockage du document comme array */
+  const PROP_ORDER_PATH = __DIR__.'/proporder.yaml';
+  /** @var array<mixed> $graph  stockage du graphe comme array */
   readonly public array $graph;
   
   /** construit un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph
@@ -151,19 +153,21 @@ class YamlLD {
   }
   
   function __toString(): string {
-    if (count($this->graph['@graph'] ?? [])==1) {
+    $sortedGraph = \rdf\Graph::sortProperties($this->graph, Yaml::parseFile(self::PROP_ORDER_PATH));
+    if (count($sortedGraph['@graph'] ?? [])==1) {
       $graph = ['@context' => self::CONTEXT_URI];
-      foreach ($this->graph['@graph'][0] as $p => $o)
+      foreach ($sortedGraph['@graph'][0] as $p => $o)
         $graph[$p] = $o;
     }
     else {
-      $graph = $this->graph;
+      $graph = $sortedGraph;
       if (isset($graph['@context']))
         $graph['@context'] = self::CONTEXT_URI;
     }
     return YamlDump($graph, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
   }
   
+  /** Compacte le graphe, cad lui applique un contexte */
   function compact(): self {
     $compacted = JsonLD::compact(
       json_encode($this->graph),
@@ -215,7 +219,7 @@ class RdfServer {
 };
 
 // utilisation d'un point API Records */
-class ApiRecordsServer {
+class ApiRecords {
   readonly public string $serverId;
   readonly public string $baseUrl;
   /** @var array<string,string|int|number> $httpOptions */
@@ -244,12 +248,22 @@ class ApiRecordsServer {
     $result = $this->cache->get($url, $this->httpOptions);
     if ($result === false) {
       var_dump(Http::$lastHeaders);
-      
       var_dump(Http::$lastErrorBody);
       throw new Exception("Résultat en erreur");
     }
-    var_dump($result);
     return $result;
+  }
+  
+  function items(string $collId): array {
+    $url = $this->baseUrl."collections/$collId/items?f=json";
+    echo "<a href='$url'>$url</a><br>\n";
+    $result = $this->cache->get($url, $this->httpOptions);
+    if ($result === false) {
+      var_dump(Http::$lastHeaders);
+      var_dump(Http::$lastErrorBody);
+      throw new Exception("Résultat en erreur");
+    }
+    return json_decode($result, true);
   }
 };
 
@@ -599,8 +613,7 @@ else { // utilisation en mode web
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $cswServer->getFullDcatById($_GET['id']);
           $yamlld = new YamlLD($rdf);
-          $compacted = $yamlld->frame();
-          echo "<pre>$compacted</pre>\n";
+          echo "<pre>",$yamlld->frame(),"</pre>\n";
           die();
         }
         case 'dcat-xml': {
@@ -667,15 +680,25 @@ else { // utilisation en mode web
       }
       die();
     }
-    case 'collections': {
+    case 'collections': { // liste des collections du serveur OGC API Records
       echo HTML_HEADER,'<pre>';
-      $server = new ApiRecordsServer($id, $id);
+      $server = new ApiRecords($id, $id);
       /*
       $home = $server->getHome();
       var_dump($home);
       */
-      $colls = $server->collections();
-      var_dump($colls);
+      $colls = json_decode($server->collections(), true);
+      echo Yaml::dump($colls, 9);
+      foreach ($colls['collections'] as $coll) {
+        echo "<a href='?server=$id&action=items&coll=$coll[id]'>$coll[title]</a><br>\n";
+      }
+      die();
+    }
+    case 'items': { // Liste des enregistrements de la collection coll du serveur OGC API Records
+      echo HTML_HEADER,'<pre>';
+      $server = new ApiRecords($id, $id);
+      $items = $server->items($_GET['coll']);
+      echo Yaml::dump($items, 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
       die();
     }
     case 'doc': { // doc

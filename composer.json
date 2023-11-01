@@ -2,6 +2,8 @@
     "require": {
         "symfony/yaml": "^6.3",
         "easyrdf/easyrdf": "^1.1",
-        "ml/json-ld": "^1.2"
+        "ml/json-ld": "^1.2",
+        "graphp/graphviz": "^0.2.2",
+        "alom/graphviz": "^2.0"
     }
 }

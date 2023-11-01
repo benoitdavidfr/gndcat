@@ -152,11 +152,20 @@ servers:
       cubewerx:
         title: CubeWerx Inc.
         apiRecordsUrl: https://atlas.pvretano.com/cubewerx/cubeserv/default/ogcapi/catalogues/
+      pygeoapi:
+        title: pygeoapi Demo instance - running latest GitHub version
+        apiRecordsUrl: https://demo.pygeoapi.io/master/
+      pycsw:
+        title: pycsw Geospatial Catalogue gisdata demo
+        apiRecordsUrl: https://demo.pycsw.org/gisdata/
   georchestra:
     title: Démo geOrchestra
     cswUrl: https://demo.georchestra.org/geonetwork/srv/fre/csw
     rdfSearchUrl: https://demo.georchestra.org/geonetwork/srv/fre/rdf.search
     apiRecordsUrl: https://demo.georchestra.org/geonetwork/srv/api/search/records/_search
+  localgn:
+    title: GeoNetwork local
+    cswUrl:  http://geonetwork:8080/geonetwork/srv/fre/csw
   # nationaux
   # Géo-IDE
   gide:

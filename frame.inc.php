@@ -1,6 +1,9 @@
 <?php
 namespace rdf;
 /** Imbrication d'un graphe RDF.
+ * COMPOSANT ABANDONNE
+ * J'ai réussi à utiliser JsonLD::frame()
+ *
  * La méthode Resource::frameGraph() prend en entrée un graphe aplani et l'imbrique (frame).
  * Dans ce script cela consiste à:
  *  - identifier les ressources qui ne sont pas référencées par d'autre ressource du graphe,

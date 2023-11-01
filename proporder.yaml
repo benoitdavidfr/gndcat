@@ -1,0 +1,39 @@
+# Ordre des propriétés à utiliser pour l'affichage des fiches
+'@context':
+$id:
+isA:
+title:
+abstract:
+identifierL:
+language:
+keyword:
+theme:
+  $id:
+  isA:
+  prefLabel:
+  inScheme:
+spatial:
+  $id:
+  isA:
+  'geosparql:asWKT':
+'dct:issued':
+issuedL:
+'dct:updated':
+accrualPeriodicity:
+publisher:
+  $id:
+  isA:
+  name:
+  member:
+    $id:
+    isA:
+    name:
+    mbox:
+    phone:
+license:
+distribution:
+  $id:
+  isA:
+  title:
+  format:
+  'dcat:accessURL':
