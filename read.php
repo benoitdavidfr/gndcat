@@ -6,10 +6,11 @@ require_once __DIR__.'/vendor/autoload.php';
 require_once __DIR__.'/http.inc.php';
 require_once __DIR__.'/inspiremd.inc.php';
 require_once __DIR__.'/mdserver.inc.php';
-require_once __DIR__.'/rdfgraph.inc.php';
+require_once __DIR__.'/simpld.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
-use ML\JsonLD\JsonLD;
+use simpLD\SimpLD;
+use simpLD\PropOrder;
 
 const VERSION = "2/11/2023";
 
@@ -130,66 +131,6 @@ class Turtle {
       $src = preg_replace("!<http$urlp>!", $urlR, $src);
     }
     return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
-  }
-};
-
-/** Gestion d'un graphe LD en JSON-LD ou Yaml-LD empaquetant les méthodes de ML\JsonLD\JsonLD */
-class YamlLD {
-  /** @var array<mixed> $graph  stockage du graphe comme array */
-  readonly public array $graph;
-  
-  /** initialise un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph
-   * @param array<mixed>|\EasyRdf\Graph $rdfOrArray
-   */
-  function __construct(array|\EasyRdf\Graph $rdfOrArray) {
-    if (is_array($rdfOrArray))
-      $this->graph = $rdfOrArray;
-    else
-      $this->graph = json_decode($rdfOrArray->serialise('jsonld'), true);
-    // die ("<pre>$this</pre>\n"); // affichage du JSON-LD
-  }
-  
-  /** Fabrique une représentation Yaml en remplacant évt. le contexte par un URI et en ord. évt. les prop. des ressources */
-  function asYaml(string $contextURI='', ?\rdf\PropOrder $order=null): string {
-    if ($order)
-      $sGraph = \rdf\Graph::sortProperties($this->graph, $order);
-    else
-      $sGraph = $this->graph;
-    if (count($sGraph['@graph'] ?? []) == 1) {
-      $graph = [];
-      if ($contextURI)
-        $graph['@context'] = $contextURI;
-      foreach ($sGraph['@graph'][0] as $p => $o)
-        $graph[$p] = $o;
-    }
-    else {
-      $graph = $sGraph;
-      if (isset($graph['@context']) && $contextURI)
-        $graph['@context'] = $contextURI;
-    }
-    return YamlDump($graph, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-  }
-  
-  /** Compacte le graphe, cad lui applique le contexte.
-   * @param array<string,mixed> $context ; le contexte à appliquer
-   */
-  function compact(array $context): self {
-    $compacted = JsonLD::compact(json_encode($this->graph), json_encode($context));
-    $compacted = json_decode(json_encode($compacted), true);
-    //$compacted = $this->improve()
-    return new self($compacted);
-  }
-  
-  /** Imbrique le graphe en fonction du cadre fourni
-   * @param array<string,mixed> $frame ; le cadre à utiliser
-   */
-  function frame(array $frame): self {
-    $framed = JsonLD::frame(
-      json_encode($this->graph),
-      json_encode($frame));
-    $framed = json_decode(json_encode($framed), true);
-    //$framed['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
-    return new self($framed);
   }
 };
 
@@ -607,7 +548,7 @@ else { // utilisation en mode web
         case 'dcat-yamlLd': {
           echo $menu;
           $rdf = $cswServer->getFullDcatById($_GET['id']);
-          $yamlld = new YamlLD($rdf);
+          $yamlld = new SimpLD($rdf);
           //$compacted = $yamlld->compact();
           echo '<pre>',$yamlld->asYaml(),"</pre>\n";
           die();
@@ -616,13 +557,13 @@ else { // utilisation en mode web
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $cswServer->getFullDcatById($_GET['id']);
-          $yamlld = new YamlLD($rdf);
+          $yamlld = new SimpLD($rdf);
           echo "<pre>",
                 $yamlld
                   ->compact(Yaml::parseFile(__DIR__.'/contextnl.yaml'))
                     ->asYaml(
                       contextURI: 'https://geoapi.fr/gndcat/contextnl.yaml',
-                      order: new \rdf\PropOrder(__DIR__.'/proporder.yaml')
+                      order: new PropOrder(__DIR__.'/proporder.yaml')
                     ),
                "</pre>\n";
           die();
@@ -631,7 +572,7 @@ else { // utilisation en mode web
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $cswServer->getFullDcatById($_GET['id']);
-          $yamlld = new YamlLD($rdf);
+          $yamlld = new SimpLD($rdf);
           $frame = [
             '@context'=> Yaml::parseFile(__DIR__.'/contextnl.yaml'),
             '@type'=> 'Dataset',
@@ -641,7 +582,7 @@ else { // utilisation en mode web
                   ->frame($frame)
                     ->asYaml(
                       contextURI: 'https://geoapi.fr/gndcat/contextnl.yaml',
-                      order: new \rdf\PropOrder(__DIR__.'/proporder.yaml')
+                      order: new PropOrder(__DIR__.'/proporder.yaml')
                     ),
                "</pre>\n";
           die();

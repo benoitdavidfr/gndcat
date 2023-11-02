@@ -1,15 +1,32 @@
 <?php
-namespace rdf;
-/** Modification du contenu d'un graphe RDF.
- * Les classes définies dans ce fichier permettent de réaliser des modifications sur les ressources RDF du graphe.
+namespace simpLD;
+/** Gestion simple d'un graphe JSON-LD ou Yaml-LD et modification des ressources du graphe.
+ * La classe SimpLD gère de manière simplifiée un graphe JSON-LD ou Yaml-LD et empaquette les méthodes de JsonLD.
+ * Les classes PObject, Literal, Reference et Resource permettent de réaliser des modifications sur les ressources RDF du graphe.
  * La classe Graph expose les méthodes sur un graphe.
- * Le graphe étant stocké comme variable statique de la classes Resource, un seul graphe peut être défini
- * à un instant donné.
  * Le code fait l'hypothèse que les champs '@id' et '@type' sont resp. codés en JSON comme PObject::ID et PObject::TYPE.
  */
 require_once __DIR__.'/vendor/autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
+use ML\JsonLD\JsonLD;
+
+/** Liste ordonnée de propriétés par classe RDF utilisée pour Resource::sortProperties(). */
+class PropOrder {
+  /** @var array<string,list<string>> $classes liste ordonnée de propriétés par classe */
+  readonly public array $classes;
+  
+  /** Initialise un objet à partir soit du contenu d'un fichier proporder soit d'un chemin vers un tel fichier.
+   * @param string|array<string,list<string>> $order */
+  function __construct(string|array $order) {
+    if (is_string($order)) {
+      if (!is_file($order))
+        throw new \Exception("Erreur, fichier '$order' n'existe pas");
+      $order = Yaml::parseFile($order);
+    }
+    $this->classes = $order['classes'];
+  }
+};
 
 /** Objet d'une propriété dans un graphe aplani, cad soit un littéral, soit une référence à une ressource.
  * Dans un graphe non aplani, l'objet d'une propriété peut aussi être une ressource.
@@ -43,7 +60,7 @@ abstract class PObject {
   }
   
   abstract function updateCounter(): void;
-  abstract function frame(int $depth): self|Resource;
+  //abstract function frame(int $depth): self|Resource;
   /** @return string|array<mixed> */
   abstract function asArray(int $depth=0): string|int|float|bool|array;
   function sortProperties(PropOrder $propOrder): self { return $this; }
@@ -58,7 +75,7 @@ class Literal extends PObject {
 
   function updateCounter(): void {}
 
-  function frame(int $depth): Literal { return $this; }
+  //function frame(int $depth): Literal { return $this; }
   
   function asArray(int $depth=0): string|int|float|bool|array {
     if (!$this->type)
@@ -79,33 +96,16 @@ class Reference extends PObject {
       Resource::$graph[$this->id]->incrCounter();
   }
 
-  /** imbrication */
+  /** imbrication *
   function frame(int $depth): Reference|Resource {
     if (isset(Resource::$graph[$this->id]))
       return Resource::$graph[$this->id]->frame($depth+1);
     else
       return $this;
-  }
+  }*/
 
   /** @return array<mixed> */
   function asArray(int $depth=0): array { return [self::ID => $this->id]; }
-};
-
-/** Liste ordonnée de propriétés par classe utilisée pour Resource::sortProperties(). */
-class PropOrder {
-  /** @var array<string,list<string>> $classes liste ordonnée de propriétés par classe */
-  readonly public array $classes;
-  
-  /** Initialise un objet à partir soit du contenu d'un fichier proporder soit d'un chemin vers un tel fichier.
-   * @param string|array<string,list<string>> $order */
-  function __construct(string|array $order) {
-    if (is_string($order)) {
-      if (!is_file($order))
-        throw new \Exception("Erreur, fichier '$order' n'existe pas");
-      $order = Yaml::parseFile($order);
-    }
-    $this->classes = $order['classes'];
-  }
 };
 
 /** Ressource RDF et stockage d'un graphe dans la variable statique $graph */
@@ -163,7 +163,7 @@ class Resource {
     }
   }
   
-  /** Fabrique un nouvel objet en remplacant chaque référence par la ressource référencée */
+  /** Fabrique un nouvel objet en remplacant chaque référence par la ressource référencée *
   function frame(int $depth=0): self {
     if ($depth >= self::DEPTH_MAX)
       throw new \Exception("depth > DEPTH_MAX");
@@ -177,7 +177,7 @@ class Resource {
     }
     //print_r($propObjs);
     return new self($this->id, $propObjs);
-  }
+  }*/
   
   /** Tri l'ordre des propriétés en fonction de l'ordre défini par $propOrder */
   function sortProperties(PropOrder $propOrder): self {
@@ -429,6 +429,66 @@ class Graph {
       ];
     }
     echo Yaml::dump(Graph::sortProperties($graph, new PropOrder($order)), 10, 2);
+  }
+};
+
+/** Gestion d'un graphe LD en JSON-LD ou Yaml-LD empaquetant les méthodes de ML\JsonLD\JsonLD */
+class SimpLD {
+  /** @var array<mixed> $graph  stockage du graphe comme array */
+  readonly public array $graph;
+  
+  /** initialise un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph
+   * @param array<mixed>|\EasyRdf\Graph $rdfOrArray
+   */
+  function __construct(array|\EasyRdf\Graph $rdfOrArray) {
+    if (is_array($rdfOrArray))
+      $this->graph = $rdfOrArray;
+    else
+      $this->graph = json_decode($rdfOrArray->serialise('jsonld'), true);
+    // die ("<pre>$this</pre>\n"); // affichage du JSON-LD
+  }
+  
+  /** Fabrique une représentation Yaml en remplacant évt. le contexte par un URI et en ord. évt. les prop. des ressources */
+  function asYaml(string $contextURI='', ?PropOrder $order=null): string {
+    if ($order)
+      $sGraph = Graph::sortProperties($this->graph, $order);
+    else
+      $sGraph = $this->graph;
+    if (count($sGraph['@graph'] ?? []) == 1) {
+      $graph = [];
+      if ($contextURI)
+        $graph['@context'] = $contextURI;
+      foreach ($sGraph['@graph'][0] as $p => $o)
+        $graph[$p] = $o;
+    }
+    else {
+      $graph = $sGraph;
+      if (isset($graph['@context']) && $contextURI)
+        $graph['@context'] = $contextURI;
+    }
+    return YamlDump($graph, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+  }
+  
+  /** Compacte le graphe, cad lui applique le contexte.
+   * @param array<string,mixed> $context ; le contexte à appliquer
+   */
+  function compact(array $context): self {
+    $compacted = JsonLD::compact(json_encode($this->graph), json_encode($context));
+    $compacted = json_decode(json_encode($compacted), true);
+    //$compacted = $this->improve()
+    return new self($compacted);
+  }
+  
+  /** Imbrique le graphe en fonction du cadre fourni
+   * @param array<string,mixed> $frame ; le cadre à utiliser
+   */
+  function frame(array $frame): self {
+    $framed = JsonLD::frame(
+      json_encode($this->graph),
+      json_encode($frame));
+    $framed = json_decode(json_encode($framed), true);
+    //$framed['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
+    return new self($framed);
   }
 };
 

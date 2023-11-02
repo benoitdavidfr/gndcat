@@ -3,12 +3,12 @@
 **Attention, développements en cours !**
 
 L'objectif principal de ce projet est de tester l'utilisation du modèle [DCAT](https://www.w3.org/TR/vocab-dcat-3/)
-dans les requêtes [CSW](https://www.ogc.org/standard/cat/) de [Geonetwork](https://geonetwork-opensource.org/).
+dans les requêtes [CSW](https://www.ogc.org/standard/cat/) de [GeoNetwork](https://geonetwork-opensource.org/).
 
 L'outil de test est disponible sur https://geoapi.fr/gndcat/read.php.
 
 Pour effectuer ces tests un certain nombre de catalogues sont recensés dans l'outil
-dans le fichier [servers.yaml](servers.yaml).
+dans le fichier [servers.yaml](servers.yaml) dont la structure est décrite par un schéma JSON.
 
 Pour afficher une fiche de MD:
 
@@ -44,7 +44,24 @@ Lors des requêtes sur les catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
 
 ### Organisation du code
-Le code du proto est principalement dans le fichier [read.php](read.php) qui définit plusieurs classes:
+Le code du proto est réparti dans les fichiers suivants:
+
+- le fichier [mdserver.inc.php](mdserver.inc.php) gère la logique d'utilisation des serveurs CSW :
+  - la classe Cache gère le cache des requêtes Http de manière sommaire.
+  - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
+    et en effectuant les requêtes au travers du cache associé au serveur.
+  - la classe MdServer définit une abstraction de serveur de MD au moyen, d'une part, d'un itérateur sur les fiches de MD
+    d'un serveur et, d'autre part, de méthodes retournant le contenu de la fiche courante en XML/ISO-19139 ou en RDF/DCAT.
+
+- le fichier [http.inc.php](http.inc.php) simplifie l'envoi de requêtes Http.
+
+- les fichiers [mdvars2.inc.php](mdvars2.inc.php) et [inspiremd.inc.php](inspiremd.inc.php) simplifient l'utilisation
+  des MD Inspire codés en ISO 19139 en se fondant sur les XPath des éléments de MD Inspire définis par le CNIG.
+
+- le fichier [simpLD.inc.php](simpLD.inc.php) définit notamment la classe SimpLD simplifiant l'utilisation d'un graphe
+  JSON-LD/Yaml-LD en empaquetant les opérations de JsonLD.
+
+- le fichier [read.php](read.php) définit les classes suivantes:
 
   - la classe OrgRef gère un référentiel des organisations stocké dans le fichier [orgref.yaml](orgref.yaml) ;
     il est partiel et a été utilisé pour effectuer des tests sur Géo-IDE.
@@ -52,34 +69,17 @@ Le code du proto est principalement dans le fichier [read.php](read.php) qui dé
   - la classe Turtle facilite l'affichage en Turtle/Html, cad un texte Turtle dans lequel les URL sont transformés
     en liens HTML.
   
-  - la classe YamlLD gère des graphes RDF, les transforme en JSON-LD/YAML-LD et effectue l'opération de compactage.
-  
   - la classe RdfServer est utilisée pour tester les points DCAT sans CSW de certains serveurs.
 
   - la classse ApiRecords est utilisée pour tester les serveurs OGC API Records.
   
   - enfin le reste du code enchaine les actions demandées soit en CLI, soit en web.
 
-De plus:
-
-  - le fichier [http.inc.php](http.inc.php) définit la classe Http qui simplifie la réalisation de requêtes Http.
-  - le fichier [mdvars2.inc.php](mdvars2.inc.php) a été repris de projets précédents,
-    il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire
-    et effectue la conversion en JSON d'une fiche de MD en utilisant les XPath définis par le CNIG.
-  - la classe InspireMd définie dans le fichier [inspiremd.inc.php](inspiremd.inc.php) complète Mdvars
-    et simplifie la structure JSON retournée.
-  - le fichier [mdserver.inc.php](mdserver.inc.php) définit :
-    - la classe Cache gère le cache des requêtes Http de manière sommaire.
-    - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
-      et en effectuant les requêtes au travers du cache associé au serveur.
-    - la classe MdServer implémente un itérateur sur les réponses aux GetRecords retournés par un serveur CSW
-      pour itérer plus facilement dans les métadonnées retournées.
-  - le fichier [rdfgraph.inc.php](rdfgraph.inc.php) permet de réaliser des modifications sur les ressources d'un graphe RDF.
 
 Enfin, le code utilise les bibliothèques suivantes:
 
   - https://symfony.com/doc/current/components/yaml.html pour lire et écrire les fichiers Yaml,
   - https://www.easyrdf.org/ pour convertir le RDF entre XML, Turtle et JSON-LD,
-  - https://github.com/lanthaler/JsonLD notamment pour compacter le JSON-LD,
+  - https://github.com/lanthaler/JsonLD notamment pour compacter et imbriquer un graphe JSON-LD,
   
 et est régulièrement testé avec l'[outil PhpStan](https://phpstan.org/).

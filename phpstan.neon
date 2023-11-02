@@ -23,6 +23,6 @@ parameters:
     - inspiremd.inc.php
     - mdvars2.inc.php
     - mdserver.inc.php
-    - rdfgraph.inc.php
+    - simpld.inc.php
     - ficheckan.php
     - convert.php
