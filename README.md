@@ -28,11 +28,12 @@ le [Guide de saisie des éléments de métadonnées INSPIRE, v 2.0, décembre 20
 
 L'affichage DCAT des MD est effectué soit en XML, soit en [Turtle](https://www.w3.org/TR/turtle/),
 soit en [YAML-LD](https://json-ld.github.io/yaml-ld/spec/)
-(YAML-LD ressemble à du JSON-LD en étant plus lisible) compacté.
-Le compactage en JSON-LD/YAML-LD facilite à un humain la lecture d'un document en appliquant un contexte ;
-le contexte utilisé ici est défini dans [context.yaml](context.yaml).  
+(YAML-LD ressemble à du JSON-LD en étant plus lisible) compacté ou imbriqué.
+Le compactage (compact) en JSON-LD/YAML-LD facilite à un humain la lecture d'un document en appliquant un contexte ;
+le contexte utilisé ici est défini dans [contextnl.yaml](contextnl.yaml).  
+L'imbrication (frame) permet de restructurer le graphe en remplacant certaines réf. par les ressources référencées.
 
-Des tests particuliers ont été effectués sur l'interface Géonetwork de Géo-IDE,
+Des tests particuliers ont été effectués sur l'interface GéoNetwork de Géo-IDE,
 notamment la possibilité d'interroger les métadonnées d'une organisation particulière, par exemple une DDT.
 Le résultat de ces derniers tests est plutôt **négatif**
 car les libellés des organisations responsables sont assez hétérogènes.
@@ -43,26 +44,20 @@ Lors des requêtes sur les catalogues les résultats sont mis en cache.
 Un message est affiché lorsque cette mise en cache est effectuée.
 
 ### Organisation du code
-Le code du proto est principalement dans le fichier [read.php](read.php) qui est décomposé en plusieurs classes:
+Le code du proto est principalement dans le fichier [read.php](read.php) qui définit plusieurs classes:
 
   - la classe OrgRef gère un référentiel des organisations stocké dans le fichier [orgref.yaml](orgref.yaml) ;
     il est partiel et a été utilisé pour effectuer des tests sur Géo-IDE.
-    
-  - la classe Cache gère le cache des requêtes Http de manière sommaire.
   
-  - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
-    et en effectuant les requêtes au travers du cache associé au serveur.
-    
   - la classe Turtle facilite l'affichage en Turtle/Html, cad un texte Turtle dans lequel les URL sont transformés
     en liens HTML.
-    
+  
   - la classe YamlLD gère des graphes RDF, les transforme en JSON-LD/YAML-LD et effectue l'opération de compactage.
   
-  - la classe MDs implémente un itérateur sur les réponses aux GetRecords retournés par un serveur CSW
-    pour itérer plus facilement dans les métadonnées retournées.
-    
   - la classe RdfServer est utilisée pour tester les points DCAT sans CSW de certains serveurs.
 
+  - la classse ApiRecords est utilisée pour tester les serveurs OGC API Records.
+  
   - enfin le reste du code enchaine les actions demandées soit en CLI, soit en web.
 
 De plus:
@@ -71,9 +66,16 @@ De plus:
   - le fichier [mdvars2.inc.php](mdvars2.inc.php) a été repris de projets précédents,
     il implémente la classe Mdvars qui contient les différents éléments de MD ISO/Inspire
     et effectue la conversion en JSON d'une fiche de MD en utilisant les XPath définis par le CNIG.
-  - la classe IsoMd définie dans le fichier [isomd.inc.php](isomd.inc.php) complète Mdvars
+  - la classe InspireMd définie dans le fichier [inspiremd.inc.php](inspiremd.inc.php) complète Mdvars
     et simplifie la structure JSON retournée.
-    
+  - le fichier [mdserver.inc.php](mdserver.inc.php) définit :
+    - la classe Cache gère le cache des requêtes Http de manière sommaire.
+    - la classe CswServer facilite l'utilisation d'un serveur CSW en construisant les URL des requêtes CSW
+      et en effectuant les requêtes au travers du cache associé au serveur.
+    - la classe MdServer implémente un itérateur sur les réponses aux GetRecords retournés par un serveur CSW
+      pour itérer plus facilement dans les métadonnées retournées.
+  - le fichier [rdfgraph.inc.php](rdfgraph.inc.php) permet de réaliser des modifications sur les ressources d'un graphe RDF.
+
 Enfin, le code utilise les bibliothèques suivantes:
 
   - https://symfony.com/doc/current/components/yaml.html pour lire et écrire les fichiers Yaml,
