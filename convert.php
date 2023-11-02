@@ -23,7 +23,10 @@ function extension(string $path): string {
   return $matches[1];
 }
 
-/** Extrait les noms des classes des ressources à partir d'un graphe compacté */
+/** Extrait les noms des classes des ressources à partir d'un graphe compacté
+ * @param array<mixed> $compacted; Le graphe compacté
+ * @return list<string>
+ */
 function extractTypes(array $compacted): array {
   //echo '<pre>compacted='; print_r($compacted);
   $idLabel = '@id';
@@ -162,9 +165,10 @@ switch ($_GET['fmt'] ?? null) { // traitement en fonction du format de sortie
       }
       die();
     }
-    $contextInJSON = match(extension($_GET['context'])) {
+    $contextInJSON = match($ext = extension($_GET['context'])) {
       'json'=> file_get_contents($_GET['context']),
       'yaml'=> json_encode(Yaml::parseFile($_GET['context'])),
+      default=> throw new \Exception("extension $ext non prévu"),
     };
     $compacted = JsonLD::compact($rdf->serialise('jsonld'), $contextInJSON);
     $compacted = json_decode(json_encode($compacted), true);

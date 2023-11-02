@@ -45,7 +45,7 @@ abstract class PObject {
   abstract function updateCounter(): void;
   abstract function frame(int $depth): self|Resource;
   /** @return string|array<mixed> */
-  abstract function asArray(): string|int|float|bool|array;
+  abstract function asArray(int $depth=0): string|int|float|bool|array;
   function sortProperties(PropOrder $propOrder): self { return $this; }
 };
 
@@ -60,7 +60,7 @@ class Literal extends PObject {
 
   function frame(int $depth): Literal { return $this; }
   
-  function asArray(): string|int|float|bool|array {
+  function asArray(int $depth=0): string|int|float|bool|array {
     if (!$this->type)
       return $this->value;
     else
@@ -72,7 +72,6 @@ class Literal extends PObject {
 class Reference extends PObject {
   readonly string $id;
   
-  /** @param array<mixed> $object */
   function __construct(string $id) { $this->id = $id; }
 
   function updateCounter(): void {
@@ -89,7 +88,7 @@ class Reference extends PObject {
   }
 
   /** @return array<mixed> */
-  function asArray(): array { return [self::ID => $this->id]; }
+  function asArray(int $depth=0): array { return [self::ID => $this->id]; }
 };
 
 /** Liste ordonnée de propriétés par classe utilisée pour Resource::sortProperties(). */
@@ -186,6 +185,8 @@ class Resource {
     //echo "this->propObjs="; print_r($this->propObjs);
     $propList = []; // la liste des propriétés triées extraite de $propOrder
     foreach ($this->propObjs['isA'] ?? [] as $literal) {
+      if (get_class($literal) <> __NAMESPACE__.'\\Literal')
+        throw new \Exception("Erreur, isA non littéral");
       $className = $literal->value;
       if ($propList = $propOrder->classes[$className] ?? [])
         break;
@@ -253,8 +254,7 @@ class Graph {
     }
   }
   
-  /** Fonctionnalité abandonnée au profit de JsonLD::frame() */
-  private static function ABANDONED() {
+  /** Fonctionnalité abandonnée au profit de JsonLD::frame() * {
     /** Imbrique un graphe aplani défini comme array ayant 2 propriétés @context et @graph.
      * SOLUTION ABANDONNEE AU PROFIF DE JsonLD::frame()
      * Dans le résultat ne sont conservées à la racine que les ressources qui ne sont pas référencées dans le graphe.
@@ -362,8 +362,8 @@ class Graph {
         default: die("action $_GET[action] inconnue\n");
       }
       echo '<pre>frameGraph = '; print_r(Graph::frame($graph));
-    }*/
-  }
+    }* /
+  }*/
   
   /** tri les propriétés de chaque ressource selon l'ordre défini dans $order.
    * L'ordre es défini par un dictionnaire [({pName}=> {subOrder}) | ({no}=> {pName})]
@@ -372,7 +372,7 @@ class Graph {
    * Si une propriété a pour objet un littéral ou une référence alors l'entrée doit être {no}=> {pName}
    * où {no} est une numéro d'ordre.
    * @param array<string,mixed> $graph ; le graphe en entrée
-   * @param array<mixed> $order ; l'ordre des propriétés
+   * @param PropOrder $order ; l'ordre des propriétés
    * @return array<string,mixed> le graphe en retour
    */
   static function sortProperties(array $graph, PropOrder $order): array {
@@ -390,11 +390,11 @@ class Graph {
   /** Test de sortProperties() */
   static function testSortProperties(): void {
     echo '<pre>';
-    if (1) {
+    if (1) { // @phpstan-ignore-line
       $graph = Yaml::parseFile('fichetest.yaml');
       $order = Yaml::parseFile('proporder.yaml');
     }
-    elseif (0) {
+    elseif (0) { // @phpstan-ignore-line
       $graph = [
         '@graph'=> [
           [ '$id' => '_:xxx',

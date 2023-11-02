@@ -170,7 +170,9 @@ class YamlLD {
     return YamlDump($graph, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
   }
   
-  /** Compacte le graphe, cad lui applique le contexte */
+  /** Compacte le graphe, cad lui applique le contexte.
+   * @param array<string,mixed> $context ; le contexte à appliquer
+   */
   function compact(array $context): self {
     $compacted = JsonLD::compact(json_encode($this->graph), json_encode($context));
     $compacted = json_decode(json_encode($compacted), true);
@@ -178,7 +180,9 @@ class YamlLD {
     return new self($compacted);
   }
   
-  /** Imbrique le graphe en fonction du cadre fourni */
+  /** Imbrique le graphe en fonction du cadre fourni
+   * @param array<string,mixed> $frame ; le cadre à utiliser
+   */
   function frame(array $frame): self {
     $framed = JsonLD::frame(
       json_encode($this->graph),
@@ -252,6 +256,7 @@ class ApiRecords {
     return $result;
   }
   
+  /** @return array<mixed> */
   function items(string $collId): array {
     $url = $this->baseUrl."collections/$collId/items?f=json";
     echo "<a href='$url'>$url</a><br>\n";

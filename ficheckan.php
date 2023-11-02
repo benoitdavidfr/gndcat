@@ -15,7 +15,7 @@ switch ($_GET['action'] ?? null) {
     echo "<a href='?action=JsonLD'>Utilisation de JsonLD::frame</a><br>\n";
     die();
   }
-  case 'Graph': {  // utilisation de Graph::frame
+  /*case 'Graph': {  // utilisation de Graph::frame
     // On commence par une expansion avant de recompacter sur le contexte souhaité
     $expanded = JsonLD::expand('ficheckan.jsonld');
 
@@ -34,7 +34,7 @@ switch ($_GET['action'] ?? null) {
     echo '<pre>',Yaml::dump($framed, 8, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
     //print_r($compacted);
     die();
-  }
+  }*/
   case 'JsonLD': { // utilisation de JsonLD::frame(()
     $frame = [
       '@context'=> Yaml::parseFile(__DIR__.'/context.yaml'),
