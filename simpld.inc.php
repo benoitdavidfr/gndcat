@@ -1,11 +1,9 @@
 <?php
-namespace simpLD;
 /** Gestion simple d'un graphe JSON-LD ou Yaml-LD et modification des ressources du graphe.
  * La classe SimpLD gère de manière simplifiée un graphe JSON-LD ou Yaml-LD et empaquette les méthodes de JsonLD.
  * Les classes PObject, Literal, Reference et Resource permettent de réaliser des modifications sur les ressources RDF du graphe.
- * La classe Graph expose les méthodes sur un graphe.
- * Le code fait l'hypothèse que les champs '@id' et '@type' sont resp. codés en JSON comme PObject::ID et PObject::TYPE.
  */
+namespace simpLD;
 require_once __DIR__.'/vendor/autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
@@ -31,15 +29,14 @@ class PropOrder {
 /** Objet d'une propriété dans un graphe aplani, cad soit un littéral, soit une référence à une ressource.
  * Dans un graphe non aplani, l'objet d'une propriété peut aussi être une ressource.
  * Si ONLY_FLATTEN_GRAPH est vrai alors la création à partir d'un graphe non aplani génère une erreur.
- * Le code fait l'hypothèse que les champs '@id' et '@type' sont resp. codés en JSON comme ID et TYPE.'
  */
 abstract class PObject {
   /** La constante ONLY_FLATTEN_GRAPH permet d'interdire la construction d'un graphe non aplani */
   const ONLY_FLATTEN_GRAPH = false;
   /** codage du champ '@id' */
-  const ID = '$id';
+  static string $idLabel = '$@id';
   /** codage du champ '@type' */
-  const TYPE = 'isA';
+  static string $typeLabel = '@type';
 
   /** Création soit d'une valeur (comme string), soit d'une référence (comme array)
    * @param string|array<string,mixed> $object */
@@ -49,10 +46,10 @@ abstract class PObject {
     if (is_string($object) || is_int($object) || is_float($object) || is_bool($object))
       return new Literal($object);
     // un littéral typé
-    elseif ((count($object)==2) && array_key_exists(self::TYPE, $object) && array_key_exists('@value', $object))
-      return new Literal($object['@value'], $object[self::TYPE]);
-    elseif ((count($object)==1) && array_key_exists(self::ID, $object))
-      return new Reference($object[self::ID]);
+    elseif ((count($object)==2) && array_key_exists(self::$typeLabel, $object) && array_key_exists('@value', $object))
+      return new Literal($object['@value'], $object[self::$typeLabel]);
+    elseif ((count($object)==1) && array_key_exists(self::$idLabel, $object))
+      return new Reference($object[self::$idLabel]);
     elseif (!self::ONLY_FLATTEN_GRAPH) // @phpstan-ignore-line
       return new Resource($object);
     else
@@ -68,7 +65,9 @@ abstract class PObject {
 
 /** Un littéral */
 class Literal extends PObject {
+  /** type éventuel du littéral */
   readonly ?string $type;
+  /** valeur du littéral */
   readonly string|int|float|bool $value;
 
   function __construct(string|int|float|bool $value, string $type=null) { $this->value = $value; $this->type = $type; }
@@ -81,7 +80,7 @@ class Literal extends PObject {
     if (!$this->type)
       return $this->value;
     else
-      return [self::TYPE => $this->type, '@value'=> $this->value];
+      return [self::$typeLabel => $this->type, '@value'=> $this->value];
   }
 };
 
@@ -105,7 +104,7 @@ class Reference extends PObject {
   }*/
 
   /** @return array<mixed> */
-  function asArray(int $depth=0): array { return [self::ID => $this->id]; }
+  function asArray(int $depth=0): array { return [self::$idLabel => $this->id]; }
 };
 
 /** Ressource RDF et stockage d'un graphe dans la variable statique $graph */
@@ -122,6 +121,30 @@ class Resource {
   /** dictionnaire des resources indexé sur leur URI et leur id pour les noeuds blancs [{uri} -> Resource]
    * @var array<string,self> */
   static array $graph=[];
+  
+  /** chargement d'un graphe dans self::$graph.
+   * @param array<string,mixed> $graph ; le graphe en entrée
+   */
+  static function load(array $graph): void {
+    // déduit du contexte d'éventuels labels pour @id et @type et modifie en conséquence les var. statiques correspondantes
+    PObject::$idLabel = '@id';
+    PObject::$typeLabel = '@type';
+    foreach ($graph['@context'] ?? [] as $key => $value) {
+      if ($value == '@id')
+        PObject::$idLabel = $key;
+      elseif ($value == '@type')
+        PObject::$typeLabel = $key;
+    }
+    
+    if (!isset($graph['@graph']))
+      throw new \Exception("Erreur champ '@graph' absent");
+    foreach ($graph['@graph'] as $resource) {
+      self::$graph[$resource['$id']] = new self($resource);
+    }
+    foreach (Resource::$graph as $id => $resource) {
+      $resource->updateCounter();
+    }
+  }
   
   /** création d'une ressource soit à partir de sa version array, soit à partir de son id et de ses propriétés.
    * @param string|array<string,mixed> $resourceOrId
@@ -238,132 +261,21 @@ class Resource {
   }
 };
 
-/** Classe exposant des méthodes sur un graphe */
-class Graph {
-  /** chargement du graphe dans Resource::$graph.
-   * @param array<string,mixed> $graph ; le graphe en entrée
-   */
-  private static function load(array $graph): void {
-    if (!isset($graph['@graph']))
-      throw new \Exception("Erreur champ '@graph' absent");
-    foreach ($graph['@graph'] as $resource) {
-      Resource::$graph[$resource['$id']] = new Resource($resource);
-    }
-    foreach (Resource::$graph as $id => $resource) {
-      $resource->updateCounter();
-    }
-  }
+/** Gestion d'un graphe LD en JSON-LD ou Yaml-LD empaquetant les méthodes de ML\JsonLD\JsonLD */
+class SimpLD {
+  /** @var array<mixed> $graph  stockage du graphe comme array */
+  readonly public array $graph;
   
-  /** Fonctionnalité abandonnée au profit de JsonLD::frame() * {
-    /** Imbrique un graphe aplani défini comme array ayant 2 propriétés @context et @graph.
-     * SOLUTION ABANDONNEE AU PROFIF DE JsonLD::frame()
-     * Dans le résultat ne sont conservées à la racine que les ressources qui ne sont pas référencées dans le graphe.
-     * Si le graphe ne contient qu'une seule ressource alors elle est retournée sans la propriété @graph
-     * @param array<string,mixed> $graph ; le graphe aplani en entrée
-     * @return array<string,mixed> le graphe imbriqué en retour
-     *
-    static function frame(array $graph): array {
-      // chargement du graphe dans Resource::$graph
-      self::load($graph);
-    
-      // imbrication des resources en ne conservant que les ressources qui ne sont pas référencées dans le graphe
-      // et transformation de ces ressources imbriqués en array
-      $graph['@graph'] = [];
-      foreach (Resource::$graph as $resource) {
-        if ($resource->getCounter() == 0) {
-          $graph['@graph'][] = $resource->frame()->asArray();
-        }
-      }
-    
-      // Retour du graphe en ne conservant le champ @graph que s'il existe plus d'une ressource
-      if (count($graph['@graph']) <> 1)
-        return $graph;
-      $resource = ['@context'=> $graph['@context']];
-      foreach ($graph['@graph'][0] as $p => $objs)
-        $resource[$p] = $objs;
-      return $resource;
-    }
-
-    / ** Test de frame() * /
-    static function testFrame(): void {
-      switch($_GET['action'] ?? null) {
-        case null: { // menu
-          echo "<a href='?action=boucle'>boucle</a><br>\n";
-          echo "<a href='?action=boucleEtRacine'>boucleEtRacine, génère une exception sur DEPTH_MAX</a><br>\n";
-          echo "<a href='?action=racineEtFils'>racineEtFils</a><br>\n";
-          echo "<a href='?action=flatten2'>flatten2</a><br>\n";
-          die();
-        }
-        case 'boucle': { // boucle retourne un graphe vide
-          $graph = [
-            '@context'=> '',
-            '@graph'=> [
-              [
-                '$id'=> 'boucle',
-                'prop'=> [
-                  '$id'=> 'boucle',
-                ],
-              ],
-            ],
-          ];
-          break;
-        }
-        case 'boucleEtRacine': { // boucleEtRacine, génère une exception
-          $graph = [
-            '@context'=> '',
-            '@graph'=> [
-              [
-                '$id'=> 'racine',
-                'ref'=> ['$id'=> 'boucle'],
-              ],
-              [
-                '$id'=> 'boucle',
-                'ref'=> ['$id'=> 'boucle'],
-              ],
-            ],
-          ];
-          break;
-        }
-        case 'racineEtFils': { // Test sur graphe ok
-          $graph = [
-            '@context'=> '',
-            '@graph'=> [
-              [
-                '$id'=> 'racine',
-                'ref'=> ['$id'=> 'fils'],
-              ],
-              [
-                '$id'=> 'fils',
-                'val'=> "valeur",
-              ],
-            ],
-          ];
-          break;
-        }
-        case 'flatten2': { // double imbrication
-          $graph = [
-            '@context'=> '',
-            '@graph'=> [
-              [
-                '$id'=> 'racine',
-                'ref'=> ['$id'=> 'fils'],
-              ],
-              [
-                '$id'=> 'fils',
-                'val'=> "valeur",
-              ],
-            ],
-          ];
-          $framed = Graph::frame($graph);
-          echo '<pre>frameGraph = '; print_r($framed);
-          $graph = ['@context'=> '', '@graph'=> [$framed]];
-          break;
-        }
-        default: die("action $_GET[action] inconnue\n");
-      }
-      echo '<pre>frameGraph = '; print_r(Graph::frame($graph));
-    }* /
-  }*/
+  /** initialise un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph
+   * @param array<mixed>|\EasyRdf\Graph $rdfOrArray
+   */
+  function __construct(array|\EasyRdf\Graph $rdfOrArray) {
+    if (is_array($rdfOrArray))
+      $this->graph = $rdfOrArray;
+    else
+      $this->graph = json_decode($rdfOrArray->serialise('jsonld'), true);
+    // die ("<pre>$this</pre>\n"); // affichage du JSON-LD
+  }
   
   /** tri les propriétés de chaque ressource selon l'ordre défini dans $order.
    * L'ordre es défini par un dictionnaire [({pName}=> {subOrder}) | ({no}=> {pName})]
@@ -375,10 +287,10 @@ class Graph {
    * @param PropOrder $order ; l'ordre des propriétés
    * @return array<string,mixed> le graphe en retour
    */
-  static function sortProperties(array $graph, PropOrder $order): array {
+  function sortProperties(PropOrder $order): array {
     //echo 'Graph::sortProperties(), $graph='; print_r($graph);
     // chargement du graphe dans Resource::$graph
-    self::load($graph);
+    Resource::load($this->graph);
     
     $graph['@graph'] = [];
     foreach (Resource::$graph as $resource) {
@@ -430,28 +342,11 @@ class Graph {
     }
     echo Yaml::dump(Graph::sortProperties($graph, new PropOrder($order)), 10, 2);
   }
-};
-
-/** Gestion d'un graphe LD en JSON-LD ou Yaml-LD empaquetant les méthodes de ML\JsonLD\JsonLD */
-class SimpLD {
-  /** @var array<mixed> $graph  stockage du graphe comme array */
-  readonly public array $graph;
-  
-  /** initialise un objet soit à partir d'une représentation array JSON soit à partir d'un objet \EasyRdf\Graph
-   * @param array<mixed>|\EasyRdf\Graph $rdfOrArray
-   */
-  function __construct(array|\EasyRdf\Graph $rdfOrArray) {
-    if (is_array($rdfOrArray))
-      $this->graph = $rdfOrArray;
-    else
-      $this->graph = json_decode($rdfOrArray->serialise('jsonld'), true);
-    // die ("<pre>$this</pre>\n"); // affichage du JSON-LD
-  }
   
   /** Fabrique une représentation Yaml en remplacant évt. le contexte par un URI et en ord. évt. les prop. des ressources */
   function asYaml(string $contextURI='', ?PropOrder $order=null): string {
     if ($order)
-      $sGraph = Graph::sortProperties($this->graph, $order);
+      $sGraph = $this->sortProperties($order);
     else
       $sGraph = $this->graph;
     if (count($sGraph['@graph'] ?? []) == 1) {
@@ -475,7 +370,6 @@ class SimpLD {
   function compact(array $context): self {
     $compacted = JsonLD::compact(json_encode($this->graph), json_encode($context));
     $compacted = json_decode(json_encode($compacted), true);
-    //$compacted = $this->improve()
     return new self($compacted);
   }
   
@@ -496,6 +390,4 @@ class SimpLD {
 if (basename(__FILE__) <> basename($_SERVER['SCRIPT_NAME'])) return; // TEST unitaire
 
 
-//Graph::testFrame(); // Test unitaire de Graph::frame()
-
-Graph::testSortProperties(); // Test unitaire de Graph::sortProperties()
+SimpLD::testSortProperties(); // Test unitaire de Graph::sortProperties()
