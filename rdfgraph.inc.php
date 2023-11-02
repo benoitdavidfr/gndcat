@@ -46,6 +46,7 @@ abstract class PObject {
   abstract function frame(int $depth): self|Resource;
   /** @return string|array<mixed> */
   abstract function asArray(): string|int|float|bool|array;
+  function sortProperties(PropOrder $propOrder): self { return $this; }
 };
 
 /** Un littéral */
@@ -91,6 +92,23 @@ class Reference extends PObject {
   function asArray(): array { return [self::ID => $this->id]; }
 };
 
+/** Liste ordonnée de propriétés par classe utilisée pour Resource::sortProperties(). */
+class PropOrder {
+  /** @var array<string,list<string>> $classes liste ordonnée de propriétés par classe */
+  readonly public array $classes;
+  
+  /** Initialise un objet à partir soit du contenu d'un fichier proporder soit d'un chemin vers un tel fichier.
+   * @param string|array<string,list<string>> $order */
+  function __construct(string|array $order) {
+    if (is_string($order)) {
+      if (!is_file($order))
+        throw new \Exception("Erreur, fichier '$order' n'existe pas");
+      $order = Yaml::parseFile($order);
+    }
+    $this->classes = $order['classes'];
+  }
+};
+
 /** Ressource RDF et stockage d'un graphe dans la variable statique $graph */
 class Resource {
   const DEPTH_MAX = 100; // profondeur max d'imbrication pour éviter les boucles
@@ -100,7 +118,7 @@ class Resource {
    * Dans un graphe imbriqué la valeur peut aussi être une Resource.
    * @var array<string, list<PObject>> $propObjs */
   readonly public array $propObjs;
-  protected int $counter=0; // compteur du nbre de référencement à la ressource
+  protected int $counter=0; // compteur du nbre de références vers cette ressource
   
   /** dictionnaire des resources indexé sur leur URI et leur id pour les noeuds blancs [{uri} -> Resource]
    * @var array<string,self> */
@@ -162,52 +180,57 @@ class Resource {
     return new self($this->id, $propObjs);
   }
   
-  /** Tri l'ordre des propriétés en fonction de l'ordre défini dans $order */
-  function sortProperties(array $order): self {
-    $propObjs = [];
-    foreach ($order as $propName => $subProps) {
-      //echo "propName=$propName, subProps="; print_r($subProps); echo "\n";
-      if (isset($this->propObjs[$propName])) {
-        if (!$subProps)
-          $propObjs[$propName] = $this->propObjs[$propName];
-        else {
-          $propObjs[$propName] = [];
-          foreach ($this->propObjs[$propName] as $pObjOrResource) {
-            if (get_class($pObjOrResource)== __NAMESPACE__.'\\'.'Resource') {
-              $propObjs[$propName][] = $pObjOrResource->sortProperties($subProps);
-            }
-            else
-              $propObjs[$propName][] = $pObjOrResource;
-          }
-        }
-      }
+  /** Tri l'ordre des propriétés en fonction de l'ordre défini par $propOrder */
+  function sortProperties(PropOrder $propOrder): self {
+    $propObjs = []; // le nouveau dict. des propriétés
+    //echo "this->propObjs="; print_r($this->propObjs);
+    $propList = []; // la liste des propriétés triées extraite de $propOrder
+    foreach ($this->propObjs['isA'] ?? [] as $literal) {
+      $className = $literal->value;
+      if ($propList = $propOrder->classes[$className] ?? [])
+        break;
     }
+    //echo "className=$className, proplist="; print_r($propList);
+    // je commence à recopier les propriétés définies dans $propOrder
+    foreach ($propList as $propName) {
+      //echo "propName=$propName, subProps="; print_r($subProps); echo "\n";
+      if (isset($this->propObjs[$propName]))
+        $propObjs[$propName] = $this->propObjs[$propName];
+    }
+    // puis je copie les propriétés qui ne sont pas définies dans $propOrder en conservant leur ordre initial
     foreach ($this->propObjs as $propName => $pObjs) {
       if (!array_key_exists($propName, $propObjs))
         $propObjs[$propName] = $pObjs;
+    }
+    // Appel récursif sur les ressources imbriquées
+    foreach ($propObjs as $propName => &$pObjs) {
+      foreach ($pObjs as &$pObj)
+        $pObj = $pObj->sortProperties($propOrder);
     }
     return new self($this->id, $propObjs);
   }
   
   /** Retransforme la ressource en array pur.
+   * les identfiants de noeuds blancs des ressources imbriquées sont supprimés.
    * @return array<string,mixed>
    */
-  function asArray(): array {
+  function asArray(int $depth=0): array {
     $propObjs = array_map(
-        function(array $objs): array|string|int|float|bool {
+        function(array $objs) use($depth): array|string|int|float|bool {
           if (count($objs) == 1)
-            return $objs[0]->asArray();
+            return $objs[0]->asArray($depth+1);
           else
             return array_map(
-              function(PObject|Resource $po): array|string|int|float|bool {
-                return $po->asArray();
+              function(PObject|Resource $po) use($depth): array|string|int|float|bool {
+                return $po->asArray($depth+1);
               },
               $objs
             );
         },
         $this->propObjs
     );
-    if (substr($this->id, 0, 2)=='_:')
+    // pour les ressources imbriquées, les identfiant de noeuds blancs sont supprimés
+    if ($depth && (substr($this->id, 0, 2)=='_:'))
       return $propObjs;
     else
       return array_merge(['$id'=> $this->id], $propObjs);
@@ -352,7 +375,7 @@ class Graph {
    * @param array<mixed> $order ; l'ordre des propriétés
    * @return array<string,mixed> le graphe en retour
    */
-  static function sortProperties(array $graph, array $order): array {
+  static function sortProperties(array $graph, PropOrder $order): array {
     //echo 'Graph::sortProperties(), $graph='; print_r($graph);
     // chargement du graphe dans Resource::$graph
     self::load($graph);
@@ -361,25 +384,51 @@ class Graph {
     foreach (Resource::$graph as $resource) {
       $graph['@graph'][] = $resource->sortProperties($order)->asArray();
     }
-    
-    // Retour du graphe en ne conservant le champ @graph que s'il existe plus d'une ressource
-    if (count($graph['@graph']) <> 1) {
-      //echo 'Graph::sortProperties(), return='; print_r($graph);
-      return $graph;
-    }
-    $resource = ['@context'=> $graph['@context']];
-    foreach ($graph['@graph'][0] as $p => $objs)
-      $resource[$p] = $objs;
-    //echo 'Graph::sortProperties(), return='; print_r($resource);
-    return $resource;
+    return $graph;
   }
 
   /** Test de sortProperties() */
   static function testSortProperties(): void {
     echo '<pre>';
-    $fichetest = Yaml::parseFile('fichetest.yaml');
-    $propOrder = Yaml::parseFile('proporder.yaml');
-    echo Yaml::dump(Graph::sortProperties($fichetest, $propOrder), 10, 2);
+    if (1) {
+      $graph = Yaml::parseFile('fichetest.yaml');
+      $order = Yaml::parseFile('proporder.yaml');
+    }
+    elseif (0) {
+      $graph = [
+        '@graph'=> [
+          [ '$id' => '_:xxx',
+            'isA'=> "IMT",
+            'value'=> 'application/xml',
+            'label'=> "XML",
+          ],
+        ],
+      ];
+      $order = [
+        'label'=> null,
+        'value'=> null,
+      ];
+    }
+    elseif (1) {
+      $graph = [
+        '@graph'=> [
+          [
+            '$id'=> '_:yyy',
+            'isA'=> 'Dataset',
+            'fmt'=> [ '$id' => '_:xxx',
+              'isA'=> "IMT",
+              'value'=> 'application/xml',
+              'label'=> "XML",
+            ],
+          ],
+        ],
+      ];
+      $order = [
+        'label'=> null,
+        'value'=> null,
+      ];
+    }
+    echo Yaml::dump(Graph::sortProperties($graph, new PropOrder($order)), 10, 2);
   }
 };
 

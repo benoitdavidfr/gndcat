@@ -12,7 +12,7 @@ foaf: http://xmlns.com/foaf/0.1/
 geosparql: http://www.opengis.net/ont/geosparql#
 locn: http://www.w3.org/ns/locn#
 mediatypes: https://www.iana.org/assignments/media-types/
-ogc: http://www.opengis.net/
+#ogc: http://www.opengis.net/ # je n'ai pas trouév de définition de cet espace de noms
 plume: http://registre.data.developpement-durable.gouv.fr/plume/
 rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
 rdfs: http://www.w3.org/2000/01/rdf-schema#
@@ -85,6 +85,7 @@ spatial: dct:spatial
 
 # FOAF
 Organization: foaf:Organization
+Agent: foaf:Agent
 name: foaf:name
 mbox: {'@id': foaf:mbox, '@type': '@id'}
 phone: foaf:phone
@@ -94,6 +95,7 @@ page: {'@id': foaf:page, '@type': '@id'}
 isPrimaryTopicOf: foaf:isPrimaryTopicOf
 primaryTopic: foaf:primaryTopic
 member: foaf:member
+thumbnail: foaf:thumbnail
 
 # vCARD
 VCard: vcard:Kind
@@ -112,6 +114,9 @@ status: adms:status
 # LOCN
 geometryAsWktLiteral: {'@id': locn:geometry, '@type': geosparql:wktLiteral}
 geometryAsGeoJSON: {'@id': locn:geometry, '@type': mediatypes:application/vnd.geo+json}
+
+# GeoSPARQL
+asWKT: geosparql:asWKT
 
 # RDF
 value: rdf:value

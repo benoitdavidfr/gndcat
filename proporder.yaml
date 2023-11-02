@@ -1,39 +1,62 @@
-# Ordre des propriétés à utiliser pour l'affichage des fiches
-'@context':
-$id:
-isA:
-title:
-abstract:
-identifierL:
-language:
-keyword:
-theme:
-  $id:
-  isA:
-  prefLabel:
-  inScheme:
-spatial:
-  $id:
-  isA:
-  'geosparql:asWKT':
-'dct:issued':
-issuedL:
-'dct:updated':
-accrualPeriodicity:
-publisher:
-  $id:
-  isA:
-  name:
-  member:
-    $id:
-    isA:
-    name:
-    mbox:
-    phone:
-license:
-distribution:
-  $id:
-  isA:
-  title:
-  format:
-  'dcat:accessURL':
+title: Ordre des propriétés à utiliser pour l'affichage des fiches
+abstract: |
+  Définition d'une liste de propriétés par classe.
+$schema:
+  $id: http://geoapi.fr/gndcat/proporder.yaml#/$schema
+  type: object
+  additionalProperties: false
+  properties:
+    title: { type: string }
+    abstract: {type: string }
+    $schema: http://json-schema.org/schema#
+    classes:
+      description: dictionnaire de classes -> propriétés
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[a-zA-Z0-9:]+$:
+          description: liste ordonnée des propriétés de la classe
+          type: array
+          items:
+            description: nom de la propriété
+            type: string
+classes:
+  Dataset:
+    - $id
+    - isA
+    - title
+    - abstract
+    - identifierL
+    - language
+    - keyword
+    - theme
+    - spatial
+    - dct:issued
+    - issuedL
+    - dct:updated
+    - accrualPeriodicity
+    - publisher
+    - license
+    - distribution
+  Concept: # pout les thèmes
+    - $id
+    - isA
+    - prefLabel
+    - inScheme
+  Organization: # publisher
+    - $id
+    - isA
+    - name
+    - member
+  foaf:Agent: # membre
+    - $id
+    - isA
+    - name
+    - mbox
+    - phone
+  Distribution:
+    - $id
+    - isA
+    - title
+    - format
+    - dcat:accessURL
