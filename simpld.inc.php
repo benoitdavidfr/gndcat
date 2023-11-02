@@ -57,7 +57,6 @@ abstract class PObject {
   }
   
   abstract function updateCounter(): void;
-  //abstract function frame(int $depth): self|Resource;
   /** @return string|array<mixed> */
   abstract function asArray(int $depth=0): string|int|float|bool|array;
   function sortProperties(PropOrder $propOrder): self { return $this; }
@@ -73,8 +72,6 @@ class Literal extends PObject {
   function __construct(string|int|float|bool $value, string $type=null) { $this->value = $value; $this->type = $type; }
 
   function updateCounter(): void {}
-
-  //function frame(int $depth): Literal { return $this; }
   
   function asArray(int $depth=0): string|int|float|bool|array {
     if (!$this->type)
@@ -94,14 +91,6 @@ class Reference extends PObject {
     if (isset(Resource::$graph[$this->id]))
       Resource::$graph[$this->id]->incrCounter();
   }
-
-  /** imbrication *
-  function frame(int $depth): Reference|Resource {
-    if (isset(Resource::$graph[$this->id]))
-      return Resource::$graph[$this->id]->frame($depth+1);
-    else
-      return $this;
-  }*/
 
   /** @return array<mixed> */
   function asArray(int $depth=0): array { return [self::$idLabel => $this->id]; }
@@ -185,22 +174,6 @@ class Resource {
       }
     }
   }
-  
-  /** Fabrique un nouvel objet en remplacant chaque référence par la ressource référencée *
-  function frame(int $depth=0): self {
-    if ($depth >= self::DEPTH_MAX)
-      throw new \Exception("depth > DEPTH_MAX");
-    $propObjs = [];
-    //print_r($this->propObjs);
-    foreach ($this->propObjs as $prop => $objs) {
-      $propObjs[$prop] = [];
-      foreach ($objs as $obj) {
-        $propObjs[$prop][] = $obj->frame($depth);
-      }
-    }
-    //print_r($propObjs);
-    return new self($this->id, $propObjs);
-  }*/
   
   /** Tri l'ordre des propriétés en fonction de l'ordre défini par $propOrder */
   function sortProperties(PropOrder $propOrder): self {
