@@ -21,15 +21,6 @@ $schema:
                   type: string
                 Literal:
                   type: string
-    cswPost:
-      description: structure de paramétrage de l'appel GetRecords en POST au serveurs CSW
-      type: object
-      additionalProperties: false
-      required: [filter]
-      properties:
-        filter:
-          description: filtre encodé en object respectant "OpenGIS® Filter Encoding 1.1.0" (OGC 04-095)
-          $ref: '#/definitions/ogcFilter'
     httpOptions:
       type: object
       additionalProperties: false
@@ -45,7 +36,6 @@ $schema:
         Accept:
           description: liste des types MIME demandés, ex 'application/json,application/geo+json'
           type: string
-        
     server:
       description: |
         description d'un serveur CSW ou API Records.
@@ -63,9 +53,11 @@ $schema:
               type: string
               description: URL CSW sans les paramètres CSW
             cswPost:
-              description: |
-                indique que le serveur CSW doit être appelé en POST pour les GetRecords et fournit le filtre à utiliser
-              $ref: '#/definitions/cswPost'
+              description: le serveur doit-il être interrogé en POST ?
+              type: boolean
+            filter:
+              description: filtre encodé en object respectant "OpenGIS® Filter Encoding 1.1.0" (OGC 04-095)
+              $ref: '#/definitions/ogcFilter'
             homepage:
               type: string
               description: URL du site HTML du catalogue ou de la plateforme
@@ -180,44 +172,43 @@ servers:
       gn-pds:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              PropertyIsEqualTo:
-                PropertyName: dc:type
-                Literal: dataset
+        cswPost: true
+        filter:
+          Filter:
+            PropertyIsEqualTo:
+              PropertyName: dc:type
+              Literal: dataset
       gn-pds37:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like 'DDT 37'
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
       gn-pdsCharente:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & (OrganisationName like 'DDT 16' or (OrganisationName like 'DDT' and OrganisationName like 'Charente'))
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - Or:
-                    - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 16 }
-                    - And:
-                        - PropertyIsLike: { PropertyName: OrganisationName, Literal: Charente }
-                        - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT }
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - Or:
+                  - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 16 }
+                  - And:
+                      - PropertyIsLike: { PropertyName: OrganisationName, Literal: Charente }
+                      - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT }
       gn-Vendée:
         title: Géo-IDE-GN/POST avec un filtre sur type='dataset' & OrganisationName like "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)"
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - PropertyIsLike: { PropertyName: OrganisationName, Literal: "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)" }
-
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - PropertyIsLike: { PropertyName: OrganisationName, Literal: "DDTM 85 (Direction Départementale des Territoires et de la Mer de Vendée)" }
 
       sp:
         title: Géo-IDE, point spécifique
@@ -225,12 +216,12 @@ servers:
       sp37:
         title: Géo-IDE, point spécifique, post, dataset DDT 37 - NE MARCHE PAS
         cswUrl: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/dataset-harvestable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT 37 }
 
   gide01:50:
     title: Géo-IDE généré D01->D50 (TESTS)
@@ -288,12 +279,12 @@ servers:
       gn-pds$key:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
       
   gide51:95:
     title: Géo-IDE généré D51->D74 (TESTS)
@@ -327,12 +318,12 @@ servers:
       gn-pds$key:
         title: Géo-IDE-GN/POST avec un filtre sur type=dataset & OrganisationName=$value
         cswUrl: http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/srv/eng/csw-moissonnable
-        cswPost:
-          filter:
-            Filter:
-              And:
-                - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-                - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
+        cswPost: true
+        filter:
+          Filter:
+            And:
+              - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+              - PropertyIsLike: { PropertyName: OrganisationName, Literal: $value }
       
   sextant:
     title: Sextant (Ifremer) (GeoNetwork 4.2.5)

@@ -6,7 +6,67 @@
  *   et en effectuant les requêtes au travers du cache associé au serveur.
  * - La classe Cache gère un cache des requêtes Http de manière sommaire.
  */
+require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__.'/http.inc.php';
+
 use Symfony\Component\Yaml\Yaml;
+
+/** Traduit un filtre défini en array en XML avec l'espace de nom ogc.
+ * @param array<mixed> $array */
+function arrayToXml(array $array): string {
+  $xml = '';
+  if (array_is_list($array)) {
+    foreach ($array as $value) {
+      $xml .= arrayToXml($value);
+    }
+  }
+  else {
+    foreach ($array as $key => $value) {
+      if (!is_array($value)) {
+        $xml .= "<ogc:$key>$value</ogc:$key>";
+      }
+      elseif ($key == 'Filter') {
+        $xml .= "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'>".arrayToXml($value)."</ogc:$key>";
+      }
+      else
+        $xml .= "<ogc:$key>".arrayToXml($value)."</ogc:$key>";
+    }
+  }
+  return $xml;
+}
+if (0) { // @phpstan-ignore-line // Test arrayToXml()
+  $filter = [
+    'Filter'=> [
+      'PropertyIsEqualTo'=> [
+        'PropertyName'=> 'dc:type',
+        'Literal'=> 'dataset',
+      ],
+    ],
+  ];
+  $yaml = <<<EOT
+Filter:
+  - PropertyIsEqualTo:
+      PropertyName: dc:type
+      Literal: dataset
+  - PropertyIsLike:
+      PropertyName: OrganisationName
+      Literal: 37
+EOT;
+  $yaml = <<<EOT
+Filter:
+  And:
+    - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
+    - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT de Charente }
+
+EOT;
+  $filter = Yaml::parse($yaml);
+  //echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
+  $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
+  
+  header('Content-type: application/xml');
+  die($filreXml);
+}
+
 
 /** Gestion d'un cache pour des requêtes http.
  *
@@ -134,6 +194,7 @@ class Cache {
   }
 };
 
+/** classe portant le registre des serveurs */
 class Server {
   /** dictionnaire des caractéristiques des serveurs .
    * @var array<string,mixed> */
@@ -229,8 +290,9 @@ class CswServer {
   readonly public string $serverId;
   readonly public string $cswUrl;
   readonly public string $title;
-  /** @var array<mixed> */
-  readonly public array $post;
+  readonly public bool $post;
+  /** @var array<mixed> $filter */
+  readonly public array $filter;
   /** @var array<string,string|int|number> $httpOptions */
   readonly public array $httpOptions;
   readonly public Cache $cache;
@@ -241,7 +303,8 @@ class CswServer {
     $this->serverId = $serverId;
     $this->cswUrl = $server['cswUrl'];
     $this->title = $server['title'];
-    $this->post = $server['cswPost'] ?? [];
+    $this->post = $server['cswPost'] ?? false;
+    $this->filter = $server['filter'] ?? [];
     $this->httpOptions = $server['httpOptions'] ?? [];
     $this->cache = new Cache(str_replace('/','-',$cachedir));
   }
@@ -259,25 +322,34 @@ class CswServer {
     return $result;
   }
   
-  /** Retourne l'URL du GetRecords en GET */
-  function getRecordsUrl(string $type, string $ElementSetName, int $startPosition): string {
+  /** Retourne l'URL du GetRecords en GET.
+   * @param array<mixed>|null $filter
+   */
+  function getRecordsUrl(string $type, string $ElementSetName, int $startPosition, ?array $filter=null): string {
     $OutputSchema = urlencode(self::MODEL_PARAMS[$type]['OutputSchema']);
     $namespace = urlencode(self::MODEL_PARAMS[$type]['namespace']);
     $TypeNames = self::MODEL_PARAMS[$type]['TypeNames'];
-
+    if ($filter === null)
+      $filter = $this->filter;
+    
     return $this->cswUrl
       ."?SERVICE=CSW&VERSION=2.0.2&REQUEST=GetRecords&ElementSetName=$ElementSetName"
       .'&ResultType=results&MaxRecords=10&OutputFormat=application/xml'
       ."&OutputSchema=$OutputSchema&NAMESPACE=$namespace&TypeNames=$TypeNames"
-      ."&startPosition=$startPosition";
+      ."&startPosition=$startPosition"
+      .($filter ? '&CONSTRAINTLANGUAGE=FILTER&CONSTRAINT_LANGUAGE_VERSION=1.1.0&CONSTRAINT='.urlencode(arrayToXml($filter)) : '');
   }
   
-  /** Réalise un GetRecords soit en GET soit en POST en fonction du paramétrage du serveur */
-  function getRecords(string $type, string $ElementSetName, int $startPosition): string {
+  /** Réalise un GetRecords soit en GET soit en POST en fonction du paramétrage du serveur.
+   * Par défaut, $filter=null <=> utilisation du filtre défini pour le serveur.
+   * Pour une requête sans filtre utiliser [].
+   * @param array<mixed>|null $filter
+   */
+  function getRecords(string $type, string $ElementSetName, int $startPosition, ?array $filter=null): string {
     if ($this->post)
-      $result = $this->getRecordsInPost($type, $ElementSetName, $startPosition);
+      $result = $this->getRecordsInPost($type, $ElementSetName, $startPosition, $filter);
     else
-      $result = $this->getRecordsInGet($type, $ElementSetName, $startPosition);
+      $result = $this->getRecordsInGet($type, $ElementSetName, $startPosition, $filter);
     //var_dump($result);
     if ($result === false)
       throw new Exception("Erreur dans l'appel de getRecords");
@@ -291,29 +363,35 @@ class CswServer {
     return $result;
   }
   
-  /** Réalise un GetRecords en GET */
-  private function getRecordsInGet(string $type, string $ElementSetName, int $startPosition): string|false {
+  /** Réalise un GetRecords en GET
+   * @param array<mixed>|null $filter
+   */
+  private function getRecordsInGet(string $type, string $ElementSetName, int $startPosition, ?array $filter=null): string|false {
     //echo "CswServer::getRecords(startPosition=$startPosition)<br>\n";
-    $url = $this->getRecordsUrl($type, $ElementSetName, $startPosition);
+    $url = $this->getRecordsUrl($type, $ElementSetName, $startPosition, $filter);
     return $this->cache->get($url, $this->httpOptions);
   }
   
-  /** Réalise un GetRecords en POST */
-  private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition): string|false {
+  /** Réalise un GetRecords en POST
+   * @param array<mixed>|null $filter
+   */
+  private function getRecordsInPost(string $type, string $ElementSetName, int $startPosition, ?array $filter=null): string|false {
     $OutputSchema = self::MODEL_PARAMS[$type]['OutputSchema'];
     $namespace = self::MODEL_PARAMS[$type]['namespace'];
     $TypeNames = self::MODEL_PARAMS[$type]['TypeNames'];
     
-    $filter = $this->post['filter'] ?? [];
+    if ($filter === null)
+      $filter = $this->filter;
+    
     $query = '<?xml version="1.0" encoding="utf-8"?>'."\n"
       ."<GetRecords service='CSW' version='2.0.2' maxRecords='10'\n"
       ."  startPosition='$startPosition' resultType='results' outputFormat='application/xml'\n"
       ."  outputSchema='$OutputSchema' xmlns='http://www.opengis.net/cat/csw/2.0.2'\n"
-      ."  xmlns:ogc='http://www.opengis.net/ogc' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'\n"
+      ."  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'\n"
       ."  xsi:schemaLocation='http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd'>\n"
       ."  <Query typeNames='$TypeNames'>\n"
       ."    <ElementSetName>$ElementSetName</ElementSetName>\n"
-      .($filter ? "<Constraint version='1.1.0'>".arrayToXml($filter, 'ogc:').'</Constraint>' : '')
+      .($filter ? "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>' : '')
       ."  </Query>\n"
       ."</GetRecords>";
       

@@ -28,60 +28,6 @@ function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0)
           $dump)));
 }
 
-/** Traduit un array en XML.
- * @param array<mixed> $array */
-function arrayToXml(array $array, string $prefix=''): string {
-  $xml = '';
-  if (array_is_list($array)) {
-    foreach ($array as $value) {
-      $xml .= arrayToXml($value, $prefix);
-    }
-  }
-  else {
-    foreach ($array as $key => $value) {
-      if (is_array($value)) {
-        $xml .= "<$prefix$key>".arrayToXml($value, $prefix)."</$prefix$key>";
-      }
-      else {
-        $xml .= "<$prefix$key>$value</$prefix$key>";
-      }
-    }
-  }
-  return $xml;
-}
-if (0) { // @phpstan-ignore-line // Test arrayToXml()
-  $filter = [
-    'Filter'=> [
-      'PropertyIsEqualTo'=> [
-        'PropertyName'=> 'dc:type',
-        'Literal'=> 'dataset',
-      ],
-    ],
-  ];
-  $yaml = <<<EOT
-Filter:
-  - PropertyIsEqualTo:
-      PropertyName: dc:type
-      Literal: dataset
-  - PropertyIsLike:
-      PropertyName: OrganisationName
-      Literal: 37
-EOT;
-  $yaml = <<<EOT
-Filter:
-  And:
-    - PropertyIsEqualTo: { PropertyName: dc:type, Literal: dataset }
-    - PropertyIsLike: { PropertyName: OrganisationName, Literal: DDT de Charente }
-
-EOT;
-  $filter = Yaml::parse($yaml);
-  //echo "<pre>", str_replace('<','&lt;', arrayToXml($filter, 'ogc:')); die();
-  $filreXml = "<Constraint version='1.1.0'>".arrayToXml($filter).'</Constraint>';
-  
-  header('Content-type: application/xml');
-  die($filreXml);
-}
-
 /** Standardisation des noms des organismes */
 class OrgRef {
   const FILE_PATH = __DIR__.'/orgref.yaml';
@@ -191,7 +137,7 @@ class ApiRecords {
     $result = $this->cache->get($url, $this->httpOptions);
     if ($result === false) {
       var_dump(Http::$lastHeaders);
-      var_dump(Http::$lastErrorBody);
+      var_dump(Http::$lastErrorMessage);
       throw new Exception("Résultat en erreur");
     }
     return $result;
@@ -204,7 +150,7 @@ class ApiRecords {
     $result = $this->cache->get($url, $this->httpOptions);
     if ($result === false) {
       var_dump(Http::$lastHeaders);
-      var_dump(Http::$lastErrorBody);
+      var_dump(Http::$lastErrorMessage);
       throw new Exception("Résultat en erreur");
     }
     return json_decode($result, true);
@@ -222,7 +168,9 @@ function listRecords(string $action, string $id, string $cacheDir, int $startPos
     if (in_array($record->dc_type, $typesToSkip)) continue;
     if (++$nbreLignes > NBRE_MAX_LIGNES) break;
     $url = "?server=$id&action=viewRecord&id=".$record->dc_identifier."&startPosition=$startPosition";
-    echo "<tr><td><a href='$url'>$record->dc_title</a> ($record->dc_type)</td></tr>\n";
+    if (!($title = (string)$record->dc_title))
+      $title = "(SANS TITRE)";
+    echo "<tr><td><a href='$url'>$title</a> ($record->dc_type)</td></tr>\n";
   }
   echo "</table>\n";
   //echo "numberOfRecordsMatched=",$mds->numberOfRecordsMatched(),"<br>\n";

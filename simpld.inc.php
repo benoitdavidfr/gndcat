@@ -256,12 +256,10 @@ class SimpLD {
    * où {subOrder} est l'ordre défini sur les sous-propriétés.
    * Si une propriété a pour objet un littéral ou une référence alors l'entrée doit être {no}=> {pName}
    * où {no} est une numéro d'ordre.
-   * @param array<string,mixed> $graph ; le graphe en entrée
    * @param PropOrder $order ; l'ordre des propriétés
    * @return array<string,mixed> le graphe en retour
    */
   function sortProperties(PropOrder $order): array {
-    //echo 'Graph::sortProperties(), $graph='; print_r($graph);
     // chargement du graphe dans Resource::$graph
     Resource::load($this->graph);
     
@@ -313,7 +311,8 @@ class SimpLD {
         'value'=> null,
       ];
     }
-    echo Yaml::dump(Graph::sortProperties($graph, new PropOrder($order)), 10, 2);
+    $simpLD = new self($graph);
+    echo Yaml::dump($simpLD->sortProperties(new PropOrder($order)), 10, 2);
   }
   
   /** Fabrique une représentation Yaml en remplacant évt. le contexte par un URI et en ord. évt. les prop. des ressources */
