@@ -1,10 +1,11 @@
 # contexte Yaml-LD pour affichage simplifié des jeux de données DCAT
 # Benoit DAVID - MTECT/CGDD/SRI/Ecolab - 5/6/2023
-# 2 versions existent, celle-ci sans langue définie et l'autre définissant comme langue le français
-#'@language': fr
+# 2 versions existent, celle-ci définissant comme langue le français et l'autre sans langue définie
+'@language': fr
 
 # namespaces
 adms: http://www.w3.org/ns/adms#
+content: http://www.w3.org/2011/content#
 dcat: http://www.w3.org/ns/dcat#
 dct: http://purl.org/dc/terms/
 ecospheres: http://registre.data.developpement-durable.gouv.fr/ecospheres/
@@ -12,8 +13,10 @@ foaf: http://xmlns.com/foaf/0.1/
 geosparql: http://www.opengis.net/ont/geosparql#
 locn: http://www.w3.org/ns/locn#
 mediatypes: https://www.iana.org/assignments/media-types/
-#ogc: http://www.opengis.net/ # je n'ai pas trouvé de définition de cet espace de noms
+org: http://www.w3.org/ns/org#
+owl: http://www.w3.org/2002/07/owl#
 plume: http://registre.data.developpement-durable.gouv.fr/plume/
+prov: http://www.w3.org/ns/prov#
 rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
 rdfs: http://www.w3.org/2000/01/rdf-schema#
 skos: http://www.w3.org/2004/02/skos/core#
@@ -32,6 +35,7 @@ Catalog: dcat:Catalog
 CatalogRecord: dcat:CatalogRecord
 DataService: dcat:DataService
 Distribution: dcat:Distribution
+Role: dcat:Role
 inSeries: {'@id': dcat:inSeries, '@type': '@id'}
 seriesMember: {'@id': dcat:seriesMember, '@type': '@id'}
 inCatalog: dcat:inCatalog
@@ -46,6 +50,11 @@ accessService: dcat:accessService
 bboxAsWktLiteral: {'@id': dcat:bbox, '@type': geosparql:wktLiteral}
 startDate: {'@id': dcat:startDate, '@type': xsd:date} # défini comme date
 endDate: {'@id': dcat:endDate, '@type': xsd:date} # défini comme date
+spatialResolutionInMeters: {'@id': dcat:spatialResolutionInMeters, '@type': xsd:decimal}
+bboxAsGML: {'@id': dcat:bbox, '@type': geosparql:gmlLiteral}
+bboxAsGeoJSONLiteral: {'@id': dcat:bbox, '@type': geosparql:geoJSONLiteral}
+bboxAsGeoJSON: {'@id': dcat:bbox, '@type': mediatypes:application/vnd.geo+json}
+hadRole: dcat:hadRole
 
 # DCT
 LinguisticSystem: dct:LinguisticSystem
@@ -57,15 +66,17 @@ LicenseDocument: dct:LicenseDocument
 MediaTypeOrExtent: dct:MediaTypeOrExtent
 PeriodOfTime: dct:PeriodOfTime
 Location: dct:Location
+type: dct:type
 title: dct:title
 abstract: dct:abstract
 description: dct:description
+subject: dct:subject
 conformsTo: dct:conformsTo
 format: dct:format
 IMT: dct:IMT # DCMI Metadata Terms - The set of media types specified by the Internet Assigned Numbers Authority.
+source: dct:source
 issued: {'@id': dct:issued, '@type': xsd:date} # défini comme date
 issuedT: {'@id': dct:issued, '@type': xsd:dateTime} # défini comme dateTime
-issuedL: dct:issued # défini comme littéral
 modified: {'@id': dct:modified, '@type': xsd:date} # défini comme date
 modifiedT: {'@id': dct:modified, '@type': xsd:dateTime} # défini comme dateTime
 created: {'@id': dct:created, '@type': xsd:date} # défini comme date
@@ -76,8 +87,8 @@ creator: dct:creator
 provenance: dct:provenance
 accrualPeriodicity: dct:accrualPeriodicity
 language: dct:language
-identifierU: {'@id': dct:identifier, '@type': '@id'} # défini comme Uri
-identifier: {'@id': dct:identifier, '@language': null} # défini comme littéral sans langue
+identifier: {'@id': dct:identifier, '@type': '@id'} # défini comme Uri
+identifierL: {'@id': dct:identifier, '@language': null} # défini comme littéral sans langue
 license: dct:license
 accessRights: dct:accessRights
 rightsHolder: dct:rightsHolder
@@ -85,28 +96,35 @@ spatial: dct:spatial
 
 # FOAF
 Organization: foaf:Organization
-Agent: foaf:Agent
+Person: foaf:Person
+Document: foaf:Document
 name: foaf:name
 mbox: {'@id': foaf:mbox, '@type': '@id'}
-phone: foaf:phone
 workplaceHomepage: {'@id': foaf:workplaceHomepage, '@type': '@id'}
 homepage: {'@id': foaf:homepage, '@type': '@id'}
 page: {'@id': foaf:page, '@type': '@id'}
-primaryTopic: foaf:primaryTopic
 isPrimaryTopicOf: foaf:isPrimaryTopicOf
+primaryTopic: foaf:primaryTopic
 #foaf:primaryTopic: {'@reverse': foaf:isPrimaryTopicOf} # je n'arrive pas à utiliser @reverse
 #foaf:isPrimaryTopicOf: {'@reverse': foaf:primaryTopic}
-member: foaf:member
-thumbnail: foaf:thumbnail
 
 # vCARD
 VCard: vcard:Kind
+Individual: vcard:Individual
+Address: vcard:Address
+hasAddress: vcard:hasAddress
 hasEmail: {'@id': vcard:hasEmail, '@type': '@id'}
 hasURL: {'@id': vcard:hasURL, '@type': '@id'}
 fullName: vcard:fn
+hasTelephone: vcard:hasTelephone
+organization-name: vcard:organization-name
+country-name: vcard:country-name
+locality: vcard:locality
+street-address: vcard:street-address
 
 # SKOS
 Concept: skos:Concept
+Scheme: Concept:Scheme
 prefLabel: skos:prefLabel
 inScheme: skos:inScheme
 
@@ -116,9 +134,20 @@ status: adms:status
 # LOCN
 geometryAsWktLiteral: {'@id': locn:geometry, '@type': geosparql:wktLiteral}
 geometryAsGeoJSON: {'@id': locn:geometry, '@type': mediatypes:application/vnd.geo+json}
+geometryAsGeoJSONLiteral: {'@id': locn:geometry, '@type': geosparql:geoJSONLiteral}
+geometryAsGML: {'@id': locn:geometry, '@type': geosparql:gmlLiteral}
 
-# GeoSPARQL
-asWKT: geosparql:asWKT
+# Prov
+Agent: prov:Agent
+Attribution: prov:Attribution
+agent: prov:agent
+qualifiedAttribution: prov:qualifiedAttribution
+
+# content
+characterEncoding: {'@id': content:characterEncoding, '@language': null}
+
+# OWL
+versionInfo: owl:versionInfo
 
 # RDF
 value: rdf:value

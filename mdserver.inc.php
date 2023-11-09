@@ -286,6 +286,21 @@ class CswServer {
       'TypeNames' => 'gfc:FC_FeatureCatalogue',
     ], // FeatureCatalogue
   ];
+  /** Liste des nom des paramètres avec majuscules/manuscules comme utilisé dans les requêtes */
+  const PARAMS_LIST = [
+    'SERVICE',
+    'VERSION',
+    'REQUEST',
+    'ElementSetName',
+    'ResultType',
+    'MaxRecords',
+    'OutputFormat',
+    'OutputSchema',
+    'NAMESPACE',
+    'TypeNames',
+    'startPosition',
+    'id',
+  ];
   
   readonly public string $serverId;
   readonly public string $cswUrl;
@@ -422,15 +437,44 @@ class CswServer {
       ."&id=".urlencode($id);
   }
   
+  /** si le getRecordById est en cache alors retourne le chemin du dans le cache, sinon retourne l'URL du getRecordById */
+  function getRecordByIdCachePath(string $type, string $ElementSetName, string $id): string {
+    $url = $this->getRecordByIdUrl($type, $ElementSetName, $id);
+    $id = $this->cache->id($url);
+    if (is_file($id))
+      return $id;
+    else
+      return $url;
+  }
+  
   /** Retourne le GetRecordById comme chaine XML */
   function getRecordById(string $type, string $ElementSetName, string $id): string {
     return $this->cache->get($this->getRecordByIdUrl($type, $ElementSetName, $id), $this->httpOptions);
   }
+  
+  /** Effectue une requête GET en fonctioon des paramètres passés.
+   * Garde le même ordre des paramètres que dans les autres appels de la classe.
+   * @param array<string,string> $params */
+  function get(array $params): string {
+    $url = '';
+    $pUpper = []; // les paramètres avec leur clé en majuscules
+    foreach ($params as $key => $value)
+      $pUpper[strtoupper($key)] = $value;
+    foreach (self::PARAMS_LIST as $key) {
+      $keyUpper = strtoupper($key);
+      if (isset($pUpper[$keyUpper])) {
+        $url .= ($url ? '&' : '?')."$key=".urlencode($pUpper[$keyUpper]);
+      }
+    }
+    $url = $this->cswUrl.$url;
+    return $this->cache->get($url, $this->httpOptions);
+  }
 
   /** Retourne le GetRecordById en Full DCAT comme \EasyRdf\Graph */
-  function getFullDcatById(string $id): \EasyRdf\Graph {
+  function getFullDcatById(string $id): ?\EasyRdf\Graph {
     $url = $this->getRecordByIdUrl('dcat', 'full', $id);
     $xml = $this->getRecordById('dcat', 'full', $id);
+    //echo 'lastCachepathReturned=',$this->cache->lastCachepathReturned(),"\n";
     $xml = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
     $xml = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml);
     $rdf = new \EasyRdf\Graph($url);
@@ -438,7 +482,8 @@ class CswServer {
       $rdf->parse($xml, 'rdf', $url);
     }
     catch (EasyRdf\Parser\Exception $e) {
-      die("Erreur sur le parse RDF: ".$e->getMessage());
+      echo "Erreur sur le parse RDF: ".$e->getMessage()."\n";
+      return null;
     }
     return $rdf;
   }
@@ -555,7 +600,7 @@ class MdServer implements Iterator {
   }
   
   /** Retourne la fiche courante complète de MD en DCAT comme \EsayRdf\Graph */
-  function getFullDcat(): \EasyRdf\Graph {
+  function getFullDcat(): ?\EasyRdf\Graph {
     return $this->server->getFullDcatById($this->current()->dc_identifier);
   }
 };

@@ -308,7 +308,15 @@ class Mdvars {
     'temporalExtent' => [
       'title-fr' => "Étendue temporelle",
       'title-en' => "Temporal extent",
-      'xpath' => '//gmd:identificationInfo/*/gmd:extent/*/gmd:temporalElement',
+      'xpath' => '//gmd:identificationInfo/*/gmd:extent/*/gmd:temporalElement/*/gmd:extent/gml:TimePeriod',
+      'svar'=> [
+        'name' => 'beginPosition',
+        'xpath' => '//gml:TimePeriod/gml:beginPosition',
+      ],
+      'svar2'=> [
+        'name' => 'endPosition',
+        'xpath' => '//gml:TimePeriod/gml:endPosition',
+      ],
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
     // 5.2. Date de publication - 5.2. Date of publication

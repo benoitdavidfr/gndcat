@@ -342,15 +342,18 @@ servers:
   naturefrance:
     title: NatureFrance
     cswUrl: https://data.naturefrance.fr/geonetwork/srv/fre/csw
+  geolittoral:
+    title: GéoLittoral
+    cswUrl: https://www.mongeosource.fr/geosource/1111/fre/csw
+  cerema-data:
+    title: Cerema Data
+    cswUrl: https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata
   igngp:
     title: Géoportail IGN
     cswUrl: https://wxs.ign.fr/catalogue/csw
   igngpf:
     title: Géoplateforme IGN
     cswUrl: https://data.geopf.fr/csw
-  cerema-data:
-    title: Cerema Data
-    cswUrl: https://www.cdata.cerema.fr/geonetwork/srv/fre/csw-catalogue-cdata
   sas:
     title: GéoSAS.fr - INRAE / UMR SAS - Institut Agro Rennes Angers (GN 3.8.3)
     cswUrl: https://geosas.fr/geonetwork/srv/fre/csw

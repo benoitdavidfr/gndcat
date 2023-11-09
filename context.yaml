@@ -1,6 +1,6 @@
 # contexte Yaml-LD pour affichage simplifié des jeux de données DCAT
 # Benoit DAVID - MTECT/CGDD/SRI/Ecolab - 5/6/2023
-# 2 versions existent, celle-ci définissant comme langue le français et l'autre sans langue définie
+# 3 versions existent, celle-ci définissant comme langue le français, une autre sans langue définie et une 3e pour DCAT-AP
 '@language': fr
 
 # namespaces

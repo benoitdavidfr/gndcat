@@ -9,6 +9,20 @@ require_once __DIR__.'/vendor/autoload.php';
 use Symfony\Component\Yaml\Yaml;
 use ML\JsonLD\JsonLD;
 
+/** supprime les - suivis d'un retour à la ligne dans Yaml::dump() et ajoute par défaut l'option DUMP_MULTI_LINE_LITERAL_BLOCK
+ * @param mixed $data
+ */
+function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0): string {
+  $options |= Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK;
+  $dump = Yaml::dump($data, $level, $indentation, $options);
+  //return $dump;
+  return
+    preg_replace('!: \|-ZZ\n!', ": |-\n", 
+      preg_replace('!-\n *!', '- ', 
+        preg_replace('!(: +)\|-\n!', "\$1|-ZZ\n",
+          $dump)));
+}
+
 /** Liste ordonnée de propriétés par classe RDF utilisée pour Resource::sortProperties(). */
 class PropOrder {
   /** @var array<string,list<string>> $classes liste ordonnée de propriétés par classe */
@@ -143,7 +157,7 @@ class Resource {
     if (is_array($resourceOrId)) { // 1er cas de création à partir de la version array
       $resource = $resourceOrId;
       //echo 'dans Resource::__construct(), resource='; print_r($resource);
-      $this->id = $resource['$id'];
+      $this->id = $resource['$id'] ?? uniqid('_:', true);
       unset($resource['$id']);
       $propObjs = [];
       foreach ($resource as $prop => $pvals) {

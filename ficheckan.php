@@ -4,37 +4,43 @@
  *  - imbrication des ressources et suppression des noeuds blancs
  */
 require_once __DIR__.'/vendor/autoload.php';
-require_once __DIR__.'/rdfgraph.inc.php';
+require_once __DIR__.'/simpld.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use ML\JsonLD\JsonLD;
 
 switch ($_GET['action'] ?? null) {
   case null: {
-    //echo "<a href='?action=Graph'>Utilisation de Graph::frame</a><br>\n";
+    echo "<a href='?action=Turtle'>Sérialisation en Turtle</a><br>\n";
+    echo "<a href='?action=SimpLD'>Utilisation de SimpLD::frame</a><br>\n";
     echo "<a href='?action=JsonLD'>Utilisation de JsonLD::frame</a><br>\n";
     die();
   }
-  /*case 'Graph': {  // utilisation de Graph::frame
-    // On commence par une expansion avant de recompacter sur le contexte souhaité
-    $expanded = JsonLD::expand('ficheckan.jsonld');
-
-    // On compacte le résultat avec le nouveau contexte
-    $compacted = JsonLD::compact(
-      $expanded,
-      json_encode(Yaml::parseFile(__DIR__.'/context.yaml')));
-
-    // transformation en array
-    $compacted = json_decode(json_encode($compacted), true);
-    // simplifification du contexte, préférable pour l'affichage
-    $compacted['@context'] = 'https://geoapi.fr/gndcat/context.yaml';
-
-    // imbrication du graphe
-    $framed = \rdf\Graph::frame($compacted);
-    echo '<pre>',Yaml::dump($framed, 8, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-    //print_r($compacted);
+  case 'Turtle': {
+    $rdf = new \EasyRdf\Graph('http://localhost/');
+    $rdf->parse(file_get_contents('ficheckan.jsonld'), 'jsonld', 'http://localhost/');
+    //print_r($rdf);
+    echo '<pre>',str_replace('<','&lt;',$rdf->serialise('turtle'));
     die();
-  }*/
+  }
+  case 'SimpLD': {
+    $rdf = new \EasyRdf\Graph('http://localhost/');
+    $rdf->parse(file_get_contents('ficheckan.jsonld'), 'jsonld', 'http://localhost/');
+    $simpLD = new \simpLD\SimpLD($rdf);
+    $frame = [
+      '@context'=> Yaml::parseFile(__DIR__.'/context.yaml'),
+      '@type'=> 'Dataset',
+    ];
+    echo "<pre>",
+          $simpLD
+            ->frame($frame)
+              ->asYaml(
+                contextURI: 'https://geoapi.fr/gndcat/context.yaml',
+                order: new \simpLD\PropOrder(__DIR__.'/proporder.yaml')
+              ),
+         "</pre>\n";
+    die();
+  }
   case 'JsonLD': { // utilisation de JsonLD::frame(()
     $frame = [
       '@context'=> Yaml::parseFile(__DIR__.'/context.yaml'),

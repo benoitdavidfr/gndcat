@@ -7,26 +7,14 @@ require_once __DIR__.'/http.inc.php';
 require_once __DIR__.'/inspiremd.inc.php';
 require_once __DIR__.'/mdserver.inc.php';
 require_once __DIR__.'/simpld.inc.php';
+require_once __DIR__.'/geodcatap.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use simpLD\SimpLD;
 use simpLD\PropOrder;
+use function simpLD\YamlDump;
 
 const VERSION = "2/11/2023";
-
-/** supprime les - suivis d'un retour à la ligne dans Yaml::dump() et ajoute par défaut l'option DUMP_MULTI_LINE_LITERAL_BLOCK
- * @param mixed $data
- */
-function YamlDump(mixed $data, int $level=3, int $indentation=2, int $options=0): string {
-  $options |= Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK;
-  $dump = Yaml::dump($data, $level, $indentation, $options);
-  //return $dump;
-  return
-    preg_replace('!: \|-ZZ\n!', ": |-\n", 
-      preg_replace('!-\n *!', '- ', 
-        preg_replace('!(: +)\|-\n!', "\$1|-ZZ\n",
-          $dump)));
-}
 
 /** Standardisation des noms des organismes */
 class OrgRef {
@@ -73,7 +61,7 @@ class Turtle {
       $url = $matches[1];
       $urlR = "&lt;<a href='HTTP$url'>HTTP$url</a>&gt;";
       // Il faut échapper les caractères spécifiques de preg_replace()
-      $urlp = str_replace(['?','(',')'],['\?','\(','\)'], $matches[1]);
+      $urlp = str_replace(['?','(',')','+'],['\?','\(','\)','\+'], $matches[1]);
       $src = preg_replace("!<http$urlp>!", $urlR, $src);
     }
     return str_replace(["<a href='HTTP",'>HTTP'], ["<a href='http",'>http'], $src);
@@ -157,6 +145,83 @@ class ApiRecords {
   }
 };
 
+class Menu {
+  readonly public array $def;
+  readonly public string $header; // l'en-tête de début d'affichage
+  readonly public string $back; // entrée du menu pour remonter sous la forme d'une cellule de table
+  
+  function __construct(array $def, string $header, string $back) {
+    $this->def = $def;
+    $this->header = $header;
+    $this->back = $back;
+  }
+  
+  // prefix est le début des URL
+  function asHtml(string $prefix, string $cfmt): string {
+    $menu = $this->header;
+    $menu .= "<table border=1><tr>";
+    foreach ($this->def as $f => $title) {
+      if ($f == $cfmt)
+        $menu .= "<td><b><div title=\"$title\">$f</div></b></td>";
+      else
+        $menu .= "<td><a href='$prefix&fmt=$f' title=\"$title\">$f</a></td>";
+    }
+    $menu .= "</table>\n";
+    return $menu;
+  }
+};
+
+class Menu2Levels {
+  readonly public array $def;
+  readonly public string $header; // l'en-tête de début d'affichage
+  readonly public string $back; // entrée du menu pour remonter sous la forme d'une cellule de table
+  
+  function __construct(array $def, string $header, string $back) {
+    $this->def = $def;
+    $this->header = $header;
+    $this->back = $back;
+  }
+  
+  // prefix est le début des URL
+  function asHtml(string $prefix, string $cfmt): string {
+    $menu = $this->header;
+    $menu .= "<table border=1><tr>";
+    // 1e ligne
+    foreach ($this->def as $k0 => $val0) {
+      if (is_string($val0)) {
+        if ($k0 == $cfmt)
+          $menu .= "<td><b><div title=\"$val0\">$k0</div></b></td>";
+        else
+          $menu .= "<td><a href='$prefix&fmt=$k0' title=\"$val0\">$k0</a></td>";
+      }
+      else {
+        $cspan = count($val0) - 1;
+        $title = $val0[0];
+        $menu .= "<td colspan=$cspan><center><div title=\"$title\">$k0</div></center></td>";
+      }
+    }
+    $menu .= "</tr><tr>\n";
+    // 2e ligne
+    foreach ($this->def as $k0 => $val0) {
+      if (is_string($val0)) {
+        $menu .= "<td></td>";
+      }
+      else {
+        foreach ($val0 as $k1 => $title) {
+          if (!$k1) continue;
+          $f = "$k0-$k1";
+          if ($f == $cfmt)
+            $menu .= "<td><b><div title=\"$title\">$k1</div></b></td>";
+          else
+            $menu .= "<td><a href='$prefix&fmt=$f' title=\"$title\">$k1</a></td>";
+        }
+      }
+    }
+    $menu .= "</tr></table>\n";
+    return $menu;
+  }
+};
+
 /** Affiche les MDs sauf ceux de $typesToSkip
  * @param list<string> $typesToSkip */
 function listRecords(string $action, string $id, string $cacheDir, int $startPosition, array $typesToSkip): void {
@@ -216,7 +281,7 @@ function responsibleParties(string $id, string $cacheDir, callable $stdOrgName):
   ksort($rpNames);
   return $rpNames;
 }
-  
+
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>gndcat</title></head><body>\n";
 const NBRE_MAX_LIGNES = 35; // nbre d'enregistrements affichchés par page pour GetRecords
 
@@ -349,6 +414,28 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           echo Yaml::dump($quals);
           die("FIN\n");
         }
+        case 'inspireYaml': {
+          $mdServer = new MdServer($id, $id, 1);
+          foreach ($mdServer as $no => $md) {
+            echo " - $md->dc_title ($md->dc_type)\n";
+            $xml = $mdServer->getFullGmd();
+            $record = InspireMd::convert($xml);
+            echo YamlDump([(string)$md->dc_identifier => $record], 5, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+          }
+          die();
+        }
+        case 'turtle': {
+          $mdServer = new MdServer($id, $id, 1);
+          foreach ($mdServer as $no => $md) {
+            echo " - $md->dc_title ($md->dc_type)\n";
+            $xml = $mdServer->getFullDcat();
+            //echo 'lastCachepathReturned=',$mdServer->server->cache->lastCachepathReturned(),"\n";
+            if (!$xml) continue;
+            $turtle = $xml->serialise('turtle');
+            echo YamlDump([(string)$md->dc_identifier => $turtle]);
+          }
+          die();
+        }
       }
     }
   }
@@ -448,52 +535,93 @@ else { // utilisation en mode web
       die();
     }
     case 'viewRecord': {
-      $fmt = $_GET['fmt'] ?? 'ins-yaml'; // modèle et format
-      $menu = HTML_HEADER;
+      $fmt = $_GET['fmt'] ?? 'InspireIso-yaml'; // modèle et format
       $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
-      $url = "?server=$id&action=viewRecord&id=$_GET[id]$startPosition";
-      $menu .= "<table border=1><tr>";
-      foreach ([
-         'ins-yaml'=> 'Inspire sérialisé en Yaml',
-         'iso-xml'=> 'ISO 19139 complet sérialisé en XML',
-         'dcat-ttl'=> 'DCAT sérialisé en Turtle',
-         'dcat-yamlLdi'=> "DCAT sérialisé en Yaml-LD imbriqué avec le contexte",
-         'dcat-yamlLdc'=> "DCAT sérialisé en Yaml-LD compacté avec le contexte",
-         'dcat-yamlLd'=> "DCAT sérialisé en Yaml-LD non imbriqué et non compacté",
-         'dcat-xml'=> "DCAT sérialisé en RDF/XML",
-         'double'=> "double affichage",
-          ] as $f => $title) {
-        if ($f == $fmt)
-          $menu .= "<td><b><div title='$title'>$f</div></b></td>";
-        else
-          $menu .= "<td><a href='$url&fmt=$f' title='$title'>$f</a></td>";
-      }
-      if ($startPosition)
-        $menu .= "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>";
-      $menu .= "</table>\n";
-          
+      $menu = new Menu(
+        [
+          'ins-yaml'=> 'Inspire sérialisé en Yaml',
+          'iso-xml'=> 'ISO 19139 complet sérialisé en XML',
+          'gndcat-ttl'=> 'DCAT généré par GN et sérialisé en Turtle',
+          'gndcat-yLdi-ds'=> "DCAT généré par GN et sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+          'gndcat-yLdi-cr'=> "DCAT généré par GN et sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+          //'dcat-yamlLdc'=> "DCAT sérialisé en Yaml-LD compacté avec le contexte",
+          //'dcat-yamlLd'=> "DCAT sérialisé en Yaml-LD non imbriqué et non compacté",
+          'gndcat-xml'=> "DCAT généré par GN et sérialisé en RDF/XML",
+          'dap-html'=> "DCAT-AP en utilisant l'API GeoDCAT-AP",
+          'dap-ttl'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Turtle",
+          'dap-yLdi-ds'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+          'dap-yLdi-cr'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+          'dap-yLdi-sv'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
+          'gdap-ttl'=> "GeoDCAT-AP généré par l'API GeoDCAT-AP API sérialisé en Turtle",
+          'gdap-yLdi-ds'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+          'gdap-yLdi-cr'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+          'gdap-yLdi-sv'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
+          'double'=> "double affichage",
+        ],
+        HTML_HEADER,
+        $startPosition ? "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>" : ''
+      );
+      $menu = new Menu2Levels(
+        [
+          'InspireIso'=> [
+            0=> "Inspire/ISO 19139",
+            'yaml'=> 'Inspire sérialisé en Yaml',
+            'xml'=> 'ISO 19139 complet sérialisé en XML',
+          ],
+          'GN-DCAT'=> [
+            0=> "DCAT généré par GéoNetwork",
+            'ttl'=> 'sérialisé en Turtle',
+            'yLdi-ds'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+            'yLdi-cr'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+            'yLdi-sv'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
+            //'dcat-yamlLdc'=> "DCAT sérialisé en Yaml-LD compacté avec le contexte",
+            //'dcat-yamlLd'=> "DCAT sérialisé en Yaml-LD non imbriqué et non compacté",
+            'xml'=> "sérialisé en RDF/XML",
+          ],
+          'DCAT-AP'=> [
+            0=> "DCAT-AP généré par GeoDCAT-AP API",
+            'html'=> "renvoi vers l'API GeoDCAT-AP",
+            'ttl'=> "sérialisé en Turtle",
+            'yLdi-ds'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+            'yLdi-cr'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+            'yLdi-sv'=> "sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
+          ],
+          'GeoDCAT-AP'=> [
+            0=> "GeoDCAT-AP généré par l'API GeoDCAT-AP API",
+            'ttl'=> " sérialisé en Turtle",
+            'yLdi-ds'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
+            'yLdi-cr'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
+            'yLdi-sv'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
+          ],
+          'double'=> "double affichage",
+        ],
+        HTML_HEADER,
+        $startPosition ? "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>" : ''
+      );
+      
+      $menu = $menu->asHtml("?server=$id&action=viewRecord&id=$_GET[id]$startPosition", $fmt);
       switch ($fmt) {
-        case 'ins-yaml': { // InspireMd formatté en Yaml
+        case 'InspireIso-yaml': { // InspireMd formatté en Yaml
           echo $menu;
           $xml = $cswServer->getRecordById('gmd', 'full', $_GET['id']);
           $record = InspireMd::convert($xml);
           echo '<pre>',YamlDump($record, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
           die();
         }
-        case 'iso-xml': {
+        case 'InspireIso-xml': {
           $url = $cswServer->getRecordByIdUrl('gmd', 'full', $_GET['id']);
           header('HTTP/1.1 302 Moved Temporarily');
           header("Location: $url");
           die();
         }
-        case 'dcat-ttl': {
+        case 'GN-DCAT-ttl': {
           echo $menu;
           $rdf = $cswServer->getFullDcatById($_GET['id']);
           $turtle = new Turtle($rdf);
           echo "<pre>$turtle</pre>\n";
           die();
         }
-        case 'dcat-yamlLd': {
+        case 'GN-DCAT-yamlLd': {
           echo $menu;
           $rdf = $cswServer->getFullDcatById($_GET['id']);
           $yamlld = new SimpLD($rdf);
@@ -501,7 +629,7 @@ else { // utilisation en mode web
           echo '<pre>',$yamlld->asYaml(),"</pre>\n";
           die();
         }
-        case 'dcat-yamlLdc': { // Yaml-LD compacté avec le contexte contextnl.yaml
+        /*case 'dcat-yamlLdc': { // Yaml-LD compacté avec le contexte contextnl.yaml
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $cswServer->getFullDcatById($_GET['id']);
@@ -515,15 +643,22 @@ else { // utilisation en mode web
                     ),
                "</pre>\n";
           die();
-        }
-        case 'dcat-yamlLdi': { // Yaml-LD imbriqué avec le contexte contextnl.yaml et le cadre défini
+        }*/
+        case 'GN-DCAT-yLdi-ds': // Yaml-LD imbriqué avec le contexte contextnl.yaml et le cadre défini
+        case 'GN-DCAT-yLdi-cr': // Yaml-LD imbriqué avec le contexte contextnl.yaml et le cadre défini
+        case 'GN-DCAT-yLdi-sv': {
           echo $menu;
           //echo '<pre>'; print_r(\EasyRdf\Format::getFormats());
           $rdf = $cswServer->getFullDcatById($_GET['id']);
           $yamlld = new SimpLD($rdf);
           $frame = [
             '@context'=> Yaml::parseFile(__DIR__.'/contextnl.yaml'),
-            '@type'=> 'Dataset',
+            '@type'=> match(substr($fmt,-2)) {
+              'ds'=> 'Dataset',
+              'cr'=> 'CatalogRecord',
+              'sv'=> 'DataService',
+              default=> die("fmt non interprété ligne ".__LINE__),
+            },
           ];
           echo "<pre>",
                 $yamlld
@@ -535,18 +670,66 @@ else { // utilisation en mode web
                "</pre>\n";
           die();
         }
-        case 'dcat-xml': {
+        case 'GN-DCAT-xml': {
           $url = $cswServer->getRecordByIdUrl('dcat', 'full', $_GET['id']);
           header('HTTP/1.1 302 Moved Temporarily');
           header("Location: $url");
           die();
+        }
+        case 'DCAT-AP-html': {
+          $urlGmdFull = $cswServer->getRecordByIdUrl('gmd', 'full', $_GET['id']);
+          $urlGeoDCATAP = 'https://geodcat-ap.semic.eu/api/?outputSchema=extended&src='.urlencode($urlGmdFull);
+          header('HTTP/1.1 302 Moved Temporarily');
+          header("Location: $urlGeoDCATAP");
+          die();
+        }
+        case 'DCAT-AP-ttl':
+        case 'GeoDCAT-AP-ttl': {
+          echo $menu;
+          $urlGmdFull = $cswServer->getRecordByIdCachePath('gmd', 'full', $_GET['id']);
+          $geoDcatAp = new GeoDcatApUsingXslt($urlGmdFull);
+          $rdf = $geoDcatAp->asEasyRdf(substr($fmt,0,1)=='G' ? 'extended' : 'core');
+          $turtle = new Turtle($rdf);
+          echo "<pre>$turtle</pre>\n";
+          die();
+        }
+        case 'DCAT-AP-yLdi-ds':
+        case 'DCAT-AP-yLdi-cr':
+        case 'DCAT-AP-yLdi-sv':
+        case 'GeoDCAT-AP-yLdi-ds':
+        case 'GeoDCAT-AP-yLdi-cr':
+        case 'GeoDCAT-AP-yLdi-sv': {
+          echo $menu;
+          $urlGmdFull = $cswServer->getRecordByIdCachePath('gmd', 'full', $_GET['id']);
+          $geoDcatAp = new GeoDcatApUsingXslt($urlGmdFull);
+          $rdf = $geoDcatAp->asEasyRdf(substr($fmt,0,1)=='G' ? 'extended' : 'core');
+          $yamlld = new SimpLD($rdf);
+          $frame = [
+            '@context'=> Yaml::parseFile(__DIR__.'/contextdcatap.yaml'),
+            '@type'=> match(substr($fmt,-2)) {
+              'ds'=> 'Dataset',
+              'cr'=> 'CatalogRecord',
+              'sv'=> 'DataService',
+              default=> die("fmt non interprété ligne ".__LINE__),
+            },
+          ];
+          echo "<pre>",
+                $yamlld
+                  ->frame($frame)
+                    ->asYaml(
+                      contextURI: 'https://geoapi.fr/gndcat/contextdcatap.yaml',
+                      order: new PropOrder(__DIR__.'/proporder.yaml')
+                    ),
+               "</pre>\n";
+          die();
+          
         }
         case 'double': {
           $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
           echo "
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]$startPosition' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=dcat-yamlLd$startPosition' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=gndcat-yLdi-ds$startPosition' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
@@ -556,6 +739,7 @@ else { // utilisation en mode web
     ";
           die();
         }
+        default: die("Format $fmt inconnu");
       }
     }
     case 'rdf': {
@@ -652,7 +836,11 @@ else { // utilisation en mode web
             "&id=fr-120066022-ldd-4bc9b901-1e48-4afd-a01a-cc80e40c35b8'>",
             "sur Géo-IDE</a></li>\n";
       echo "<li><a href='?server=sextant&action=viewRecord&id=34c8d98c-9aea-4bd6-bdf4-9e1041bda08a'>",
-           "sur Sextant (GN 4)</a></li>\n";
+            "sur Sextant (GN 4)</a></li>\n";
+      echo "<li><a href='?server=sextant&action=viewRecord&id=575cf2fe-3792-4f95-bf81-7253ea1b6188'>",
+            "sur Sextant (GN 4) avec temporalExtent</a></li>\n";
+      echo "<li><a href='?server=sextant&action=viewRecord&id=e3b0a42a4a843af7a1d5920641f70db8372918ac'>",
+            "sur Sextant (GN 4) le service WFS de la DCSMM</a></li>\n";
       echo "</ul>\n";
       echo "<li><a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
             "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a></li>\n";

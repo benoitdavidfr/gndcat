@@ -24,9 +24,12 @@ classes:
   Dataset:
     - $id
     - isA
+    - type
     - title
+    - description
     - abstract
-    - identifierL
+    - identifier
+    - identifierU
     - language
     - keyword
     - theme
