@@ -424,7 +424,7 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
           }
           die();
         }
-        case 'turtle': {
+        case 'gnturtle': {
           $mdServer = new MdServer($id, $id, 1);
           foreach ($mdServer as $no => $md) {
             echo " - $md->dc_title ($md->dc_type)\n";
@@ -432,6 +432,18 @@ if (php_sapi_name() == 'cli') { // utilisation en CLI
             //echo 'lastCachepathReturned=',$mdServer->server->cache->lastCachepathReturned(),"\n";
             if (!$xml) continue;
             $turtle = $xml->serialise('turtle');
+            echo YamlDump([(string)$md->dc_identifier => $turtle]);
+          }
+          die();
+        }
+        case 'dap-turtle': {
+          $mdServer = new MdServer($id, $id, 1);
+          foreach ($mdServer as $no => $md) {
+            echo " - $md->dc_title ($md->dc_type)\n";
+            $urlGmdFull = $mdServer->server->getRecordByIdCachePath('gmd', 'full', (string)$md->dc_identifier);
+            $geoDcatAp = new GeoDcatApUsingXslt($urlGmdFull);
+            $rdf = $geoDcatAp->asEasyRdf('core');
+            $turtle = $rdf->serialise('turtle');
             echo YamlDump([(string)$md->dc_identifier => $turtle]);
           }
           die();
@@ -841,6 +853,10 @@ else { // utilisation en mode web
             "sur Sextant (GN 4) avec temporalExtent</a></li>\n";
       echo "<li><a href='?server=sextant&action=viewRecord&id=e3b0a42a4a843af7a1d5920641f70db8372918ac'>",
             "sur Sextant (GN 4) le service WFS de la DCSMM</a></li>\n";
+      echo "<li><a href='?server=sextant&action=viewRecord&id=SDN_CPRD_1850_DGMW_JADE_v2'>",
+            "sur Sextant (GN 4) une fiche DCAT-AP avec distributions</a></li>\n";
+      echo "<li><a href='?server=geolittoral&action=viewRecord&id=9be3543d-7123-4a44-a000-daba979a9beb'>",
+            "sentier du littoral sur GéoLittoral avec distributions</a></li>\n";
       echo "</ul>\n";
       echo "<li><a href='?server=gide/gn&action=idxRespParty&respParty=DDT%20de%20Charente'>",
             "Liste des JD de Géo-IDE GN ayant comme responsibleParty 'DDT de Charente'</a></li>\n";

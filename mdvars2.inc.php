@@ -164,6 +164,10 @@ class Mdvars {
         'name' => 'name',
         'xpath' => '//gmd:onLine/*/gmd:name/gco:CharacterString',
       ],
+      'svar3' => [
+        'name' => 'function',
+        'xpath' => '//gmd:onLine/*/gmd:function/gmd:CI_OnLineFunctionCode/@codeListValue',
+      ], // Utilisé par GeoDCAT-AP pour déterminer si le locator correspond à une dcat:Distribution
       'multiplicity' => [ 'data' => '0..*', 'service' => '0..*' ],
     ],
     // 1.5. Identificateur de ressource unique - 1.5. Unique resource identifier
