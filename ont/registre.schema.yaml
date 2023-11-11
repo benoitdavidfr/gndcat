@@ -1,0 +1,352 @@
+$id: https://georef.eu/exportESph/registre.schema.yaml
+$schema: http://json-schema.org/schema#
+definitions:
+  document:
+    description: description d'un document de référence
+    oneOf:
+      - description: description informelle ou URL du document
+        type: string
+      - description: description plus structurée selon DublinCore
+        type: object
+        additionalProperties: false
+        properties:
+          title: {description: titre du document, type: string}
+          identifier: {description: identifiant du document, type: string}
+          href: {description: URL du document, type: string}
+          issued: {description: date de publication, type: string, format: date}
+  multiLingualLabel:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^|..$':
+        type: string
+  instance:
+    description: Description d'une instance bien connue
+    oneOf:
+      - description: instance avec une étiquette
+        type: object
+        required: [ $id, label ]
+        additionalProperties: false
+        properties:
+          $id:
+            description: URI de la ressource
+            type: string
+          label:
+            description: étiquette multi-lingue
+            $ref: '#/definitions/multiLingualLabel'
+      - description: instance skos:ConceptScheme
+        type: object
+        required: [ $id, title ]
+        additionalProperties: false
+        properties:
+          $id:
+            description: URI de la ressource
+            type: string
+            format: uri
+          title:
+            description: titre du schéma de concepts
+            $ref: '#/definitions/multiLingualLabel'
+          publisher:
+            description: éditeur défini comme URI défini comme ressource de foaf:Organization
+            referentialIntegrity: publisher doit être un URI défini comme ressource de foaf:Organization
+            type: string
+            format: uri
+      - description: instance skos:Concept
+        type: object
+        required: [ $id, prefLabel ]
+        additionalProperties: false
+        properties:
+          $id:
+            description: URI de la ressource
+            type: string
+          prefLabel:
+            description: étiquette préférentielle multi-lingue
+            $ref: '#/definitions/multiLingualLabel'
+          inScheme:
+            description: schémas de concepts dans lesquels le concept est défini
+            referentialIntegrity: les URI de inScheme doivent être chacun un URI défini comme ressource de skos:ConceptScheme
+            type: array
+            items: {type: string, format: uri}
+      - description: instance foaf:Organization
+        type: object
+        required: [ $id, name, homepage ]
+        additionalProperties: false
+        properties:
+          $id:
+            description: URI de la ressource
+            type: string
+            format: uri
+          name:
+            description: nom de l'organisation
+            $ref: '#/definitions/multiLingualLabel'
+          homepage:
+            description: page internet d'accueil de l'organisation
+            type: string
+            format: uri
+  instances:
+    description: liste de instances bien connues de la classe et utiles
+    type: array
+    items:
+      description: Description de chaque instance
+      $ref: '#/definitions/instance'
+  definition:
+    description: définition(s) officielle(s) de la classe
+    oneOf:
+      - description: définition officielle de la classe
+        type: string
+      - description: |
+          différentes définitions définies dans différentes ontologies définies par leur prefixe d'espace de nom.
+          Par exemple un élément peut être éfini par son ontologie et redéfini par une autre l'utilisant en définissant
+          plutôt l'usage qui en est fait dans cette seconde ontologie.
+        type: object
+        additionalProperties: false
+        patternProperties:
+          '^[a-zA-Z]+$':
+            type: string
+  example:
+    description: un exemple illustrant un concept
+    type: object
+    additionalProperties: false
+    properties:
+      title: {description: titre de l'exemple, type: string}
+      asTurtle:
+        description: code Turtle de l'exemple
+        type: string
+      asYaml-LD:
+        description: code Yaml-LD de l'exemple
+        type: object
+  examples:
+    description: exemple ou liste d'exemples illustrant le concept
+    oneOf:
+      - description: un exemple
+        $ref: '#/definitions/example'
+      - description: une liste d'exemples
+        type: array
+        items:
+          $ref: '#/definitions/example'
+  class:
+    description: description d'une classe et de ses ressources bien connues
+    type: object
+    additionalProperties: false
+    required: [definition, subClassOf]
+    properties:
+      label: { description: "libellé s'il ne se déduit pas facilement de son URI (rdfs:label)", type: string}
+      labelFr: { description: "libellé en français", type: string}
+      definition:
+        description: 'définition officielle de la classe (skos:definition)'
+        $ref: '#/definitions/definition'
+      #comment: { description: 'commentaire officiel sur la classe (rdfs:comment)', type: string }
+      scopeNote: {description: note d'application d'un concept (source SKOS), type: string }
+      subClassOf:
+        description: liste des classes parentes définies par leur URI compact (rdfs:subClassOf)
+        referentialIntegrity: chaque CURI de subClassOf doit un CURI d'une classe
+        type: array
+        items:
+          type: string
+          pattern: '^[a-zA-Z0-9]+:[A-Za-z0-9]+$'
+      instances:
+        description: liste d'instances bien connues de la classe et utiles
+        $ref: '#/definitions/instances'
+      example:
+        description: liste d'exemples illustrant la classe
+        $ref: '#/definitions/examples'
+  property:
+    description: description d'une propriété
+    type: object
+    additionalProperties: false
+    properties:
+      label: { description: "libellé en anglais s'il ne se déduit pas facilement de son URI", type: string}
+      labelFr: { description: "libellé en français", type: string}
+      definition:
+        $ref: '#/definitions/definition'
+      definition(fr): { description: "une traduction en français de la définition", type: string }
+      editorialNote:
+        description: commentaires personnels sur l'ontologie
+        type: string
+      subPropertyOf:
+        description: liste des propriétés parentes (rdfs:subPropertyOf)
+        referentialIntegrity: chaque subPropertyOf doit être le CURI d'une propriété
+        type: array
+        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+      equivalentProperty:
+        referentialIntegrity: chaque equivalentProperty doit être le CURI d'une propriété
+        type: array
+        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+      range:
+        description: cible de la propriété comme ensemble de classes définies par leur URI compact
+        type: array
+        items:
+          type: string
+          pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
+          referentialIntegrity:
+            label: chaque range doit être le CURI d'une classe
+            path: '#/ontologies/*/classes/$id'
+      datatype:
+        description: liste de types de données attendus
+        referentialIntegrity: chaque datatype doit être un type défini
+        type: array
+        items: {type: string}
+      domain:
+        description: domaine de définition de la propriété comme ensemble de classes définies par leur URI compact
+        referentialIntegrity: chaque domain doit être le CURI d'une classe
+        type: array
+        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+      inverse:
+        description: définition d'une propriété inverse, cette propriété inverse n'est pas définie comme propriété
+        type: string
+        pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
+      #comment: { description: 'un commentaire', type: string }
+      scopeNote: {description: note d'application d'un concept (source SKOS), type: string }
+      #dcatSpecialization:
+      #  description: commentaire sur la spécialisation de la description pour DCAT
+      #  type: string
+      example:
+        description: liste d'exemples illustrant la classe
+        $ref: '#/definitions/examples'
+  properties:
+    description: dictionnaire de propriétés indexées sur leur URI compact
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$':
+        oneOf:
+          - description: description de la propriété
+            $ref: '#/definitions/property'
+          - description: propriété non détaillée dont uniquement l'URI est fournie
+            type: 'null'
+  ontology:
+    description: description de l'ontologie
+    type: object
+    additionalProperties: false
+    properties:
+      title: { description: "titre de l'ontologie", type: string }
+      source:
+        description: liste des documents de référence sur cette ontologie
+        type: array
+        items:
+          description: description d'un document de référence
+          $ref: '#/definitions/document'
+      publisher:
+        description: éditeur défini comme URI défini comme ressource de foaf:Organization
+        referentialIntegrity: publisher doit être un URI défini comme ressource de foaf:Organization
+        type: string
+        format: uri
+      abstract:
+        description: résumé de l'ontologie
+        type: string
+      status:
+        description: inormations sur le statut de l'ontologie
+        type: string
+      editorialNote:
+        description: commentaires personnels sur l'ontologie
+        type: string
+      namespace:
+        description: URI de l'espace de noms
+        type: string
+        format: uri
+      suggestedPrefix:
+        description: prefixe suggéré par l'ontologie
+        type: string
+      classes:
+        oneOf:
+          - description: liste de classes non remplie
+            type: 'null'
+          - description: dictionnaire de classes indexées sur leur URI compact
+            type: object
+            additionalProperties: false
+            patternProperties:
+              '^[a-zA-Z0-9]+:[A-Za-z0-9]+$':
+                description: description d'une classe et de ses ressources bien connues
+                $ref: '#/definitions/class'
+      datatypes:
+        description: dictionnaire des types de données indexés sur leur URI compact
+        type: object
+        additionalProperties: false
+        patternProperties:
+          '^[a-z]+:[a-zA-Z0-9]+$':
+            description: description littérale du type de données
+            type: string
+      datatypeProperties:
+        oneOf:
+          - description: dictionnaire de propriétés non rempli
+            type: 'null'
+          - description: |
+              dictionnaire de propriétés de type de données (owl:DatatypeProperty) indexées sur leur URI compact
+            $ref: '#/definitions/properties'
+      objectProperties:
+        oneOf:
+          - description: dictionnaire de propriétés non rempli
+            type: 'null'
+          - description: dictionnaire de propriétés d'objets (owl:ObjectProperty) indexées sur leur URI compact
+            $ref: '#/definitions/properties'
+      properties:
+        oneOf:
+          - description: dictionnaire de propriétés non rempli
+            type: 'null'
+          - description: dictionnaire de propriétés non différenciées indexées sur leur URI compact
+            $ref: '#/definitions/properties'
+  namespace:
+    oneOf:
+      - description: URI de l'espace de noms
+        type: string
+        format: uri
+      - description: description plus détaillée de l'espace quand c'est utile
+        type: object
+        additionalProperties: false
+        properties:
+          uri:
+            description: URI de l'espace de noms
+            type: string
+            format: uri
+          comment:
+            description: commentaire
+            type: string
+type: object
+additionalProperties: false
+required: [ title, abstract, $schema, namespaces, ontologies ]
+properties:
+  title: { description: 'titre du document', type: string }
+  abstract: { description: 'résumé du document', type: string }
+  lineage:
+    description: historique des évolutions sous la forme d'une liste de déclarations datées
+    type: array
+    items:
+      type: object
+      properties:
+        date:
+          description: date de la déclaration
+          type: string
+          format: date
+        label:
+          description: déclaration associée à la date
+          type: string
+  ruler:
+    description: |
+      chaine de caractères définissant la taille de l'écran pour lequel le fichier a été formatté,
+      par ex. 120 caractères de large
+    type: string
+  $schema:
+    description: 'schema JSON du document'
+    oneOf:
+      - $ref: http://json-schema.org/schema#
+      - type: string
+  namespaces:
+    description: |
+      dictionnaire des espaces de noms indexés sur leur prefixe utilisés dans ce document.
+      Permet aussi de constituer une liste de référence d'espaces de noms et de leur prefixe.
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z0-9+]+$':
+        $ref: '#/definitions/namespace'
+  ontologies:
+    description: dictionnaire des ontologies indexées sur le préfixe de leur espace de noms
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z0-9]+$':
+        description: description de l'ontologie
+        $ref: '#/definitions/ontology'
+  eof:
+    description: propriété marquant la fin du fichier
+    type: 'null'

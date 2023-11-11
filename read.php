@@ -145,37 +145,20 @@ class ApiRecords {
   }
 };
 
-class Menu {
-  readonly public array $def;
-  readonly public string $header; // l'en-tête de début d'affichage
-  readonly public string $back; // entrée du menu pour remonter sous la forme d'une cellule de table
-  
-  function __construct(array $def, string $header, string $back) {
-    $this->def = $def;
-    $this->header = $header;
-    $this->back = $back;
-  }
-  
-  // prefix est le début des URL
-  function asHtml(string $prefix, string $cfmt): string {
-    $menu = $this->header;
-    $menu .= "<table border=1><tr>";
-    foreach ($this->def as $f => $title) {
-      if ($f == $cfmt)
-        $menu .= "<td><b><div title=\"$title\">$f</div></b></td>";
-      else
-        $menu .= "<td><a href='$prefix&fmt=$f' title=\"$title\">$f</a></td>";
-    }
-    $menu .= "</table>\n";
-    return $menu;
-  }
-};
-
+/** Affichage d'un menu à 2 niveaux */
 class Menu2Levels {
   readonly public array $def;
   readonly public string $header; // l'en-tête de début d'affichage
   readonly public string $back; // entrée du menu pour remonter sous la forme d'une cellule de table
   
+  /** Création du menu.
+   * La définition du menu est un dictionnaire contenant des entrées à 1 ou 2 niveaux.
+   * Pour les entrées à 1 niveau le dictionnaire contient [{id}=> {title}].
+   * Pour les entrées à 2 niveaux le dictionnaire contient [{id1}=> [0=> {title1}, {id2}=> {title2}]]
+   * où:
+   *  - {id1} et {title1} sont resp. l'id et le titre de l'entrée de 1er niveau
+   *  - {id2} et {title2} sont resp. les id et titres des entrées de second niveau
+   * @param array<string,string|array<int|string, string> $def */
   function __construct(array $def, string $header, string $back) {
     $this->def = $def;
     $this->header = $header;
@@ -200,6 +183,8 @@ class Menu2Levels {
         $menu .= "<td colspan=$cspan><center><div title=\"$title\">$k0</div></center></td>";
       }
     }
+    if ($this->back)
+      $menu .= $this->back;
     $menu .= "</tr><tr>\n";
     // 2e ligne
     foreach ($this->def as $k0 => $val0) {
@@ -217,6 +202,8 @@ class Menu2Levels {
         }
       }
     }
+    if ($this->back)
+      $menu .= '<td></td>';
     $menu .= "</tr></table>\n";
     return $menu;
   }
@@ -549,30 +536,6 @@ else { // utilisation en mode web
     case 'viewRecord': {
       $fmt = $_GET['fmt'] ?? 'InspireIso-yaml'; // modèle et format
       $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
-      $menu = new Menu(
-        [
-          'ins-yaml'=> 'Inspire sérialisé en Yaml',
-          'iso-xml'=> 'ISO 19139 complet sérialisé en XML',
-          'gndcat-ttl'=> 'DCAT généré par GN et sérialisé en Turtle',
-          'gndcat-yLdi-ds'=> "DCAT généré par GN et sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
-          'gndcat-yLdi-cr'=> "DCAT généré par GN et sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
-          //'dcat-yamlLdc'=> "DCAT sérialisé en Yaml-LD compacté avec le contexte",
-          //'dcat-yamlLd'=> "DCAT sérialisé en Yaml-LD non imbriqué et non compacté",
-          'gndcat-xml'=> "DCAT généré par GN et sérialisé en RDF/XML",
-          'dap-html'=> "DCAT-AP en utilisant l'API GeoDCAT-AP",
-          'dap-ttl'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Turtle",
-          'dap-yLdi-ds'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
-          'dap-yLdi-cr'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
-          'dap-yLdi-sv'=> "DCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
-          'gdap-ttl'=> "GeoDCAT-AP généré par l'API GeoDCAT-AP API sérialisé en Turtle",
-          'gdap-yLdi-ds'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur Dataset",
-          'gdap-yLdi-cr'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur CatalogRecord",
-          'gdap-yLdi-sv'=> "GeoDCAT-AP généré par GeoDCAT-AP API sérialisé en Yaml-LD contextualisé et imbriqué sur DataService",
-          'double'=> "double affichage",
-        ],
-        HTML_HEADER,
-        $startPosition ? "<td><a href='?server=$id&action=listDatasets$startPosition' target='_parent'>^</a></td>" : ''
-      );
       $menu = new Menu2Levels(
         [
           'InspireIso'=> [
@@ -738,10 +701,10 @@ else { // utilisation en mode web
         }
         case 'double': {
           $startPosition = isset($_GET['startPosition']) ? "&startPosition=$_GET[startPosition]" : '';
-          echo "
+          echo "<!DOCTYPE HTML>\n<html><head><title>gndcat double</title></head>
     <frameset cols='50%,50%' >
       <frame src='?server=$id&action=viewRecord&id=$_GET[id]$startPosition' name='left'>
-      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=gndcat-yLdi-ds$startPosition' name='right'>
+      <frame src='?server=$id&action=viewRecord&id=$_GET[id]&fmt=GN-DCAT-yLdi-ds$startPosition' name='right'>
       <noframes>
       	<body>
       		<p><a href='index2.php'>Accès sans frame</p>
@@ -819,25 +782,39 @@ else { // utilisation en mode web
     case 'doc': { // doc
       echo HTML_HEADER,"<h2>Docs</h2><ul>";
       echo "<li><b>Docs du projet</b></li><ul>\n";
-      echo "<li><a href='contextnl.yaml'>Contexte utilisé dans le format DCAT Yaml-LD compacté (dcat-yamlLd-c)</a></li>\n";
+      echo "<li>Contextes Yaml-LD utilisés pour l'affichage<ul>\n";
+      echo "<li><a href='context.yaml'>Contexte en français</a></li>\n";
+      echo "<li><a href='contextnl.yaml'>Contexte sans langue</a></li>\n";
+      echo "<li><a href='contextdcatap.yaml'>Contexte pour DCAT-AP et GeoDCAT-AP</a></li>\n";
+      echo "</ul>\n";
       echo "<li><a href='mdvars2.inc.php'>Noms des éléments de MD utilisés dans le format",
         " \"ISO 19139 Inspire formatté en Yaml\" (iso-yaml)</a></li>\n";
+      echo "<li><a href='https://github.com/benoitdavidfr/gndcat' target='_blank'>Source du projet sur Github</a></li>\n";
       // Docs de réf.
       echo "</ul><li><b>Spécifications de référence</b></li><ul>\n";
-      echo "<li><a href='https://github.com/benoitdavidfr/gndcat' target='_blank'>Source du projet sur Github</a></li>\n";
       echo "<li><a href='https://eur-lex.europa.eu/legal-content/FR/TXT/ELI/?eliuri=eli:reg:2008:1205:oj' target='_blank'>",
         "Règlement (CE) no 1205/2008 de la Commission du 3 décembre 2008 portant modalités d'application",
         " de la directive 2007/2/CE en ce qui concerne les métadonnées</a></li>\n";
-      echo "<li><a href='https://portal.ogc.org/files/80534 target='_blank''>",
+      echo "<li><a href='https://portal.ogc.org/files/80534' target='_blank''>",
         "OpenGIS® Catalogue Services Specification 2.0.2 - ISO Metadata Application Profile: Corrigendum</a></li>\n";
-      echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130 target='_blank''>",
+      echo "<li><a href='https://portal.ogc.org/files/?artifact_id=51130' target='_blank''>",
         "OpenGIS ® Filter Encoding Implementation Specification, version 1.1.0, 3 May 2005</a></li>\n";
+      echo "<li><a href='https://semiceu.github.io/GeoDCAT-AP/drafts/latest/' target='_blank''>",
+        "GeoDCAT-AP - Version 2.0.0, A geospatial extension for the DCAT application profile for data portals in Europe,",
+        " SEMIC Editor's Draft 23 December 2020</a></li>\n";
+      echo "<ul><li><a href='https://semiceu.github.io/GeoDCAT-AP/drafts/latest/#resource-locator---on-line-resource'",
+        " target='_blank''>Point sur la traduction des localisateurs de ressource</a></li></ul>\n";
+      echo "<li><a href='https://github.com/SEMICeu/iso-19139-to-dcat-ap' target='_blank''>",
+        "iso-19139-to-dcat-ap, feuille XSLT pour transformer des MD Inspire en MD GeoDCAT-AP</a></li>\n";
       // GN
       echo "</ul><li><b>GeoNetwork</b></li><ul>\n";
       echo "<li><a href='https://geonetwork-opensource.org/manuals/4.0.x/en/' target='_blank'>",
-        "Manuel GeoNrtwork v 4</a></li>\n";
+        "Manuel GeoNetwork v 4</a></li>\n";
       echo "<li><a href='https://github.com/geonetwork/core-geonetwork/pull/6635' target='_blank'>",
         "Pull Request #6635 : CSW / Improve DCAT support (21/10/2022) (version GN 4.2.2)</a></li>\n";
+      echo "<li><a href='https://github.com/geonetwork/core-geonetwork/pull/7212' target='_blank'>",
+        "Pull Request #7212 :  CSW / GeoDCAT-AP / Add SEMICeu conversion.</a></li>\n";
+      
       echo "</ul></ul>\n";
       die();
     }

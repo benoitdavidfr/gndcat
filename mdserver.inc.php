@@ -477,6 +477,16 @@ class CswServer {
     //echo 'lastCachepathReturned=',$this->cache->lastCachepathReturned(),"\n";
     $xml = preg_replace('!<csw:GetRecordByIdResponse [^>]*>!', '', $xml);
     $xml = preg_replace('!</csw:GetRecordByIdResponse>!', '', $xml);
+    
+    \EasyRdf\RdfNamespace::set('adms', 'http://www.w3.org/ns/adms#');
+    \EasyRdf\RdfNamespace::set('cnt', 'http://www.w3.org/2011/content#');
+    \EasyRdf\RdfNamespace::set('dct', 'http://purl.org/dc/terms/');
+    \EasyRdf\RdfNamespace::set('dcat', 'http://www.w3.org/ns/dcat#');
+    \EasyRdf\RdfNamespace::set('dqv', 'http://www.w3.org/ns/dqv#');
+    \EasyRdf\RdfNamespace::set('geodcatap', 'http://data.europa.eu/930/');
+    \EasyRdf\RdfNamespace::set('geosparql', 'http://www.opengis.net/ont/geosparql#');
+    \EasyRdf\RdfNamespace::set('locn', 'http://www.w3.org/ns/locn#');
+    \EasyRdf\RdfNamespace::set('prov', 'http://www.w3.org/ns/prov#');
     $rdf = new \EasyRdf\Graph($url);
     try {
       $rdf->parse($xml, 'rdf', $url);

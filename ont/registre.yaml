@@ -1,0 +1,2134 @@
+title: registre documentant les ontologies utilisées pour la gestion de catalogues de données et de services
+abstract: |
+  Ce registre définit:
+    1) les ontologies utilisées
+    2) des ressources identifiées par des URI présents dans l'export Ecosphères et mais dont la définition
+       est absente de cet export. Ces ressources sont appelées ressources bien connues.
+  Dans certains cas les ontologies sont spécialisées dans leur utilisation pour DCAT, plusieurs définitions
+  sont alors fournies, exemple skos:ConceptScheme.
+lineage:
+  - date: '2023-11-11'
+    label: |
+      Je fais le choix d'indiquer dans une ontologie (notamment DCAT) des propriétés reprises d'autres ontologies.
+      [DCAT3](https://www.w3.org/TR/vocab-dcat-3/#external-vocab) indique:
+        DCAT requires use of elements from a number of other vocabularies. Furthermore, DCAT may be augmented by
+        additional elements from external vocabularies, following the usual RDFS [RDF-SCHEMA] and OWL2 [OWL2-OVERVIEW]
+        rules and patterns. 
+  - date: '2023-11-01'
+    label: |
+      - Document repris dans une logique de documentation des ontologies utilisées.
+      - Intégration des datatypes dans chaque ontologie.
+  - date: '2023-06-04'
+    label: |
+      transformation de la structure du registre:
+        - intégration des classes et des propriétés dans leur ontologie
+        - différents schémas possibles pour les ressources bien connues
+      Question: faut-il définir une seule ontologie pour RDF + RDFS ?
+      Mettre les datatypes comme instance de la classe Datatype !
+ruler: 89 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789X
+$schema: registre
+
+namespaces:
+  adms: http://www.w3.org/ns/adms#
+  dc: http://purl.org/dc/elements/1.1/
+  dcat: http://www.w3.org/ns/dcat#
+  dcatap: http://data.europa.eu/r5r/
+  dce:
+    uri: http://purl.org/dc/elements/1.1/
+    comment: les 15 éléments de MD originaux
+  dct:
+    uri: http://purl.org/dc/terms/
+    comment: les termes étendus formellement définis en RDF
+  dctype: http://purl.org/dc/dcmitype/
+  ecospheres: http://registre.data.developpement-durable.gouv.fr/ecospheres/
+  foaf: http://xmlns.com/foaf/0.1/
+  ogc:
+    uri: http://www.opengis.net/
+    comment: je n'ai pas trouvé de définition de cet espace de noms parfois utilisé
+  geodcatap: http://data.europa.eu/930/
+  geosparql: http://www.opengis.net/ont/geosparql#
+  locn: http://www.w3.org/ns/locn#
+  m8g: http://data.europa.eu/m8g/
+  mediatypes: https://www.iana.org/assignments/media-types/
+  odrl: http://www.w3.org/ns/odrl/2/
+  owl: http://www.w3.org/2002/07/owl#
+  pav: http://purl.org/pav/
+  plume: http://registre.data.developpement-durable.gouv.fr/plume/
+  prov: http://www.w3.org/ns/prov#
+  rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  schema: http://schema.org/
+  skos: http://www.w3.org/2004/02/skos/core#
+  spdx: http://spdx.org/rdf/terms#
+  themesEcospheres: http://registre.data.developpement-durable.gouv.fr/ecospheres/themes-ecospheres/
+  time: http://www.w3.org/2006/time#
+  vcard: http://www.w3.org/2006/vcard/ns#
+  wgs84: http://www.w3.org/2003/01/geo/wgs84_pos#
+  xsd: http://www.w3.org/2001/XMLSchema#
+
+
+ontologies:
+  rdf:
+    title: RDF Ontology
+    source:
+      - title: RDF 1.2 Schema
+        identifier: https://www.w3.org/TR/rdf-schema/
+      - title: 5.1 The XML Schema Built-in Datatypes
+        identifier: https://www.w3.org/TR/rdf11-concepts/#dfn-rdf-compatible-xsd-types
+    classes:
+      rdf:Property:
+        definition: the class of RDF properties. rdf:Property is an instance of rdfs:Class.
+        subClassOf: []
+      rdf:langString:
+        definition: |
+          the class of language-tagged string values. rdf:langString is an instance of rdfs:Datatype and a subclass
+          of rdfs:Literal.
+        subClassOf: [rdfs:Literal]
+      rdf:HTML:
+        definition: |
+          the class of HTML literal values. rdf:HTML is an instance of rdfs:Datatype and a subclass of rdfs:Literal.
+        subClassOf: [rdfs:Literal]
+      rdf:XMLLiteral:
+        definition: |
+          the class of XML literal values. rdf:XMLLiteral is an instance of rdfs:Datatype and a subclass of rdfs:Literal.
+        subClassOf: [rdfs:Literal]
+      rdf:JSON:
+        definition: JSON content as a possible literal value.
+        subClassOf: [rdfs:Literal]
+    datatypes:
+      xsd:string: Character strings (but not all Unicode character strings) # Core types
+      xsd:boolean: true, false
+      xsd:decimal: Arbitrary-precision decimal numbers
+      xsd:integer: Arbitrary-size integer numbers
+      xsd:double: 64-bit floating point numbers incl. ±Inf, ±0, NaN # IEEE floating-point numbers
+      xsd:float: 32-bit floating point numbers incl. ±Inf, ±0, NaN
+      xsd:date: Dates (yyyy-mm-dd) with or without timezone #Time and date
+      xsd:time: Times (hh:mm:ss.sss…) with or without timezone
+      xsd:dateTime: Date and time with or without timezone
+      xsd:dateTimeStamp: Date and time with required timezone
+      xsd:gYear: Gregorian calendar year # Recurring and partial dates
+      xsd:gMonth: Gregorian calendar month
+      xsd:gDay: Gregorian calendar day of the month
+      xsd:gYearMonth: Gregorian calendar year and month
+      xsd:gMonthDay: Gregorian calendar month and day
+      xsd:duration: Duration of time
+      xsd:yearMonthDuration: Duration of time (months and years only)
+      xsd:dayTimeDuration: Duration of time (days, hours, minutes, seconds only)
+      xsd:byte: -128…+127 (8 bit) # Limited-range integer numbers
+      xsd:short: -32768…+32767 (16 bit)
+      xsd:int: -2147483648…+2147483647 (32 bit)
+      xsd:long: -9223372036854775808…+9223372036854775807 (64 bit)
+      xsd:unsignedByte: 0…255 (8 bit)
+      xsd:unsignedShort: 0…65535 (16 bit)
+      xsd:unsignedInt: 0…4294967295 (32 bit)
+      xsd:unsignedLong: 0…18446744073709551615 (64 bit)
+      xsd:positiveInteger: Integer numbers >0
+      xsd:nonNegativeInteger: Integer numbers ≥0
+      xsd:negativeInteger: Integer numbers <0
+      xsd:nonPositiveInteger: Integer numbers ≤0
+      xsd:hexBinary: Hex-encoded binary data # Encoded binary data
+      xsd:base64Binary: Base64-encoded binary data
+      xsd:anyURI: Absolute or relative URIs and IRIs # Miscellaneous XSD types
+      xsd:language: Language tags per [BCP47]
+      xsd:normalizedString: Whitespace-normalized strings
+      xsd:token: Tokenized strings
+      xsd:NMTOKEN: XML NMTOKENs
+      xsd:Name: XML Names
+      xsd:NCName: XML NCNames
+      rdf:XMLLiteral: |
+        the class of XML literal values. rdf:XMLLiteral is an instance of rdfs:Datatype and a subclass of rdfs:Literal.
+      rdf:langString: |
+        the class of language-tagged string values. rdf:langString is an instance of rdfs:Datatype and a subclass
+        of rdfs:Literal.
+      rdf:HTML: |
+        the class of HTML literal values. rdf:HTML is an instance of rdfs:Datatype and a subclass of rdfs:Literal.
+    objectProperties:
+      rdf:type:
+        scopeNote: |
+          rdf:type is an instance of rdf:Property that is used to state that a resource is an instance of a class.
+          A triple of the form: R rdf:type C 
+          states that C is an instance of rdfs:Class and R is an instance of C.
+        domain: [rdfs:Resource]
+        range: [rdfs:Class]
+  rdfs:
+    title: RDF Schema
+    source:
+      - title: RDF 1.2 Schema
+        identifier: https://www.w3.org/TR/rdf-schema/
+    classes:
+      rdfs:Resource:
+        definition: |
+          All things described by RDF are called resources, and are instances of the class rdfs:Resource.
+          This is the class of everything.
+        subClassOf: []
+      rdfs:Class:
+        definition: This is the class of resources that are RDF classes. rdfs:Class is an instance of rdfs:Class.
+        subClassOf: [rdfs:Resource]
+        instances:
+          - $id: rdfs:Class
+            label:
+              en: Class of resources that are RDF classes
+      rdfs:Literal:
+        definition: literal values such as strings and integers.
+        subClassOf: []
+      rdfs:Datatype:
+        definition: |
+          the class of datatypes. All instances of rdfs:Datatype correspond to the RDF model of a datatype described in the RDF Concepts specification [RDF12-CONCEPTS]. rdfs:Datatype is both an instance of and a subclass of rdfs:Class. Each instance of rdfs:Datatype is a subclass of rdfs:Literal.
+        subClassOf: []
+    properties:
+      rdfs:range:
+        labelFr: plage # l'ensemble d'arrivée
+      rdfs:domain:
+        labelFr: domaine # l'ensemble de départ
+      rdfs:subClassOf:
+      rdfs:subPropertyOf:
+      rdfs:label:
+        definition: provides a human-readable version of a resource's name.
+        subPropertyOf: []
+        range: [rdfs:Literal]
+        domain: [rdfs:Resource]
+      rdfs:comment:
+        definition: provides a human-readable description of a resource.
+        subPropertyOf: []
+        range: [rdfs:Literal]
+        domain: [rdfs:Resource]
+  dce:
+    title: Initial Dublin Core™ metadata elements
+    namespace: http://purl.org/dc/elements/1.1/
+    editorialNote: |
+      Espace de noms utilisé pour les 15 éléments originaux du Dublin Core créés en 1995 et formalisés en RDF en 2000.
+      Cet espace de nom correspond au domaine d'application de la norme ISO 15836 publiée en 2003 et révisée en 2017
+      sous le nom ISO 15836-1:2017.
+    properties:
+      dce:title:
+      dce:identifier:
+      dce:type:
+      dce:description:
+      dce:language:
+      dce:subject:
+      dce:contributor:
+      dce:creator:
+      dce:publisher:
+      dce:rights:
+      dce:date:
+      dce:coverage:
+      dce:format:
+      dce:source:
+      dce:relation:
+  dct:
+    title: DCMI Metadata Terms
+    namespace: http://purl.org/dc/terms/
+    editorialNote: |
+      Espace créé en 2001 pour identifier de nouveaux termes à côté des 15 éléments originaux. En 2008, lors de la
+      définition d'une sémantique formelle pour l'utilisation dans les applications RDF, les 15 termes originaux
+      ont été dupliqués dans cet espace de noms.
+      Le DCMI encourage l'utilisation de ce nouvel espace de noms.
+    source:
+      - https://www.dublincore.org/specifications/dublin-core/dcmi-terms/
+      - https://www.dublincore.org/resources/userguide/publishing_metadata/
+    classes:
+      dct:Agent:
+        definition: A resource that acts or has the power to act.
+        subClassOf: []
+      dct:AgentClass:
+        definition: A group of agents.
+        subClassOf: []
+      dct:PeriodOfTime:
+        definition: An interval of time that is named or defined by its start and end.
+        subClassOf: [dct:LocationPeriodOrJurisdiction]
+      dct:LinguisticSystem:
+        definition: A system of signs, symbols, sounds, gestures, or rules used in communication.
+        scopeNote: Written, spoken, sign, and computer languages are linguistic systems.
+        subClassOf: []
+        instances:
+          - $id: http://publications.europa.eu/resource/authority/language/FRA
+            label:
+              fr: Français
+              en: French
+      dct:RightsStatement:
+        definition: |
+          A statement about the intellectual property rights (IPR) held in or over a resource, a legal document giving official
+          permission to do something with a resource, or a statement about access rights.
+        subClassOf: []
+        instances:
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/LimitationsOnPublicAccess/noLimitations
+            label:
+              fr: Pas de restriction d’accès public selon INSPIRE # libellé souvent utilisé
+              en: no limitations to public access # source registre Inspire
+      dct:LicenseDocument:
+        definition: A legal document giving official permission to do something with a resource.
+        subClassOf: [dct:RightsStatement]
+        instances:
+          - $id: https://spdx.org/licenses/etalab-2.0
+            label:
+              fr: Licence ouverte Etalab 2.0
+              en: Etalab Open License 2.0
+          - $id: https://spdx.org/licenses/ODbL-1.0
+            label:
+              fr: Licence de base de données ouverte Open Data Commons v1.0
+              en: Open Data Commons Open Database License v1.0
+      dct:Standard:
+        definition: A reference point against which other things can be evaluated or compared.
+        subClassOf: []
+        instances:
+          - $id: https://tools.ietf.org/html/rfc4287
+            label:
+              fr: Le format de syndication Atom
+              #en: The Atom Syndication Format
+          - $id: http://www.opengis.net/def/crs/EPSG/0/4326
+            label:
+              fr: Système géodésique mondial 1984
+              #en: World Geodetic System 1984
+              #'': WGS 84
+          - $id: http://www.opengis.net/def/crs/EPSG/0/4171
+            label:
+              fr: Système géodésique RGF93
+              #'': RGF93 v1
+          - $id: http://www.opengis.net/def/crs/EPSG/0/2154
+            label:
+              fr: Projection Lambert 93
+              #'': RGF93 v1 / Lambert-93
+          - $id: http://www.opengis.net/def/crs/EPSG/0/27572
+            label:
+              fr: Projection Lambert II Étendue
+              #'': NTF (Paris) / Lambert zone II
+      dct:MediaTypeOrExtent:
+        definition: A media type or extent.
+        subClassOf: []
+      dct:MediaType:
+        definition: A file format or physical medium.
+        subClassOf: [dct:MediaTypeOrExtent]
+        instances:
+          - $id: https://www.iana.org/assignments/media-types/text/html
+            label:
+              fr: Texte HTML
+              en: HTML text
+      dct:SizeOrDuration:
+        definition: A dimension or extent, or a time taken to play or execute.
+        subClassOf: [dct:MediaTypeOrExtent]
+      dct:LocationPeriodOrJurisdiction:
+        label: Location, Period, or Jurisdiction
+        definition: A location, period of time, or jurisdiction.
+        subClassOf: []
+      dct:Location:
+        definition: A spatial region or named place.
+        subClassOf: [dct:LocationPeriodOrJurisdiction]
+        scopeNote: |
+          Usage note DCAT:
+          For an extensive geometry (i.e., a set of coordinates denoting the vertices of the relevant geographic area),
+          the property locn:geometry [LOCN] SHOULD be used.
+          For a geographic bounding box delimiting a spatial area the property dcat:bbox SHOULD be used.
+          For the geographic center of a spatial area, or another characteristic point, the property dcat:centroid SHOULD be used.
+      dct:Frequency:
+        definition: A rate at which something recurs.
+        subClassOf: []
+        instances:
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/continual
+            label:
+              fr: En continu
+              en: Continual
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/asNeeded
+            label:
+              fr: Comme requis
+              en: As needed
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/notPlanned
+            label:
+              fr: Pas prévu
+              en: Not planned
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/irregular
+            label:
+              fr: Irrégulier
+              en: Irregular
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/annually
+            label:
+              fr: Annuel
+              en: Annually
+          - $id: http://inspire.ec.europa.eu/metadata-codelist/MaintenanceFrequency/quarterly
+            label:
+              fr: Trimestriel
+              en: Quarterly
+    properties:  
+      dct:title: # MD DCMI de base: titres, id, type, résumé, ...
+        definition: A name given to the resource.
+        range: [rdfs:Literal]
+      dct:alternative:
+        definition: An alternative name for the resource.
+        subPropertyOf: [dct:title]
+      dct:identifier:
+        definition: An unambiguous reference to the resource within a given context.
+        range: [rdfs:Literal]
+      dct:type:
+        definition: The nature or genre of the resource.
+        scopeNote: |
+          Recommended practice is to use a controlled vocabulary such as the DCMI Type Vocabulary [DCMI-TYPE].
+          To describe the file format, physical medium, or dimensions of the resource, use the property Format.
+      dct:description:
+        definition: An account of the resource.
+        definition(fr): Un compte rendu de la ressource. [GoogleTranslate]
+        scopeNote: |
+          Description may include but is not limited to: an abstract, a table of contents, a graphical representation,
+          or a free-text account of the resource.
+      dct:abstract:
+        definition: A summary of the resource.
+        subPropertyOf: [dct:description]
+      dct:tableOfContents:
+        definition: A list of subunits of the resource.
+        subPropertyOf: [dct:description]
+      dct:language:
+        definition: A language of the resource.
+        scopeNote: |
+          Recommended practice is to use either a non-literal value representing a language from a controlled vocabulary such as
+          ISO 639-2 or ISO 639-3, or a literal value consisting of an IETF Best Current Practice 47 [IETF-BCP47] language tag.
+        range: [dct:LinguisticSystem]
+      dct:subject:
+        definition: A topic of the resource.
+        scopeNote: |
+          Recommended practice is to refer to the subject with a URI. If this is not possible or feasible, a literal value
+          that identifies the subject may be provided. Both should preferably refer to a subject in a controlled vocabulary.
+  
+      dct:contributor: # acteurs participants
+        definition: An entity responsible for making contributions to the resource.
+        scopeNote: The guidelines for using names of persons or organizations as creators apply to contributors.
+        range: [dct:Agent]
+      dct:creator:
+        definition: An entity responsible for making the resource.
+        scopeNote: |
+          Recommended practice is to identify the creator with a URI. If this is not possible or feasible, a literal
+          value that identifies the creator may be provided.
+        subPropertyOf: [dct:contributor]
+        range: [dct:Agent]
+      dct:publisher:
+        definition: An entity responsible for making the resource available.
+        range: [dct:Agent]
+      dct:rightsHolder:
+        definition: A person or organization owning or managing rights over the resource.
+        scopeNote: |
+          Recommended practice is to refer to the rights holder with a URI. If this is not possible or feasible,
+          a literal value that identifies the rights holder may be provided.
+        range: [dct:Agent]
+      dct:audience:
+      dct:mediator:
+        definition: An entity that mediates access to the resource.
+        scopeNote: In an educational context, a mediator might be a parent, teacher, teaching assistant, or care-giver.
+        subPropertyOf: [dct:audience]
+        range: [dct:AgentClass]
+
+      dct:rights: # droits associés
+        definition: Information about rights held in and over the resource.
+        scopeNote: |
+          Typically, rights information includes a statement about various property rights associated with the resource,
+          including intellectual property rights. Recommended practice is to refer to a rights statement with a URI.
+          If this is not possible or feasible, a literal value (name, label, or short text) may be provided.
+        range: [dct:RightsStatement]
+      dct:accessRights:
+        definition: Information about who access the resource or an indication of its security status.
+        scopeNote: |
+          Access Rights may include information regarding access or restrictions based on privacy, security, or other 
+          policies.
+        subPropertyOf: [dct:rights]
+        range: [dct:RightsStatement]
+      dct:license:
+        definition: A legal document giving official permission to do something with the resource.
+        scopeNote: |
+          Recommended practice is to identify the license document with a URI. If this is not possible or feasible, 
+          a literal value that identifies the license may be provided.
+        range: [dct:LicenseDocument]
+        subPropertyOf: [dct:rights]
+
+      dct:date: # dates
+        definition: A point or period of time associated with an event in the lifecycle of the resource.
+        scopeNote: |
+          Date may be used to express temporal information at any level of granularity. Recommended practice is to
+          express the date, date/time, or period of time according to ISO 8601-1 [ISO 8601-1] or a published profile
+          of the ISO standard, such as the W3C Note on Date and Time Formats [W3CDTF] or the Extended Date/Time Format
+          Specification [EDTF].
+          If the full date is unknown, month and year (YYYY-MM) or just year (YYYY) may be used. Date ranges may be
+          specified using ISO 8601 period of time specification in which start and end dates are separated
+          by a '/' (slash) character.
+          Either the start or end date may be missing.
+        range: [rdfs:Literal]
+      dct:issued:
+        definition: Date of formal issuance of the resource.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:created:
+        definition: Date of creation of the resource.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:available:
+        definition: Date that the resource became or will become available.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:valid:
+        definition: Date (often a range) of validity of a resource.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:modified:
+        definition: Date on which the resource was changed.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:dateAccepted:
+        definition: Date of acceptance of the resource.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty. Examples of resources to which a date of acceptance may be relevant
+          are a thesis (accepted by a university department) or an article (accepted by a journal).
+        subPropertyOf: [dct:date]
+      dct:dateCopyrighted:
+        definition: Date of copyright of the resource.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+      dct:dateSubmitted:
+        definition: Date on which the resource was changed.
+        scopeNote: |
+          Recommended practice is to describe the date, date/time, or period of time as recommended for the property
+          Date, of which this is a subproperty.
+        subPropertyOf: [dct:date]
+
+      dct:coverage: # couverture
+        definition: |
+          The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction
+          under which the resource is relevant.
+        scopeNote: |
+          Spatial topic and spatial applicability may be a named place or a location specified by its geographic coordinates.
+          Temporal topic may be a named period, date, or date range. A jurisdiction may be a named administrative entity
+          or a geographic place to which the resource applies. Recommended practice is to use a controlled vocabulary
+          such as the Getty Thesaurus of Geographic Names [TGN]. Where appropriate, named places or time periods may be used
+          in preference to numeric identifiers such as sets of coordinates or date ranges. Because coverage is so broadly defined,
+          it is preferable to use the more specific subproperties Temporal Coverage and Spatial Coverage.
+        range: [dct:Location, dct:Period, dct:Jurisdiction]
+      dct:temporal:
+        label: Temporal Coverage
+        definition: Temporal characteristics of the resource.
+        subPropertyOf: [dct:coverage]
+        range: [dct:PeriodOfTime]
+      dct:spatial:
+        label: Spatial Coverage
+        definition: Spatial characteristics of the resource.
+        subPropertyOf: [dct:coverage]
+        range: [dct:Location]
+ 
+      dct:format: # format, conformité
+        definition: The file format, physical medium, or dimensions of the resource.
+        scopeNote: |
+          Recommended practice is to use a controlled vocabulary where available. For example, for file formats one could use
+          the list of Internet Media Types [MIME]. Examples of dimensions include size and duration.
+        range: [dct:MediaType, dct:Extent ]
+      dct:medium:
+        definition: The material or physical carrier of the resource.
+        range: [dct:PhysicalMedium]
+        subPropertyOf: [dct:format]
+      dct:extent:
+        definition: The size or duration of the resource.
+        scopeNote: Recommended practice is to specify the file size in megabytes and duration in ISO 8601 format.
+      dct:conformsTo:
+        definition: An established standard to which the described resource conforms.
+        range: [dct:Standard]
+        subPropertyOf: [dct:relation]
+
+      dct:relation: # relations entre ressources
+        definition: A related resource.
+        scopeNote: |
+          Recommended practice is to identify the related resource by means of a URI.
+          If this is not possible or feasible, a string conforming to a formal identification system may be provided.
+      dct:source:
+      dct:hasPart:
+        definition: A related resource that is included either physically or logically in the described resource.
+        scopeNote: |
+          This property is intended to be used with non-literal values. This property is an inverse property of
+          Is Part Of.
+        subPropertyOf: [dct:relation]
+        inverse: dct:isPartOf
+      dct:isReferencedBy:
+        inverse: dct:references
+      dct:requires:
+      dct:isRequiredBy:
+      dct:replaces:
+        inverse: dct:isReplacedBy
+      dct:hasFormat:
+        definition: |
+          A related resource that is substantially the same as the pre-existing described resource, but in another
+          format.
+        scopeNote: |
+          This property is intended to be used with non-literal values. This property is an inverse property of Is
+          Format Of.
+        subPropertyOf: [dct:relation]
+      dct:isFormatOf:
+      dct:hasVersion:
+        definition: A related resource that is a version, edition, or adaptation of the described resource.
+        inverse: dct:isVersionOf
+        scopeNote: |
+          Changes in version imply substantive changes in content rather than differences in format. This property is
+          intended to be used with non-literal values. This property is an inverse property of Is Version Of.
+
+      dct:provenance: # provenance
+        definition: |
+          A statement of any changes in ownership and custody of the resource since its creation that are significant
+          for its authenticity, integrity, and interpretation.
+        scopeNote: The statement may include a description of any changes successive custodians made to the resource.
+        range: [dct:ProvenanceStatement]
+
+      dct:accrualMethod: # accrual
+      dct:accrualPeriodicity:
+        definition: The frequency at which a dataset is published. [DCAT]
+        range: [dcterms:Frequency]
+        scopeNote: |
+          Usage note: The value of dcterms:accrualPeriodicity gives the rate at which the dataset-as-a-whole is updated. This may be complemented by dcat:temporalResolution to give the time between collected data points in a time series.
+      dct:accrualPolicy:
+
+      dct:educationLevel: # divers
+      dct:bibliographicCitation:
+      dct:instructionalMethod:
+  dctype:
+    title: DCMI Type Vocabulary
+    source:
+      - http://purl.org/dc/dcmitype/
+    publisher: http://purl.org/dc/aboutdcmi#DCMI
+    classes:
+      dctype:Collection:
+        definition: A collection is described as a group; its parts may also be separately described.
+        subClassOf: []
+      dctype:Dataset:
+        definition: Examples include lists, tables, and databases. A dataset may be useful for direct machine processing.
+        subClassOf: []
+      dctype:Event:
+        definition: Metadata for an event provides descriptive information that is the basis for discovery of the purpose, location, duration, and responsible agents associated with an event. Examples include an exhibition, webcast, conference, workshop, open day, performance, battle, trial, wedding, tea party, conflagration.
+        subClassOf: []
+      dctype:Image:
+        definition: Examples include images and photographs of physical objects, paintings, prints, drawings, other images and graphics, animations and moving pictures, film, diagrams, maps, musical notation. Note that Image may include both electronic and physical representations.
+        subClassOf: []
+      dctype:InteractiveResource:
+        definition: Examples include forms on Web pages, applets, multimedia learning objects, chat services, or virtual reality environments.
+        subClassOf: []
+      dctype:MovingImage:
+        definition: Examples include animations, movies, television programs, videos, zoetropes, or visual output from a simulation. Instances of the type Moving Image must also be describable as instances of the broader type Image.
+        subClassOf: []
+      dctype:PhysicalObject:
+        definition: Note that digital representations of, or surrogates for, these objects should use Image, Text or one of the other types.
+        subClassOf: []
+      dctype:Service:
+        definition: Examples include a photocopying service, a banking service, an authentication service, interlibrary loans, a Z39.50 or Web server.
+        subClassOf: []
+      dctype:Software:
+        definition: Examples include a C source file, MS-Windows .exe executable, or Perl script.
+        subClassOf: []
+      dctype:Sound:
+        definition: Examples include a music playback file format, an audio compact disc, and recorded speech or sounds.
+        subClassOf: []
+      dctype:StillImage:
+        definition: Examples include paintings, drawings, graphic designs, plans and maps. Recommended best practice is to assign the type Text to images of textual materials. Instances of the type Still Image must also be describable as instances of the broader type Image.
+        subClassOf: []
+      dctype:Text:
+        definition: Examples include books, letters, dissertations, poems, newspapers, articles, archives of mailing lists. Note that facsimiles or images of texts are still of the genre Text.
+        subClassOf: []
+  skos:
+    title: SKOS Simple Knowledge Organization System
+    source:
+      - https://www.w3.org/2004/02/skos/
+    classes:
+      skos:ConceptScheme:
+        labelFr: Schéma de concepts
+        definition:
+          skos: A set of concepts, optionally including statements about semantic relationships between those concepts. 
+          dcat: A knowledge organization system (KOS) used to represent themes/categories of datasets in the catalog.
+        subClassOf: []
+        instances:
+          - $id: http://publications.europa.eu/resource/authority/dataset-status
+            title:
+              fr: Liste d'autorité nommée sur l'état d'un jeu de données
+              en: Dataset status Named Authority List
+            publisher: https://op.europa.eu/
+          - $id: http://publications.europa.eu/ontology/euvoc#AccessRight
+            title:
+              fr: Droits d'accès
+              en: Access Right
+            publisher: https://op.europa.eu/
+          - $id: plume:ISO19139ProgressCode
+            title:
+              fr: État du jeu de données (ISO 19139)
+              en: Status of the dataset (ISO 19139)
+            publisher: https://www.iso.org/
+          - $id: ecospheres:themes-ecospheres
+            title: {fr: "Thèmes Ecosphères"}
+            publisher: https://www.ecologie.gouv.fr/
+      skos:Concept:
+        definition:
+          skos: An abstract idea or notion; a unit of thought.
+          dcat: A category or a theme used to describe datasets in the catalog.
+        subClassOf: []
+        instances:
+          - $id: http://publications.europa.eu/resource/authority/access-right/RESTRICTED
+            prefLabel:
+              fr: restreint
+              en: restricted
+            inScheme: [http://publications.europa.eu/ontology/euvoc#AccessRight]
+          - $id: http://publications.europa.eu/resource/authority/dataset-status/COMPLETED
+            prefLabel:
+              fr: finalisé
+              en: completed
+            inScheme: [http://publications.europa.eu/resource/authority/dataset-status]
+          - $id: plume:ISO19139ProgressCode/onGoing
+            prefLabel:
+              fr: en cours
+              en: on going
+            inScheme: [plume:ISO19139ProgressCode]
+          - $id: plume:ISO19139ProgressCode/historicalArchive
+            prefLabel:
+              fr: archive historique
+              en: historical archive
+            inScheme: [plume:ISO19139ProgressCode]
+          - $id: plume:ISO19139ProgressCode/obsolete
+            prefLabel:
+              fr: obsolète
+              en: obsolete
+            inScheme: [plume:ISO19139ProgressCode]
+            
+          - $id: themesEcospheres:climat # Thèmes Ecosphères 
+            prefLabel: { fr: Climat }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:changement-climatique
+            prefLabel: { fr: Changement climatique }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:meteorologie
+            prefLabel: { fr: Météorologie }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:amenagement-et-urbanisme
+            prefLabel: { fr: Aménagement et urbanisme }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:servitudes-d-utilite-publique
+            prefLabel: { fr: Servitudes d'utilité publique }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:politique-europeenne-d-amenagement
+            prefLabel: { fr: Politique européenne d'aménagement }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:zonages-d-amenagement
+            prefLabel: { fr: Zonages d'aménagement }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:planification
+            prefLabel: { fr: Planification }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:etudes
+            prefLabel: { fr: Études }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:etablissements-d-activites
+            prefLabel: { fr: Établissements d'activités }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:etablissements-d-enseignement
+            prefLabel: { fr: Etablissements d'enseignement }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:equipements-sportifs-ou-culturels
+            prefLabel: { fr: Équipements sportifs ou culturels }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:patrimoine-culturel
+            prefLabel: { fr: Patrimoine culturel }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:etablissements-de-sante-et-medico-sociaux
+            prefLabel: { fr: Établissements de santé et médico-sociaux }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:equipements-de-tourisme
+            prefLabel: { fr: Équipements de tourisme }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:autres-etablissements-recevant-du-public
+            prefLabel: { fr: Autres établissements recevant du public }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:eau
+            prefLabel: { fr: Eau }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:alimentation-en-eau-potable
+            prefLabel: { fr: Alimentation en eau potable }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:assainissement
+            prefLabel: { fr: Assainissement }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:masses-d-eau
+            prefLabel: { fr: Masses d'eau }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:ouvrages-hydrauliques
+            prefLabel: { fr: Ouvrages hydrauliques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:peche-en-eaux-interieures
+            prefLabel: { fr: Pêche en eaux intérieures }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:surveillance-de-la-ressource-en-eau
+            prefLabel: { fr: Surveillance de la ressource en eau }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:interventions-sur-les-cours-d-eau
+            prefLabel: { fr: Interventions sur les cours d'eau }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:protection-de-l-eau
+            prefLabel: { fr: Protection de l'eau }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:foncier-et-occupation-du-sol
+            prefLabel: { fr: Foncier et occupation du sol }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:foncier-agricole
+            prefLabel: { fr: Foncier agricole }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:mutation-fonciere
+            prefLabel: { fr: Mutation foncière }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:occupation-du-sol
+            prefLabel: { fr: Occupation du sol }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:propriete-fonciere
+            prefLabel: { fr: Propriété foncière }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:habitat-et-politique-de-la-ville
+            prefLabel: { fr: Habitat et politique de la ville }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:accession-a-la-propriete
+            prefLabel: { fr: Accession à la propriété }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:besoins-en-logements
+            prefLabel: { fr: Besoins en logements }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:construction
+            prefLabel: { fr: Construction }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:habitat-indigne
+            prefLabel: { fr: Habitat indigne }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:occupation-des-logements
+            prefLabel: { fr: Occupation des logements }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:parc-locatif-social
+            prefLabel: { fr: Parc locatif social }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:parc-de-logements
+            prefLabel: { fr: Parc de logements }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:politique-de-la-ville
+            prefLabel: { fr: Politique de la ville }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:renovation-urbaine
+            prefLabel: { fr: Rénovation urbaine }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:mer-et-littoral
+            prefLabel: { fr: Mer et littoral }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:ecologie-du-littoral
+            prefLabel: { fr: Écologie du littoral }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:limite-administrative-speciale-en-mer
+            prefLabel: { fr: Limite administrative spéciale en mer et sur le littoral }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:lutte-anti-pollution-en-mer
+            prefLabel: { fr: Lutte anti-pollution en mer et sur le littoral }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:navigation-maritime
+            prefLabel: { fr: Navigation maritime }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:topographie-en-mer
+            prefLabel: { fr: Topographie en mer et sur le littoral }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:chasse-maritime
+            prefLabel: { fr: Chasse maritime }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:nature-paysages-et-biodiversite
+            prefLabel: { fr: "Nature, paysages et biodiversité" }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:inventaires-nature-et-biodiversite
+            prefLabel: { fr: Inventaires nature et biodiversité }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:inventaires-des-paysages
+            prefLabel: { fr: Inventaires des paysages }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:protection-et-gestion-de-la-nature
+            prefLabel: { fr: Protection et gestion de la nature }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:protection-et-gestion-des-paysages
+            prefLabel: { fr: Protection et gestion des paysages }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:chasse
+            prefLabel: { fr: Chasse }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:nuisances-dechets-et-pollution
+            prefLabel: { fr: "Nuisances, déchets et pollution" }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:bruit
+            prefLabel: { fr: Bruit }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:dechets
+            prefLabel: { fr: Déchets }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:perturbations-electromagnetiques
+            prefLabel: { fr: Perturbations électromagnétiques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:pollution-des-sols
+            prefLabel: { fr: Pollution des sols }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:qualite-de-l-air
+            prefLabel: { fr: Qualité de l'air }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reseaux-d-energie-et-de-communication
+            prefLabel: { fr: Réseaux d'énergie et de communication }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:amenagement-numerique-des-territoires
+            prefLabel: { fr: Aménagement numérique des territoires }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reseau-electrique
+            prefLabel: { fr: Réseau électrique }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reseau-hydrocarbures
+            prefLabel: { fr: Réseau de transport et de stockage des hydrocarbures }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reseau-de-telecommunication
+            prefLabel: { fr: Réseau de télécommunication }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:risques
+            prefLabel: { fr: Risques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-des-avalanches
+            prefLabel: { fr: Prévention des avalanches }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-des-eruptions-volcaniques
+            prefLabel: { fr: Prévention des éruptions volcaniques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-des-inondations
+            prefLabel: { fr: Prévention des inondations }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-du-risque-mouvement-de-terrain
+            prefLabel: { fr: Prévention du risque mouvement de terrain }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-du-risque-radon
+            prefLabel: { fr: Prévention du risque radon }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-du-risque-minier
+            prefLabel: { fr: Prévention du risque minier }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-des-risques-technologiques
+            prefLabel: { fr: Prévention des risques technologiques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:prevention-du-risque-sismique
+            prefLabel: { fr: Prévention du risque sismique }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reglementation-de-prevention-des-risques-naturels
+            prefLabel: { fr: Réglementation de prévention des risques naturels }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reglementation-de-prevention-des-risques-technologiques
+            prefLabel: { fr: Réglementation de prévention des risques technologiques }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:gestion-du-risque
+            prefLabel: { fr: Gestion du risque }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:industrie
+            prefLabel: { fr: "Industrie, production d'énergie et exploitation du sol" }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:mines
+            prefLabel: { fr: "Mines, carrières et extraction de granulats" }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:sites-industriels
+            prefLabel: { fr: Sites industriels }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:parcs-eoliens
+            prefLabel: { fr: Parcs éoliens }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:production-d-energie-hors-eolien
+            prefLabel: { fr: Production d'énergie hors éolien }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:transport-et-deplacements
+            prefLabel: { fr: Transport et déplacements }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:securite-routiere
+            prefLabel: { fr: Sécurité routière }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:trafic-routier
+            prefLabel: { fr: Trafic routier et exploitation de la route }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:transport-collectif
+            prefLabel: { fr: Transport collectif }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:transport-exceptionnel
+            prefLabel: { fr: Transport exceptionnel }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:transport-de-marchandises
+            prefLabel: { fr: Transport de marchandises }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:transport-de-matieres-dangereuses
+            prefLabel: { fr: Transport de matières dangereuses }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:infrastructures-de-transport
+            prefLabel: { fr: Infrastructures de transport }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:infrastructure-aeroportuaire
+            prefLabel: { fr: Infrastructure aéroportuaire }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:circulation-douce
+            prefLabel: { fr: Circulation douce }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:infrastructure-ferree
+            prefLabel: { fr: "Infrastructure ferrée, gares et ouvrages d'art" }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:reseau-navigable
+            prefLabel: { fr: Réseau navigable et ouvrages de navigation }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:infrastructure-portuaire
+            prefLabel: { fr: Infrastructure portuaire }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:plateformes-multi-modales
+            prefLabel: { fr: Plateformes multi-modales }
+            inScheme: [ecospheres:themes-ecospheres]
+          - $id: themesEcospheres:infrastructure-routiere
+            prefLabel: { fr: Infrastructure routière }
+            inScheme: [ecospheres:themes-ecospheres]
+        
+          - $id: http://registre.data.developpement-durable.gouv.fr/themes-hors-ecospheres/energie
+            prefLabel: {fr: Énergie}
+          - $id: http://registre.data.developpement-durable.gouv.fr/themes-hors-ecospheres/transports
+            prefLabel: {fr: Transports}
+          - $id: http://registre.data.developpement-durable.gouv.fr/themes-hors-ecospheres/Environnement
+            prefLabel: {fr: Environnement}
+    properties:
+      skos:hasTopConcept:
+        domain: [skos:ConceptScheme]
+        range: [skos:Concept]
+        inverse: skos:topConceptOf
+      skos:inScheme:
+        domain: [skos:Concept]
+        range: [skos:Concept]
+      skos:prefLabel:
+        label: preferred label
+        labelFr: forme lexicale préférentielle 
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:altLabel:
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:hiddenLabel:
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:symbol:
+      skos:definition:
+        definition: A statement or formal explanation of the meaning of a concept. 
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:note:
+        definition: A general note, for any purpose.
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:scopeNote:
+        labelFr: note d'application
+        definition: A note that helps to clarify the meaning of a concept. 
+        subPropertyOf: [skos:note]
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:editorialNote:
+        labelFr: note éditoriale
+        definition: A note for an editor, translator or maintainer of the vocabulary.
+        scopeNote: |
+          supplies information that is an aid to administrative housekeeping, such as reminders of editorial work still to be done,
+          or warnings in the event that future editorial changes might be made.
+        subPropertyOf: [skos:note]
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:changeNote:
+        labelFr: note de modification
+        definition: A note about a modification to a concept. 
+        subPropertyOf: [skos:note]
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:historyNote:
+        labelFr: note historique 
+        definition: A note about the past state/use/meaning of a concept.  
+        subPropertyOf: [skos:note]
+        domain: [skos:Concept]
+        range: [rdfs:Literal]
+      skos:example:
+      skos:broader:
+        labelFr: a pour concept générique
+        label: has broader
+        domain: [skos:Concept]
+        range: [skos:Concept]
+      skod:narrower:
+        labelFr: a pour concept spécifique
+        label: has narrower
+        domain: [skos:Concept]
+        range: [skos:Concept]
+      skos:related:
+        labelFr: oncept associé
+        label: related to
+        definition: A concept with which there is an associative semantic relationship.
+        domain: [skos:Concept]
+        range: [skos:Concept]
+  foaf:
+    title: FOAF Vocabulary Specification 
+    source:
+      - http://xmlns.com/foaf/0.1/
+    classes:
+      foaf:Agent:
+        definition: An agent (eg. person, group, software or physical artifact). 
+        subClassOf: []
+      foaf:Person:
+        definition: |
+          A person.
+          The foaf:Person class represents people. Something is a foaf:Person if it is a person. We don't nitpic
+          about whether they're alive, dead, real, or imaginary. The foaf:Person class is a sub-class
+          of the foaf:Agent class, since all people are considered 'agents' in FOAF. 
+        subClassOf: [foaf:Agent]
+      foaf:Organization:
+        definition: |
+          An organization.
+          The foaf:Organization class represents a kind of foaf:Agent corresponding to social instititutions
+          such as companies, societies etc.  
+        subClassOf: [foaf:Agent]
+        instances:
+          - $id: https://op.europa.eu/
+            name:
+              fr: Office des publications de l'Union européenne
+              en: Publications Office of the European Union
+            homepage: https://op.europa.eu/
+          - $id: https://www.iso.org/
+            name:
+              fr: Organisation internationale de normalisation (ISO)
+              en: International Organization for Standardization (ISO)
+            homepage: https://www.iso.org/
+          - $id: https://www.ogc.org/
+            name:
+              en: Open Geospatial Consortium
+            homepage: https://www.ogc.org/
+          - $id: https://www.ecologie.gouv.fr/
+            name:
+              fr: Ministère chargé de l'écologie
+            homepage: https://www.ecologie.gouv.fr/
+    properties:  
+      foaf:name:
+      foaf:mbox:
+        label: personal mailbox
+        definition: |
+          A personal mailbox, ie. an Internet mailbox associated with exactly one owner, the first owner of this mailbox.
+          This is a 'static inverse functional property', in that there is (across time and change) at most one
+          individual that ever has any particular value for foaf:mbox.
+        domain: [foaf:Agent]
+        range: [rdfs:Resource]
+      foaf:phone:
+      foaf:homepage:
+        range: [foaf:Document]
+      foaf:workplaceHomepage:
+      foaf:page:
+      foaf:primaryTopic:
+        definition: The dcat:Resource (dataset or service) described in the record. [DCAT]
+        range: [dcat:Resource]
+        domain: [dcat:CatalogRecord]
+        inverse: foaf:isPrimaryTopicOf
+        scopeNote: |
+          [DCAT] Usage note: foaf:primaryTopic property is functional: each catalog record can have at most one
+          primary topic, i.e., describes one dataset or service.
+        dcatSpecialization: |
+          Les propriétés range et domain correspondent à l'utilisation effectuée dans DCAT et pas au cas général.
+  vcard:
+    title: vCard Ontology - for describing People and Organizations
+    source:
+      - https://www.w3.org/TR/vcard-rdf/
+    classes:
+      vcard:Kind:
+        definition: The parent class for all objects
+        subClassOf: []
+      vcard:Email:
+        definition: |
+          To specify the electronic mail address for communication with the object the vCard represents.
+          Use the hasEmail object property.
+        subClassOf: []
+    properties:
+      vcard:fn:
+        definition: The full name of the object (as a single string). This is the only mandatory property.
+        range: [rdfs:Literal]
+        datatype: [xsd:string]
+      vcard:hasEmail:
+        definition: To specify the electronic mail address for communication with the object
+        range: [vcard:Email]
+      vcard:hasURL:
+        definition: To specify a uniform resource locator associated with the object
+        range: [rdfs:Resource]
+  dcat:
+    title: Data Catalog Vocabulary (DCAT) - Version 3
+    source:
+      - https://www.w3.org/TR/2023/WD-vocab-dcat-3-20230307/
+      - https://www.w3.org/TR/vocab-dcat-3/
+    namespace: http://www.w3.org/ns/dcat#
+    suggestedPrefix: dcat
+    classes:
+      dcat:Catalog:
+        definition: A curated collection of metadata about resources.
+        subClassOf: [dcat:Dataset]
+      dcat:Resource:
+        label: Cataloged Resource
+        definition: Resource published or curated by a single agent.
+        subClassOf: []
+      dcat:CatalogRecord:
+        definition: A record in a catalog, describing the registration of a single dcat:Resource.
+        subClassOf: []
+      dcat:Dataset:
+        definition: |
+          A collection of data, published or curated by a single agent, and available for access or download
+          in one or more representations.
+        subClassOf: [dcat:Resource]
+      dcat:DatasetSeries:
+        definition: |
+          A collection of datasets that are published separately, but share some characteristics that group them.
+        subClassOf: [dcat:Dataset]
+      dcat:DataService:
+        definition: A collection of operations that provides access to one or more datasets or data processing functions.
+        subClassOf: [dcat:Resource, dctype:Service]
+      dcat:Distribution:
+        definition: |
+          A specific representation of a dataset. A dataset might be available in multiple serializations that may differ
+          in various ways, including natural language, media-type or format, schematic organization, temporal and spatial
+          resolution, level of detail or profiles (which might specify any or all of the above). 
+        subClassOf: []
+      dcat:Relationship:
+        definition: An association class for attaching additional information to a relationship between DCAT Resources
+        subClassOf: [prov:EntityInfluence]
+    properties:
+      dcat:record: # Catalog
+        definition: |
+          A record describing the registration of a single resource (e.g., a dataset, a data service) that is part
+          of the catalog.
+        subPropertyOf: [dcat:resource]
+        domain: [dcat:Catalog]
+        range:	[dcat:CatalogRecord]
+      dcat:resource:
+        definition: A resource that is listed in the catalog.
+        subPropertyOf: [dcterms:hasPart]
+        domain: [dcat:Catalog]
+        range: [dcat:Resource]
+        inverse: dcat:inCatalog
+        scopeNote: |
+          Usage note DCAT: This is the most general predicate for membership of a catalog. Use of a more specific
+          sub-property is recommended when available.
+      dcat:dataset:
+        definition: A dataset that is listed in the catalog.
+        subPropertyOf: [dcat:resource]
+        domain: [dcat:Catalog]
+        range:	[dcat:Dataset]
+      dcat:service:
+        definition: A service that is listed in the catalog.
+        subPropertyOf: [dcat:resource]
+        domain: [dcat:Catalog]
+        range:	[dcat:DataService]
+      dcat:catalog:
+        definition: A catalog that is listed in the catalog.
+        subPropertyOf: [dcat:resource]
+        domain: [dcat:Catalog]
+        range:	[dcat:Catalog]
+      foaf:homepage:
+        definition: A homepage of the catalog (a public Web document usually available in HTML).
+        range: [foaf:Document]
+        scopeNote: |
+          foaf:homepage is an inverse functional property (IFP) which means that it MUST be unique and precisely
+          identify the Web-page for the resource. This property indicates the canonical Web-page, which might be
+          helpful in cases where there is more than one Web-page about the resource.
+      dcat:themeTaxonomy:
+        definition: |
+          A knowledge organization system (KOS) used to classify the resources documented in the catalog
+          (e.g., datasets and services).
+        domain: [dcat:Catalog]
+        range: [rdfs:Resource]
+        scopeNote: |
+          It is recommended that the taxonomy is organized in a skos:ConceptScheme, skos:Collection, owl:Ontology
+          or similar, which allows each member to be denoted by an IRI and published as Linked Data. 
+      dct:accessRights: # Cataloged Resource
+        definition: Information about who access the resource or an indication of its security status.
+        scopeNote: |
+          Access Rights may include information regarding access or restrictions based on privacy, security,
+          or other policies.
+        subPropertyOf: [dct:rights]
+        range: [dct:RightsStatement]
+      dct:conformsTo:
+        definition: An established standard to which the described resource conforms.
+        scopeNote: |
+          This property SHOULD be used to indicate the model, schema, ontology, view or profile that the cataloged
+          resource content conforms to. 
+        range: [dct:Standard]
+        subPropertyOf: [dct:relation]
+      dcat:contactPoint:
+        definition: Relevant contact information for the cataloged resource. Use of vCard is recommended.
+        range: [vcard:Kind]
+      dct:creator:
+        definition: The entity responsible for producing the resource.
+        scopeNote: Resources of type foaf:Agent are recommended as values for this property.
+        subPropertyOf: [dct:contributor]
+        range: [foaf:Agent]
+      dct:description:
+        definition: A free-text account of the resource.
+        definition(fr): Un compte rendu en texte libre de la ressource. [GoogleTranslate]
+        range: [rdfs:Literal]
+        
+      dcat:theme:
+        definition: A main category of the resource. A resource can have multiple themes.
+        subPropertyOf: [dcterms:subject]
+        range: [rdfs:Resource]
+        scopeNote: |
+          Usage note: The set of themes used to categorize the resources are organized in a skos:ConceptScheme,
+          skos:Collection, owl:Ontology or similar, describing all the categories and their relations in the catalog.
+      dcat:qualifiedRelation:
+        definition: Link to a description of a relationship with another resource
+        subPropertyOf: [prov:qualifiedInfluence]
+        domain: [dcat:Resource]
+        range: [dcat:Relationship]
+      dcat:keyword:
+        definition: A keyword or tag describing the resource.
+        range: [rdfs:Literal]
+      dcat:bbox:
+        definition: The geographic bounding box of a spatial thing [SDW-BP].
+        domain: [dct:Location]
+        range: [rdfs:Literal]
+        scopeNote: |
+          Usage note:	The range of this property (rdfs:Literal) is intentionally generic, with the purpose of allowing
+          different geometry literal encodings.
+          E.g., the geometry could be encoded as a WKT literal (geosparql:wktLiteral [GeoSPARQL]).
+      dcat:centroid:
+        definition: The geographic center (centroid) of a spatial thing [SDW-BP].
+        domain: [dct:Location]
+        range: [rdfs:Literal]
+        scopeNote: |
+          Usage note: The range of this property (rdfs:Literal) is intentionally generic, with the purpose of allowing
+          different geometry literal encodings.
+          E.g., the geometry could be encoded as a WKT literal (geosparql:wktLiteral [GeoSPARQL]).
+      dcat:landingPage:
+        definition: |
+          A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset,
+          its distributions and/or additional information.
+        subPropertyOf: [foaf:page]
+        range: [foaf:Document]
+        scopeNote: |
+          Usage note: If the distribution(s) are accessible only through a landing page (i.e., direct download URLs
+          are not known), then the landing page link SHOULD be duplicated as dcat:accessURL on a distribution.
+      dcat:inSeries:
+        definition: A dataset series of which the dataset is part.
+        domain: [dcat:Dataset]
+        range: [dcat:DatasetSeries]
+        subPropertyOf: [dcterms:isPartOf]
+        inverse: dcat:seriesMember
+      dcat:distribution:
+        definition:	An available distribution of the dataset.
+        subPropertyOf: [dct:relation]
+        domain: [dcat:Dataset]
+        range: [dcat:Distribution]
+        inverse: dcat:isDistributionOf
+      dcat:accessURL:
+        definition: |
+          A URL of the resource that gives access to a distribution of the dataset. E.g., landing page, feed,
+          SPARQL endpoint.
+        domain: [dcat:Distribution]
+        range: [rdfs:Resource]
+        scopeNote: |
+          Usage note:	
+           - dcat:accessURL SHOULD be used for the URL of a service or location that can provide access to this
+             distribution, typically through a Web form, query or API call.
+           - dcat:downloadURL is preferred for direct links to downloadable resources.
+           - If the distribution(s) are accessible only through a landing page (i.e., direct download URLs are not
+             known), then the landing page URL associated with the dcat:Dataset SHOULD be duplicated as access URL
+             on a distribution (see 5.7 Dataset available only behind some Web page).
+      dcat:accessService:
+        definition: A data service that gives access to the distribution of the dataset
+        range: [dcat:DataService]
+        scopeNote: |
+          Usage note:	dcat:accessService SHOULD be used to link to a description of a dcat:DataService that can provide
+          access to this distribution.
+      dcat:downloadURL:
+        definition: |
+          The URL of the downloadable file in a given format. E.g., CSV file or RDF file. The format is indicated
+          by the distribution's dcterms:format and/or dcat:mediaType
+        domain: [dcat:Distribution]
+        range: [rdfs:Resource]
+        scopeNote: |
+          Usage note: dcat:downloadURL SHOULD be used for the URL at which this distribution is available directly,
+          typically through a HTTP Get request.
+      dcat:previousVersion:
+        definition: The previous version of a resource in a lineage [PAV].
+        equivalentProperty: [pav:previousVersion]
+        subPropertyOf: [prov:wasRevisionOf]
+        inverse: dcat:nextVersion
+        scopeNote: |
+          This property is meant to be used to specify a version chain, consisting of snapshots of a resource.
+          The notion of version used by this property is limited to versions resulting from revisions occurring
+          to a resource as part of its life-cycle. One of the typical cases here is representing the history
+          of the versions of a dataset that have been released over time.
+      dcat:hasVersion:
+        definition: This resource has a more specific, versioned resource [PAV].
+        equivalentProperty: [pav:hasVersion]
+        subPropertyOf: [dcterms:hasVersion, prov:generalizationOf]
+        scopeNote: |
+          Usage note:
+            This property is intended for relating a non-versioned or abstract resource to several versioned resources,
+            e.g., snapshots [PAV].
+            The notion of version used by this property is limited to versions resulting from revisions occurring
+            to a resource as part of its life-cycle. Therefore, its semantics is more specific than its super-property
+            dcterms:hasVersion, which makes use of a broader notion of version, including editions and adaptations.
+      dcat:hasCurrentVersion:
+        definition: This resource has a more specific, versioned resource with equivalent content [PAV].
+        equivalentProperty: [pav:hasCurrentVersion]
+        subPropertyOf: [pav:hasVersion]
+        scopeNote: |
+          Usage note:
+            - This property is intended for relating a non-versioned or abstract resource to a single snapshot
+              that can be used as a permalink to indicate the current version of the content [PAV].
+            - The notion of version used by this property is limited to versions resulting from revisions occurring
+              to a resource as part of its life-cycle.
+      dcat:version:
+        definition: The version indicator (name or identifier) of a resource.
+        equivalentProperty: [pav:version]
+        range: [rdfs:Literal]
+        scopeNote: |
+          Usage note: 	
+            DCAT does not prescribe how a version name / identifier should be specified, and refers for guidance to
+            [DWBP]'s Best Practice 7: Provide a version indicator.
+      dcat:first:
+        definition: |
+          The first resource in an ordered collection or series of resources, to which the current resource belongs.
+        subPropertyOf: [xhv:first]
+        scopeNote: |
+          Usage note: 	
+            In DCAT this property is used for resources belonging to a dcat:DatasetSeries.
+      dcat:last:
+        definition: |
+          The last resource in an ordered collection or series of resources, to which the current resource belongs.
+        subPropertyOf: [xhv:last]
+        scopeNote: |
+          Usage note: 	
+            In DCAT this property is used for resources belonging to a dcat:DatasetSeries.
+      dcat:prev:
+        definition: The previous resource (before the current one) in an ordered collection or series of resources.
+        subPropertyOf: [xhv:prev]
+        inverse: dcat:next
+        scopeNote: |
+          Usage note: 	
+            In DCAT this property is used for resources belonging to a dcat:DatasetSeries.
+            It is important to note that this property is different from dcat:previousVersion, as it does not denote
+            a previous version of the same resource, but a distinct resource immediately preceding the current one
+            in an ordered collection of resources.
+  prov:
+    title: "PROV-O: The PROV Ontology"
+    source:
+      - https://www.w3.org/TR/prov-o/
+    classes:
+      prov:Influence:
+        definition: |
+          Influence is the capacity of an entity, activity, or agent to have an effect on the character, development,
+          or behavior of another by means of usage, start, end, generation, invalidation, communication, derivation,
+          attribution, association, or delegation.
+        subClassOf: []
+      prov:EntityInfluence:
+        definition: |
+          EntityInfluence is the capacity of an entity to have an effect on the character, development, or behavior of
+          another by means of usage, start, end, derivation, or other.
+        subClassOf: [prov:Influence]
+    properties:
+      prov:qualifiedAttribution: # PROV
+        definition: Link to an Agent having some form of responsibility for the resource
+        subPropertyOf: [prov:qualifiedInfluence]
+        domain: [prov:Entity]
+        range: [prov:Attribution]
+        scopeNote: |
+          Usage note: Used to link to an Agent where the nature of the relationship is known but does not match one
+          of the standard [DCTERMS] properties (dcterms:creator, dcterms:publisher).
+          Use dcat:hadRole on the prov:Attribution to capture the responsibility of the Agent with respect to
+          the Resource. See 15.1 Relationships between datasets and agents for usage examples.
+      prov:wasGeneratedBy:
+        inverse: prov:generated
+  pav:
+    title: PAV - Provenance, Authoring and Versioning
+    source:
+      - https://pav-ontology.github.io/pav/
+    abstract: |
+      PAV is a lightweight ontology for tracking Provenance, Authoring and Versioning. PAV specializes the W3C
+      provenance ontology PROV-O in order to describe authorship, curation and digital creation of online resources.
+      This ontology describes the defined PAV properties and their usage. Note that PAV does not define any explicit
+      classes or domain/ranges, as every property is meant to be used directly on the described online resource.
+  odrl:
+    title: Open Digital Rights Language (ODRL)
+    source:
+      - https://www.w3.org/TR/odrl-model/
+    properties:  
+      odrl:hasPolicy:
+        definition: An ODRL conformant policy expressing the rights associated with the resource.
+        range: [odrl:Policy]
+        scopeNote: |
+          Usage note: Information about rights expressed as an ODRL policy [ODRL-MODEL] using the ODRL vocabulary
+          [ODRL-VOCAB] MAY be provided for the resource.
+  adms:
+    title: Asset Description Metadata Schema (ADMS), W3C Working Group Note
+    source:
+      - https://www.w3.org/TR/vocab-adms/
+    properties:  
+      adms:versionNotes:
+        definition: A description of changes between this version and the previous version of the resource [VOCAB-ADMS].
+        range:  [rdfs:Literal]
+        scopeNote: |
+          Usage note: 	
+            In case of backward compatibility issues with the previous version of the resource, a textual description
+            of them SHOULD be specified by using this property.
+      adms:status:
+        definition: The status of the resource in the context of a particular workflow process [VOCAB-ADMS].
+        range: [skos:Concept]
+        scopeNote: |
+          Usage note(DCAT):
+          DCAT does not prescribe the use of any specific set of life-cycle statuses, but refers to existing
+          standards and community practices fit for the relevant application scenario.
+  schema:
+    title: Schema.org (extrait)
+    editorialNote: |
+      Extrait de l'ontologie Schema.org focalisé sur la description de jeux de données et de catalogues de JdD et la localisation géographique.
+    namespace: https://schema.org/
+    source:
+      - href: https://schema.org/docs/about.html
+      - href: https://github.com/schemaorg/schemaorg
+    classes:
+      schema:Dataset:
+        definition: A body of structured information describing some topic(s) of interest.
+        subClassOf: [schema:CreativeWork]
+        example:
+          asYaml-LD:
+            '@context':
+              '@vocab': 'https://schema.org/'
+            '@type': Dataset
+            name: |
+              Removal of organic carbon by natural bacterioplankton communities as a function of pCO2 from laboratory experiments between 2012
+              and 2016
+            description: |
+              This dataset includes results of laboratory experiments which measured dissolved organic carbon (DOC) usage by natural bacteria
+              in seawater at different pCO2 levels. Included in this dataset are; bacterial abundance, total organic carbon (TOC), what DOC
+              was added to the experiment, target pCO2 level.
+            url: 'https://www.sample-data-repository.org/dataset/472032'
+            sameAs: 'https://search.dataone.org/#view/https://www.sample-data-repository.org/dataset/472032'
+            version: '2013-11-21'
+            isAccessibleForFree: true
+            keywords:
+              - 'ocean acidification'
+              - 'Dissolved Organic Carbon'
+              - 'bacterioplankton respiration'
+              - pCO2
+              - 'carbon dioxide'
+              - oceans
+            license:
+              - 'http://spdx.org/licenses/CC0-1.0'
+              - 'https://creativecommons.org/publicdomain/zero/1.0'
+            identifier:
+              '@id': 'https://doi.org/10.5066/F7VX0DMQ'
+              '@type': PropertyValue
+              propertyID: 'https://registry.identifiers.org/registry/doi'
+              value: 'doi:10.5066/F7VX0DMQ'
+              url: 'https://doi.org/10.5066/F7VX0DMQ'
+            citation: 'J.Smith ''How I created an awesome dataset’, Journal of Data Science, 1966'
+            variableMeasured:
+              - '@type': PropertyValue
+                name: latitude
+                propertyID: 'http://www.geoscienceontology.org/geo-lower/quantity#latitude'
+                url: 'https://www.sample-data-repository.org/dataset-parameter/665787'
+                description: 'Latitude where water samples were collected; north is positive.'
+                unitText: 'decimal degrees'
+                minValue: '45.0'
+                maxValue: '15.0'
+            includedInDataCatalog:
+              '@id': 'https://www.sample-data-repository.org/collection/biological-data'
+              '@type': DataCatalog
+            subjectOf:
+              '@type': DataDownload
+              name: eml-metadata.xml
+              description: 'EML metadata describing the dataset'
+              encodingFormat:
+                - application/xml
+                - 'https://eml.ecoinformatics.org/eml-2.2.0'
+              dateModified: '2019-06-12T14:44:15Z'
+            distribution:
+              '@type': DataDownload
+              contentUrl: 'https://www.sample-data-repository.org/dataset/472032.tsv'
+              encodingFormat: text/tab-separated-values
+            temporalCoverage: 2012-09-20/2016-01-22
+            spatialCoverage:
+              '@type': Place
+              geo:
+                '@type': GeoShape
+                line: '39.3280 120.1633 40.445 123.7878'
+            creator:
+              - '@id': 'https://www.sample-data-repository.org/person-role/472036'
+                '@type': Role
+                roleName: 'Principal Investigator'
+                creator:
+                  '@id': 'https://www.sample-data-repository.org/person/51317'
+                  '@type': Person
+                  name: 'Dr Uta Passow'
+                  givenName: Uta
+                  familyName: Passow
+                  url: 'https://www.sample-data-repository.org/person/51317'
+              - '@id': 'https://www.sample-data-repository.org/person-role/472038'
+                '@type': Role
+                roleName: 'Co-Principal Investigator'
+                url: 'https://www.sample-data-repository.org/person-role/472038'
+                creator:
+                  '@id': 'https://www.sample-data-repository.org/person/50663'
+                  '@type': Person
+                  identifier:
+                    '@id': 'https://orcid.org/0000-0003-3432-2297'
+                    '@type': PropertyValue
+                    propertyID: 'https://registry.identifiers.org/registry/orcid'
+                    url: 'https://orcid.org/0000-0003-3432-2297'
+                    value: 'orcid:0000-0003-3432-2297'
+                  name: 'Dr Mark Brzezinski'
+                  url: 'https://www.sample-data-repository.org/person/50663'
+            provider:
+              '@id': 'https://www.sample-data-repository.org'
+              '@type': Organization
+              legalName: 'Sample Data Repository Office'
+              name: SDRO
+              sameAs: 'http://www.re3data.org/repository/r3dxxxxxxxxx'
+              url: 'https://www.sample-data-repository.org'
+            publisher:
+              '@id': 'https://www.sample-data-repository.org'
+            isBasedOn:
+              '@id': 'https://doi.org/10.xxxx/Dataset-1'
+      schema:DataDownload:
+        definition: All or part of a Dataset in downloadable form.
+        subClassOf: [schema:MediaObject]
+      schema:Place:
+        definition: Entities that have a somewhat fixed, physical extension.
+        subClassOf: [schema:Thing]
+        example:
+          - asYaml-LD:
+              '@context': 'https://schema.org'
+              '@type': Place
+              geo:
+                '@type': GeoCoordinates
+                latitude: '40.75'
+                longitude: '-73.98'
+              name: 'Empire State Building'
+      schema:GeoCoordinates:
+        definition: The geographic coordinates of a place or event.
+        subClassOf: [schema:StructuredValue]
+      schema:GeoShape:
+        definition: |
+          The geographic shape of a place. A GeoShape can be described using several properties whose values are based on latitude/longitude
+          pairs. Either whitespace or commas can be used to separate latitude and longitude; whitespace should be used when writing a list of
+          several such points.
+        subClassOf: [schema:StructuredValue]
+        
+    properties:
+      schema:distribution:
+        definition: |
+          A downloadable form of this dataset, at a specific location, in a specific format. This property can be repeated if different
+          variations are available. There is no expectation that different downloadable distributions must contain exactly equivalent
+          information (see also DCAT on this point). Different distributions might include or exclude different subsets of the entire dataset,
+          for example.
+      schema:geo:
+        definition: The geo coordinates of the place. 
+        domain: [schema:Place]
+        range: [schema:GeoCoordinates, schema:GeoShape]
+      schema:latitude:
+        definition: The latitude of a location. For example 37.42242 (WGS 84).
+        domain: [schema:GeoCoordinates]
+        range: [xsd:string,xsd:decimal]
+      schema:longitude:
+        definition: The longitude of a location. For example -122.08585 (WGS 84).
+        domain: [schema:GeoCoordinates]
+        range: [xsd:string,xsd:decimal]
+      schema:box:
+        definition: |
+          A box is the area enclosed by the rectangle formed by two points. The first point is the lower corner, the second point
+          is the upper corner. A box is expressed as two points separated by a space character. 
+        domain: [schema:GeoShape]
+        range: [xsd:string]
+      schema:polygon:
+        definition: |
+          A polygon is the area enclosed by a point-to-point path for which the starting and ending points are the same.
+          A polygon is expressed as a series of four or more space delimited points where the first and final points are identical.  
+        domain: [schema:GeoShape]
+        range: [xsd:string]
+  wgs84:
+    title: "WGS84 Geo Positioning: an RDF vocabulary"
+    abstract: |
+      A vocabulary for representing latitude, longitude and altitude information in the WGS84 geodetic reference datum.
+      Version $Id: wgs84_pos.rdf,v 1.22 2009/04/20 15:00:30 timbl Exp $. See http://www.w3.org/2003/01/geo/ for more details.
+    source:
+      - href: https://www.w3.org/2003/01/geo/wgs84_pos
+      - https://www.w3.org/2003/01/geo/
+    namespace: http://www.w3.org/2003/01/geo/wgs84_pos#
+    status: |
+      This document was created as an informal collaboration within W3C's Semantic Web Interest Group. This work is not currently on the W3C
+      recommendation track for standardization, and has not been subject to the associated review process, quality assurance, etc.
+      If there is interest amongst the W3C membership in standards work on a location/mapping RDF vocabulary, this current work may inform
+      any more formal efforts to follow.
+    classes:
+      wgs84:SpatialThing:
+        definition: |
+          Anything with spatial extent, i.e. size, shape, or position. e.g. people, places, bowling balls, as well as abstract areas like cubes.
+        subClassOf: []
+      wgs84:Point:
+        definition: |
+          A point, typically described using a coordinate system relative to Earth, such as WGS84. Uniquely identified by lat/long/alt.
+          i.e. spaciallyIntersects(P1, P2) :- lat(P1, LAT), long(P1, LONG), alt(P1, ALT), lat(P2, LAT), long(P2, LONG), alt(P2, ALT).
+          sameThing(P1, P2) :- type(P1, Point), type(P2, Point), spaciallyIntersects(P1, P2).
+        subClassOf: [wgs84:SpatialThing]
+        example:
+          - title: A basic, standalone example
+            asTurtle: |
+              @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+              []
+                a geo:Point ;
+                geo:lat "55.701" ;
+                geo:long "12.552" .
+          - title: An example that combines Geo, Dublin Core and FOAF vocabularies
+            asTurtle: |
+              @prefix dc11: <http://purl.org/dc/elements/1.1/> .
+              @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+              @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+              @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+              <http://danbri.org/> dc11:title "Dan's home page" .
+              []
+                a foaf:Person ;
+                foaf:name "Dan Brickley" ;
+                foaf:homepage <http://danbri.org/> ;
+                foaf:based_near [
+                  geo:lat "51.47026" ;
+                  geo:long "-2.59466"
+                ] ;
+                rdfs:seeAlso <http:/danbri.org/foaf.rdf> .
+    properties:
+      wgs84:location:
+        definition: |
+          The relation between something and the point, or other geometrical thing in space, where it is. For example, the realtionship
+          between a radio tower and a Point with a given lat and long. Or a relationship between a park and its outline as a closed arc
+          of points, or a road and its location as a arc (a sequence of points). Clearly in practice there will be limit to the accuracy
+          of any such statement, but one would expect an accuracy appropriate for the size of the object and uses such as mapping.
+        range: [wgs84:SpatialThing]
+        subPropertyOf:  [foaf:based_near]
+      wgs84:lat:
+        label: latitude
+        definition: The WGS84 latitude of a SpatialThing (decimal degrees).
+        domain: [wgs84:SpatialThing]
+      wgs84:long:
+        label: longitude
+        definition: The WGS84 longitude of a SpatialThing (decimal degrees).
+        domain: [wgs84:SpatialThing]
+      wgs84:alt:
+        label: altitude
+        definition: The WGS84 altitude of a SpatialThing (decimal meters above the local reference ellipsoid).
+        domain: [wgs84:SpatialThing]
+      wgs84:lat_long:
+        label: lat/long
+        definition: A comma-separated representation of a latitude, longitude coordinate.
+  m8g:
+    title: Core Vocabularies - data.europa.eu/m8g
+    source:
+      - href: https://raw.githubusercontent.com/SEMICeu/uri.semic.eu-puris/main/releases/m8g/m8g.ttl
+        identifier: http://data.europa.eu/m8g/
+    editorialNote: Est-ce une ontologie ? ou un espace de noms ? ou un registre ?
+    classes:
+    properties:
+  locn:
+    title: Location Core Vocabulary
+    source:
+      - title: Core Location Vocabulary
+        href: https://semiceu.github.io/Core-Location-Vocabulary/releases/2.0.2
+        issued: '2023-05-15'
+        identifier: http://www.w3.org/ns/locn
+    editorialNote: |
+      La définition de cette ontologie n'est pas claire à plusieurs points de vue:
+        - la spécification textuelle mélange des classes et propriétés définies par cette ontologie et d'autres définies dans d'autres ontologies
+          sans l'expliciter clairement ; méthodologiquement cela ressemble plus à un modèle UML qu'à une ontologie.
+          exemples: geosparsql:asWKT, geosparql:asGML, schema:latitude, schema:longitude.
+        - les espaces de noms ne sont pas clairs, parfois locn, parfois m8g !!!
+        - le fichier ttl semble très incomplet, example la propriété geometry n'est pas définie
+    classes:
+      locn:Geometry:
+        definition: A shape or form of a Location.
+        subClassOf: []
+        scopeNote: |
+          This class defines the notion of "geometry" at the conceptual level, and it shall be encoded by using different formats
+          (see usage note of the locn:geometry property). Can be a point, line or polygon, expressed using coordinates in some
+          coordinate reference system. We also refer to the Examples section of this specification for a number of different
+          geometry examples expressed in different formats.
+          The specification indicates the use of geosparsql:asWKT and geosparql:asGML properties.
+      locn:Address:
+        definition: A spatial object that in a human-readable way identifies a fixed location.
+        subClassOf: []
+      locn:AdminUnit:
+        definition: A detailed administrative unit organized in a hierarchy.
+        subClassOf: []
+        scopeNote: |
+          This class should be used whenever a classification mechanism is in place, in alternative to the properties adminUnitL1
+          and adminUnitL2 of the Address class which allow free text.
+      locn:Location:
+        definition: An identifiable geographic place or named place.
+        subClassOf: []
+        scopeNote: |
+          La spécification mentionne l'utilisation de la propriété 'rdfs:seeAlso' sous le nom de 'geographic identifier'
+        example:
+          - title: Example 3 - RDF (WGS84 lat/long)
+            asTurtle: |
+              @prefix locn: <http://w3.org/ns/locn#> .
+              @prefix sf: <http://www.opengis.net/ont/sf#> .
+              @prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+              <ex:a> a locn:Location ;
+                locn:geometry [ a sf:Point ;
+                                wgs:lat "51.477811" ;
+                                wgs:long "-0.001475" ] .
+          - title: Example 4 - RDF (schema.org)
+            asTurtle: |
+              @prefix locn: <http://w3.org/ns/locn#> .
+              @prefix schema: <https://schema.org/> .
+
+              <ex:a> a locn:Location ;
+                locn:geometry [ a schema:GeoCoordinates ;
+                                  schema:latitude "51.477811" ;
+                                  schema:longitude "-0.001475" ] .
+    properties:  
+      locn:address:
+        definition: Associates any Resource with the corresponding Address.
+        domain: [rdfs:Resource]
+        range: [locn:Address]
+      locn:geometry:
+        definition: Associates any Resource with the corresponding Geometry.
+        domain: [rdfs:Resource]
+        range: [locn:Geometry]
+      locn:location:
+        definition: Associates any Resource with the corresponding Location.
+        domain: [rdfs:Resource]
+        range: [locn:Geometry]
+      locn:registeredAddress:
+        definition: The registered address relationship links a Resource with the legally registered Address.
+        domain: [rdfs:Resource]
+        range: [locn:Address]
+      locn:addressArea:
+        definition: The name of a geographic area that groups Addresses.
+        domain: [locn:Address]
+        range: [rdf:langString]
+      locn:addressId:
+        definition: A globally unique identifier for each instance of an Address.
+        domain: [locn:Address]
+        range: [rdfs:Literal]
+      locn:adminUnit:
+        definition: The adminUnit relationship links an Address with the Administrative Unit class.
+        domain: [locn:Address]
+        range: [locn:AdminUnit]
+      locn:adminUnitL1:
+        definition: The name of the uppermost level of the address, almost always a country.
+        domain: [locn:Address]
+        range: [rdf:langString]
+      locn:adminUnitL2:
+        definition: |
+          The name of a secondary level/region of the address, usually a county, state or other such area that typically
+          encompasses several localities.
+        domain: [locn:Address]
+        range: [rdf:langString]
+      locn:fullAddress:
+        definition: The complete address written as a string.
+        domain: [locn:Address]
+        range: [rdf:langString]
+      locn:locatorDesignator:
+        definition: A number or sequence of characters that uniquely identifies the locator within the relevant scope.
+        domain: [locn:Address]
+        range: [rdfs:Literal]
+        scopeNote: |
+          In simpler terms, this is the building number, apartment number, etc. For an address such as "Flat 3, 17 Bridge Street",
+          the locator is "flat 3, 17".
+      locn:locatorName:
+        definition: Proper noun(s) applied to the real world entity identified by the locator.
+        domain: [locn:Address]
+        range: [rdf:langString]
+        scopeNote: |
+          The locator name could be the name of the property or complex, of the building or part of the building, or it could be
+          the name of a room inside a building.
+          The key difference between a locator designator and a locator name is that the latter is a proper name and is unlikely
+          to include digits. For example, "Shumann, Berlaymont" is a meeting room within the European Commission headquarters
+          for which locator name is more appropriate than locator.
+      locn:postCode:
+        definition: |
+          The code created and maintained for postal purposes to identify a subdivision of addresses and postal delivery points.
+        domain: [locn:Address]
+        range: [rdfs:Literal]
+        scopeNote: |
+          Post codes are common elements in many countries' postal address systems. One of the many post codes of Paris is
+          for example "75000".
+      locn:postName:
+        definition: |
+          A name created and maintained for postal purposes to identify a subdivision of addresses and postal delivery points.
+        domain: [locn:Address]
+        range: [rdf:langString]
+        scopeNote: |
+          Usually a city, for example "Paris".
+      locn:poBox:
+        definition: A location designator for a postal delivery point at a post office, usually a number.
+        domain: [locn:Address]
+        range: [rdfs:Literal]
+      locn:thoroughfare:
+        definition: The name of a passage or way through from one location to another.
+        domain: [locn:Address]
+        range: [rdf:langString]
+        scopeNote: |
+          A thoroughfare is usually a street, but it might be a waterway or some other feature. For example, "Avenue des
+          Champs-Élysées".
+      locn:code:
+        definition: The classification of the administrative unit.
+        domain: [locn:AdminUnit]
+        range: [skos:Concept]
+      locn:level:
+        definition: The level of the administrative unit in the hierarchy.
+        domain: [locn:AdminUnit]
+        range: [skos:Concept]
+        scopeNote: |
+          Some recommended codelists from the EU Publications Office and Eurostat include: Administrative Territorial Units (ATU),
+          NUTS and Local Administrative Units (LAU). The first arrondissement of Paris is for example expressed
+          as "http://publications.europa.eu/resource/authority/atu/FRA\_AR\_PAR01" in the ATU controlled vocabulary.
+      locn:coordinates:
+        definition: A list of geographic coordinates that define the extent of the Geometry.
+        domain: [locn:Geometry]
+        range: [xsd:string]
+        scopeNote: Can be expressed as longitude, latitude, elevation.
+      locn:crs:
+        definition: An identifier for the coordinate reference system.
+        domain: [locn:Geometry]
+        range: [xsd:anyURI]
+        scopeNote: Can be a coordinate-based local, regional or global system used to locate geographical entities.
+      locn:geometryType:
+        definition: The classification of the Geometry.
+        domain: [locn:Geometry]
+        range: [skos:Concept]
+        scopeNote: Can be a point, line or polygon.
+      locn:latitude:
+        definition: The geographic coordinate that specifies the north / south position of the Geomerty on the Earth's surface.
+        editorialNote: l'exemple de Location utilise schema:latitude et non locn:latitude. Cette propriété est-elle définie dans locn ?
+        domain: [locn:Geometry]
+        range: [xsd:string]
+      locn:longitude:
+        definition: The geographic coordinate that specifies the east / west position of the Geometry on the Earth's surface.
+        domain: [locn:Geometry]
+        range: [xsd:string]
+      locn:geographicName:
+        definition: A textual description for a Location.
+        domain: [locn:Location]
+        range: [rdf:langString]
+  geosparql:
+    title: GeoSPARQL Ontology
+    source:
+      - title: OGC GeoSPARQL - A Geographic Query Language for RDF Data OGC 11-052r5
+        identifier: http://www.opengis.net/doc/IS/geosparql/1.1
+    publisher: https://www.ogc.org/
+    abstract: An RDF/OWL vocabulary for representing spatial information
+    datatypes:
+      geosparql:gmlLiteral: A GML serialization of a Geometry object.
+      geosparql:wktLiteral: A Well-known Text serialization of a Geometry object.
+      geosparql:geoJSONLiteral: A GeoJSON serialization of a Geometry object.
+      geosparql:kmlLiteral: A KML serialization of a Geometry object.
+      geosparql:dggsLiteral: A textual serialization of a Discrete Global Grid (DGGS) Geometry object.
+    classes:
+      geosparql:SpatialObject:
+        definition: Anything spatial (being or having a shape, position or an extent).
+        subClassOf: []
+        scopeNote: Subclasses of this class are expected to be used for instance data.
+      geosparql:Feature:
+        definition: A discrete spatial phenomenon in a universe of discourse.
+        subClassOf: [geosparql:SpatialObject]
+        scopeNote: |
+          A Feature represents a uniquely identifiable phenomenon, for example a river or an apple. While such phenomena
+          (and therefore the Features used to represent them) are bounded, their boundaries may be crisp (e.g., the declared
+          boundaries of a state), vague (e.g., the delineation of a valley versus its neighboring mountains), and change
+          with time (e.g., a storm front). While discrete in nature, Features may be created from continuous observations,
+          such as an isochrone that determines the region that can be reached by ambulance within 5 minutes.
+      geosparql:Geometry:
+        definition: A coherent set of direct positions in space. The positions are held within a Spatial Reference System (SRS).
+        subClassOf: [geosparql:SpatialObject]
+        scopeNote: |
+          Geometry can be used as a representation of the shape, extent or location of a Feature and may exist as
+          a self-contained entity.
+      geosparql:SpatialObjectCollection:
+        definition: A collection of individual Spatial Objects.
+        subClassOf: []
+        scopeNote: This is the superclass of Feature Collection and Geometry Collection.
+      geosparql:FeatureCollection:
+        definition: A collection of individual Features.
+        subClassOf: [geosparql:SpatialObjectCollection]
+      geosparql:GeometryCollection:
+        definition: A collection of individual Geometries.
+        subClassOf: [geosparql:SpatialObjectCollection]
+    objectProperties:
+      geosparql:defaultGeometry:
+      geosparql:hasDefaultGeometry:
+      geosparql:ehContains:
+      geosparql:ehCoveredBy:
+      geosparql:ehCovers:
+      geosparql:ehDisjoint:
+      geosparql:ehEquals:
+      geosparql:ehInside:
+      geosparql:ehMeet:
+      geosparql:ehOverlap:
+      geosparql:hasGeometry:
+        definition: A spatial representation for a given Feature.
+        domain: [geosparql:Feature]
+        range: [geosparql:Geometry]
+      geosparql:hasBoundingBox:
+        definition: The minimum or smallest bounding or enclosing box of a given Feature.
+        domain: [geosparql:Feature]
+        range: [geosparql:Geometry]
+        subPropertyOf: [geosparql:hasGeometry]
+        scopeNote: |
+          The target is a Geometry that defines a rectilinear region whose edges are aligned with the axes of the coordinate
+          reference system, which exactly contains the Feature, for example an instance of http://www.opengis.net/ont/sf#envelope.
+      geosparql:hasCentroid:
+        definition: The arithmetic mean position of all the Geometry points of a given Feature.
+        domain: [geosparql:Feature]
+        range: [geosparql:Geometry]
+        subPropertyOf: [geosparql:hasGeometry]
+        scopeNote: |
+          The target Geometry shall describe a point, for example an instance of http://www.opengis.net/ont/sf#Point.
+      geosparql:hasLength:
+        definition: The length of a Spatial Object.
+        domain: [geosparql:SpatialObject]
+        subPropertyOf: [geosparql:hasSize]
+      geosparql:hasPerimeterLength:
+        definition: The length of the perimeter of a Spatial Object.
+        domain: [geosparql:SpatialObject]
+        subPropertyOf: [geosparql:hasSize]
+      geosparql:hasArea:
+        definition: The area of a Spatial Object.
+        domain: [geosparql:SpatialObject]
+        subPropertyOf: [geosparql:hasSize]
+      geosparql:hasVolume:
+        definition: The volume of a three-dimensional Spatial Object.
+        domain: [geosparql:SpatialObject]
+        subPropertyOf: [geosparql:hasSize]
+      geosparql:hasSpatialResolution:
+        definition: The spatial resolution of a Geometry.
+        domain: [geosparql:Geometry]
+        scopeNote: |
+          Spatial resolution specifies the level of detail of a Geometry. It the smallest distinguishable distance between
+          spatially adjacent coordinates.
+      geosparql:hasSpatialAccuracy:
+        definition: The positional accuracy of the coordinates of a Geometry.
+        domain: [geosparql:Geometry]
+        scopeNote: |
+          Spatial accuracy is applicable when a Geometry is used to represent a Feature. It is expressed as a distance
+          that indicates the truthfullness of the positions (coordinates) that define the Geometry. In this case accuracy
+          defines a zone surrounding each coordinate within wich the real positions are known to be. The accuracy value defines
+          this zone as a distance from the coordinate(s) in all directions (e.g. a line, a circle or a sphere, depending on
+          spatial dimension).
+      geosparql:rcc8dc:
+        definition: "States that the subject SpatialObject is spatially disjoint from the object SpatialObject. DE-9IM: FFTFFTTTT"
+        domain: [geosparql:SpatialObject]
+        range: [geosparql:SpatialObject]
+      geosparql:rcc8ec:
+      geosparql:rcc8eq:
+      geosparql:rcc8ntpp:
+      geosparql:rcc8ntppi:
+      geosparql:rcc8po:
+      geosparql:rcc8tpp:
+      geosparql:rcc8tppi:
+      geosparql:sfContains:
+      geosparql:sfCrosses:
+      geosparql:sfDisjoint:
+      geosparql:sfEquals:
+      geosparql:sfIntersects:
+      geosparql:sfOverlaps:
+      geosparql:sfTouches:
+      geosparql:sfWithin:
+      geosparql:hasSize:
+        definition: |
+          Subproperties of this property are used to indicate the size of a Spatial Object as a measurement or estimate
+          of one or more dimensions of the Spatial Object's spatial presence.
+        domain: [geosparql:SpatialObject]
+        scopeNote: |
+          The recommended way to specify size is by using a subproperty of hasMetricSize.
+          Subproperties of hasSize can be used if more complex expressions are necessary, for example if the unit of length
+          can not be converted to meter, or if additional data are needed to describe the measurement or estimate.
+    datatypeProperties:
+      geosparql:asGML:
+        definition: The GML serialization of a Geometry.
+        subPropertyOf: [geosparql:hasSerialization]
+        domain: [geosparql:Geometry]
+        range: [geosparql:gmlLiteral]
+      geosparql:asWKT:
+        definition: The WKT serialization of a Geometry.
+        subPropertyOf: [geosparql:hasSerialization]
+        domain: [geosparql:Geometry]
+        range: [geosparql:wktLiteral]
+      geosparql:asGeoJSON:
+        definition: The GeoJSON serialization of a Geometry.
+        subPropertyOf: [geosparql:hasSerialization]
+        domain: [geosparql:Geometry]
+        range: [geosparql:geoJSONLiteral]
+      geosparql:asKML:
+        definition: The KML serialization of a Geometry.
+        subPropertyOf: [geosparql:hasSerialization]
+        domain: [geosparql:Geometry]
+        range: [geosparql:kmlLiteral]
+      geosparql:asDGGS:
+        definition: The Discrete Global Grid System (DGGS) serialization of a Geometry.
+        subPropertyOf: [geosparql:hasSerialization]
+        domain: [geosparql:Geometry]
+        range: [geosparql:dggsLiteral]
+      geosparql:coordinateDimension:
+        definition: The number of measurements or axes needed to describe the position of this Geometry in a coordinate system.
+        domain: [geosparql:Geometry]
+        range: [xsd:integer]
+      geosparql:dimension:
+        definition: |
+          The topological dimension of this geometric object, which must be less than or equal to the coordinate dimension.
+          In non-homogeneous collections, this will return the largest topological dimension of the contained objects.
+        domain: [geosparql:Geometry]
+        range: [xsd:integer]
+      geosparql:hasSerialization:
+        definition: Connects a Geometry object with its text-based serialization.
+        domain: [geosparql:Geometry]
+        range: [rdfs:Literal]
+      geosparql:isEmpty:
+        definition: |
+          (true) if this geometric object is the empty Geometry. If true, then this geometric object represents the empty
+          point set for the coordinate space.
+        domain: [geosparql:Geometry]
+        range: [xsd:boolean]
+      geosparql:isSimple:
+        definition: |
+          (true) if this geometric object has no anomalous geometric points, such as self intersection or self tangency.
+        domain: [geosparql:Geometry]
+        range: [xsd:boolean]
+      geosparql:spatialDimension:
+        definition: |
+          The number of measurements or axes needed to describe the spatial position of this Geometry in a coordinate system.
+        domain: [geosparql:Geometry]
+        range: [xsd:integer]
+      geosparql:hasMetricSpatialResolution:
+        definition: The spatial resolution of a Geometry in meters.
+        domain: [geosparql:Geometry]
+        range: [xsd:double]
+      geosparql:hasMetricSpatialAccuracy:
+        definition: The positional accuracy of the coordinates of a Geometry in meters.
+        domain: [geosparql:Geometry]
+        range: [xsd:double]
+      geosparql:hasMetricLength:
+        definition: The length of a Spatial Object in meters.
+        domain: [geosparql:SpatialObject]
+        range: [xsd:double]
+      geosparql:hasMetricPerimeterLength:
+        definition: The length of the perimeter of a Spatial Object in meters.
+        domain: [geosparql:SpatialObject]
+        range: [xsd:double]
+      geosparql:hasMetricArea:
+        definition: The area of a Spatial Object in square meters.
+        domain: [geosparql:SpatialObject]
+        range: [xsd:double]
+      geosparql:hasMetricVolume:
+        definition: The volume of a Spatial Object in cubic meters.
+        domain: [geosparql:SpatialObject]
+        range: [xsd:double]
+      geosparql:hasMetricSize:
+        definition: |
+          Subproperties of this property are used to indicate the size of a Spatial Object, as a measurement or estimate
+          of one or more dimensions of the Spatial Object's spatial presence. Units are always metric (meter, square meter
+          or cubic meter).
+        domain: [geosparql:SpatialObject]
+        range: [xsd:double]
+eof:
