@@ -3,26 +3,38 @@
  * Les contraintes d'intégrité sont définies dans le schéma sous la forme d'objets referentialIntegrity
  * associés à une propriété et contenant 2 propriétés:
  *  - label: une étiquette décrivant la contrainte
- *  - path: un chemin définissant le domaine de validité
+ *  - path: un chemin définissant les valeurs auxquelles la proprité doit appartenir
+ *
+ * Attention aux limites suivantes:
+ *  - La classe Schema définit une variable statique $schema utilisée pour recherche les définitions ;
+ *    elle peut créer des problèmes si plusieurs schemas sont créés.
+ *    Pour éviter ces problèmes cette variable est réécrite à chaque appel d'une méthode de Schema.
+ *  - les oneOf doivent se distinguer par leur structure (ex: string <> object) ou les champs obligatoires ;
+ *    si différentes branches du oneOf ont la même structure alors le code peut être erroné.
+ *    Pour éviter les erreurs, cette situation est testée et génère une erreur.
  */
-//namespace jsonschema;
-
 require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__.'/path.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+// Permet de définir les options de verbosité
+//Schema::$options['__construct'] = true;
+//Schema::$options['checkStruct'] = true;
+//Schema::$options['checkIntegrity'] = true;
+
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>checkIntegrity</title></head><body>\n";
 
-if (!isset($_GET['fpath'])) {
+if (!isset($_GET['file'])) { // choix du fichier à vérifier
   echo HTML_HEADER;
-  echo "<a href='?fpath=registre'>registre</a><br>\n";
-  echo "<a href='?fpath=reg'>reg</a><br>\n";
+  echo "<a href='?file=registre'>registre</a><br>\n";
+  echo "<a href='?file=reg'>reg</a><br>\n";
+  echo "<a href='?file=test'>test</a><br>\n";
   die();
 }
 
-$docpath = "$_GET[fpath].yaml"; // le chemin du doc à vérifier
-$schemapath = "$_GET[fpath].schema.yaml"; // le chemin du schéma contenant les règles d'intégrité
-
+/** Union des types d'élts du schéma Literal ou Object ou Array ou DefRef ou OneOf.
+ * Peut nécessiter d'être étendue. Dans ce cas le create() génèrera un die(). */
 abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
   readonly public ?string $description;
   /** 
@@ -32,27 +44,36 @@ abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
     $this->description = $srce['description'] ?? null;
   }
   
-  /** Crée un Struct
+  /** Crée un Struct, effectue un new d'une des sous-classes.
    * @param array<mixed> $srce; le scre
    * @param list<string> $path le chemin de l'objet créé
    */
   static function create(array $srce, array $path): self {
-    //echo "Struct::create(srce, path=",implode('/',$path),")<br>\n";
-    switch ($srce['type'] ?? null) {
-      case null: {
-        if (isset($srce['$ref']))
-          return new DefRef($srce, $path);
-        elseif (isset($srce['oneOf']))
-          return new OneOf($srce, $path);
-        else
-          die("No type et !oneOf pour path ".implode('/', $path));
+    if (Schema::$options['__construct'] ?? false)
+      echo "Struct::create(srce, path=",implode('/',$path),")<br>\n";
+    if (is_array($srce['type'] ?? null)) {
+      $oneOf = [];
+      foreach ($srce['type'] as $t) {
+        $oneOf[] = ['type'=> $t];
       }
-      case 'object': return new JSObject($srce, $path);
-      case 'array': return new JSArray($srce, $path);
-      case 'string': return new Literal($srce, $path);
-      case 'null': return new Literal($srce, $path);
-      default: die("type $srce[type] non traité dans Struct::create() pour path ".implode('/', $path));
+      //echo '<pre>oneOf=',Yaml::dump($oneOf); echo "</pre>\n";
+      return self::create(['oneOf'=> $oneOf], array_merge($path, ['oneOf']));
     }
+    return match ($srce['type'] ?? null) {
+      null => isset($srce['$ref']) ?
+          new DefRef($srce, $path)
+            : (isset($srce['oneOf']) ?
+              new OneOf($srce, $path)
+                : die('No type, !oneOf et !$ref dans Struct::create() pour path '.implode('/', $path))),
+      'object' => new JSObject($srce, $path),
+      'array' => new JSArray($srce, $path),
+      'string',
+      'number',
+      'integer',
+      'null' => new Literal($srce, $path),
+      default=> die("type ".json_encode($srce['type'])
+        ." non traité dans Struct::create() pour path ".implode('/', $path)),
+    };
   }
   
   /** liste des références à des définitions
@@ -66,9 +87,9 @@ abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<string,string> */
-  abstract function checkStruct(array|string|null $data, array $path): array;
+  abstract function checkStruct(array|string|float|int|null $data, array $path): array;
 
-  /** 
+  /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
    * @param array<mixed> $refdata
    * @param array<string> $path
    * @return array<mixed>
@@ -76,6 +97,7 @@ abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
   abstract function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array;
 };
 
+/** Stoke les contraintes d'intégrité définies dans le schéma */
 class RefIntegrity {
   readonly public ?string $label;
   readonly public string $path;
@@ -85,18 +107,20 @@ class RefIntegrity {
    * @param list<string> $path le chemin de l'objet créé
   */
   function __construct(array $refIntegrity, array $path) {
-    echo "Création d'une RefIntegrity pour path=",implode('/',$path),"<br>\n";
+    if (Schema::$options['__construct'] ?? false)
+      echo "Création d'une RefIntegrity pour path=",implode('/',$path),"<br>\n";
     $this->label = $refIntegrity['label'];
     $this->path = $refIntegrity['path'];
   }
 
-  /** 
+  /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
    * @param array<mixed> $refdata
    * @param array<string> $path
    * @return array<string,string>
    */
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "RefIntegrity::checkIntegrity(data=",json_encode($refdata),", path=",implode('/',$path),")<br>\n";
+    if (Schema::$options['checkIntegrity'] ?? false)
+      echo "RefIntegrity::checkIntegrity(data=",json_encode($refdata),", path=",implode('/',$path),")<br>\n";
     $vals = $baseData->path($this->path);
     return [implode('/',$path)
         => in_array($refdata, $vals) ? 'ok pour '.json_encode($refdata)
@@ -104,16 +128,18 @@ class RefIntegrity {
   }
 };
 
-/** élément littéral */
+/** Stoke un élément littéral du schéma */
 class Literal extends Struct {
-  readonly public string $type;
-  readonly public ?RefIntegrity $refIntegrity;
+  readonly public string $type; // type de l'élément: 'string', 'null', ...
+  readonly public ?RefIntegrity $refIntegrity; // contrainte référentielle éventuelle associée
 
   /** 
    * @param array<mixed> $srce; le scre
    * @param list<string> $path;
    */
   function __construct(array $srce, array $path) {
+    if (Schema::$options['__construct'] ?? false)
+      echo "Literal::_construct(srce, path=",implode('/',$path),")<br>\n";
     $this->type = $srce['type'];
     $refIntegrity = $srce['referentialIntegrity'] ?? null;
     $this->refIntegrity = isset($refIntegrity['path']) ? new RefIntegrity($refIntegrity, $path) : null;
@@ -129,32 +155,23 @@ class Literal extends Struct {
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<string,string> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "Literal::check(schema, data, path=",implode('/',$path),")<br>\n";
-    //echo '<pre>this='; print_r($this); echo "</pre>\n";
-    switch ($this->type) {
-      case 'string': {
-        if (is_string($data)) {
-          //echo "string ok<br>\n";
-          return [];
-        }
-        else {
-          //echo "string KO<br>\n";
-          return [implode('/',$path) => '!'.$this->type];
-        }
-      }
-      case 'null': {
-        if (is_null($data)) {
-          //echo "null ok<br>\n";
-          return [];
-        }
-        else {
-          //echo "null KO<br>\n";
-          return [implode('/',$path) => '!'.$this->type];
-        }
-      }
-      default: die("Type $this->type non traité");
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false) {
+      echo "Literal::checkStruct(data, path=",implode('/',$path),")<br>\n";
+      //echo '<pre>this='; print_r($this); echo "</pre>\n";
     }
+    $result = match($this->type) {
+      'null' => is_null($data) ? [] : [implode('/',$path) => '!'.$this->type],
+      'string' => is_string($data) ? [] : [implode('/',$path) => '!'.$this->type],
+      'number' => (is_float($data) || is_int($data)) ? [] : [implode('/',$path) => '!'.$this->type],
+      'integer' => is_int($data) ? [] : [implode('/',$path) => '!'.$this->type],
+      default => die("Type $this->type non traité dans Literal::checkStruct()"),
+    };
+    if ($result && (Schema::$options['checkStruct'] ?? false)) {
+      echo "<pre>Literal::check(data, path=",implode('/',$path),") -> ";
+      print_r($result);
+    }
+    return $result;
   }
   
   /** 
@@ -163,9 +180,9 @@ class Literal extends Struct {
    * @return array<string,string>
    */
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "Literal::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
+    //echo "Literal::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
     if ($this->refIntegrity) {
-      echo "Vérification<br>\n";
+      //echo "Vérification<br>\n";
       return $this->refIntegrity->checkIntegrity($refdata, $path, $baseData);
     }
     else
@@ -173,16 +190,18 @@ class Literal extends Struct {
   }
 };
 
+/** Stoke une propriété Yaml ddéfinie dans le schéma */ 
 class Property {
-  readonly public Struct $main;
-  readonly public ?string $description;
+  readonly public Struct $main; // l'objet de la propriété
+  readonly public ?string $description; // une description éventuelle
   
   /** 
    * @param array<mixed> $srce; le scre
    * @param list<string> $path le chemin de l'objet créé
    */
   function __construct(array $srce, array $path) {
-    //echo "Property::_construct(srce, path=",implode('/',$path),")<br>\n";
+    if (Schema::$options['__construct'] ?? false)
+      echo "Property::_construct(srce, path=",implode('/',$path),")<br>\n";
     $this->main = Struct::create($srce, $path);
     $this->description = $srce['description'] ?? null;
   }
@@ -191,9 +210,14 @@ class Property {
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<string,string> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "Property::check(schema, data, path=",implode('/',$path),")<br>\n";
-    return $this->main->checkStruct($data, $path);
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "Property::checkStruct(schema, data, path=",implode('/',$path),")<br>\n";
+    $check = $this->main->checkStruct($data, $path);
+    if ($check && (Schema::$options['checkStruct'] ?? false)) {
+      echo '<pre>Property::checkStruct='; print_r($check); echo "</pre>\n";
+    }
+    return $check;
   }
   
   /** 
@@ -201,24 +225,28 @@ class Property {
    * @param array<string> $path
    * @return array<string,string>
    */
-  function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "Appel de Property::checkIntegrity(refdata, path=",implode('/',$path),")<br>\n";
+  function checkIntegrity(array|string|float|int|null $refdata, array $path, BaseData $baseData): array {
+    //echo "Appel de Property::checkIntegrity(refdata, path=",implode('/',$path),")<br>\n";
     return $this->main->checkIntegrity($refdata, $path, $baseData);
   }
 };
 
-/** Objet défini dans le schéma */
+/** Objet Yaml défini dans le schéma */
 class JSObject extends Struct {
   /** @var array<string,Property> $properties */
   readonly public array $properties;
   /** @var array<string,Property> $patternProperties */
   readonly public array $patternProperties;
+  /** @var list<string> $required liste des propriétés obligatoires */
+  readonly public ?array $required;
   
   /** 
    * @param array<mixed> $srce; le scre
    * @param list<string> $path le chemin de l'objet créé
    */
   function __construct(array $srce, array $path) {
+    if (Schema::$options['__construct'] ?? false)
+      echo "JSObject::_construct(srce, path=",implode('/',$path),")<br>\n";
     $properties = [];
     $patternProperties = [];
     if (isset($srce['properties'])) {
@@ -236,6 +264,7 @@ class JSObject extends Struct {
     }
     $this->properties = $properties;
     $this->patternProperties = $patternProperties;
+    $this->required = $srce['required'] ?? [];
   }
   
   /** liste des références à des définitions
@@ -251,13 +280,19 @@ class JSObject extends Struct {
     return $defRefs;
   }
 
-  /** Teste si la donnée est conforme au schéma. Si oui retourne [], sinon retourne [{path}=>{erreur}]
+  /** Teste si la donnée est conforme au schéma. Si oui retourne [], sinon retourne [{path}=>{erreur}].
+   * Le test s'effectue sur la structure ainsi que sur l'existence dans les données des champs obligatoires.
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<mixed> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "JSObject::check(schema, data, path=",implode('/',$path),")<br>\n";
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "JSObject::check(data, path=",implode('/',$path),")<br>\n";
     if (!is_array($data)) return [implode('/',$path)=> "!object"];
+    foreach ($this->required as $pname) {
+      if (!isset($data[$pname]))
+        return [implode('/',$path)=> "$pname obligatoire et non défini"];
+    }
     $result = [];
     foreach ($data as $key => $value) {
       if (isset($this->properties[$key])) {
@@ -306,15 +341,17 @@ class JSObject extends Struct {
   }
 };
 
+/** Array Yaml défini dans le schéma */
 class JSArray extends Struct {
-  readonly public Struct $items;
+  readonly public Struct $items; // structure des éléments de l'array
 
   /** 
    * @param array<mixed> $srce; le scre
    * @param list<string> $path le chemin de l'objet créé
    */
   function __construct(array $srce, array $path) {
-    echo "JSArray::_construct(srce, path=",implode('/',$path),")<br>\n";
+    if (Schema::$options['__construct'] ?? false)
+      echo "JSArray::_construct(srce, path=",implode('/',$path),")<br>\n";
     //echo '<pre>srce='; print_r($srce); echo "</pre>\n";
     $this->items = Struct::create($srce['items'], $path);
   }
@@ -329,8 +366,9 @@ class JSArray extends Struct {
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<mixed> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "JSArray::check(schema, data, path=",implode('/',$path),")<br>\n";
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "JSArray::check(data, path=",implode('/',$path),")<br>\n";
     if (!is_array($data) || !array_is_list($data)) return [implode('/',$path)=> "!list"];
     $result = [];
     foreach ($data as $i => $value) {
@@ -347,7 +385,7 @@ class JSArray extends Struct {
    * @return array<string,string>
    */
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "JSArray::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
+    //echo "JSArray::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
     $result = [];
     foreach ($refdata as $i => $item) {
       if ($int = $this->items->checkIntegrity($item, array_merge($path, [$i]), $baseData))
@@ -357,6 +395,7 @@ class JSArray extends Struct {
   }
 };
 
+/** Alternative entre défirrentes structures définies dans le schéma */
 class OneOf extends Struct {
   /** @var list<Struct> $oneOf */
   readonly public array $oneOf;
@@ -366,6 +405,8 @@ class OneOf extends Struct {
    * @param list<string> $path le chemin de l'objet créé
    */
   function __construct(array $srce, array $path) {
+    if (Schema::$options['__construct'] ?? false)
+      echo "OneOf::__construct(baseData, path=",implode('/',$path),")<br>\n";
     $oneOf = [];
     foreach ($srce['oneOf'] as $struct)
       $oneOf[] = Struct::create($struct, $path);
@@ -381,50 +422,58 @@ class OneOf extends Struct {
   /** Teste si la donnée est conforme au schéma. Si oui retourne [], sinon retourne [{path}=>{erreur}]
    * @param array<mixed> $data
    * @param array<string> $path
-   * @return array<string,string> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "OneOf::check(schema, data, path=",implode('/',$path),")<br>\n";
+   * @return array<mixed> */
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "OneOf::check(schema, data, path=",implode('/',$path),")<br>\n";
+    $errors = []; // résultats des checkStruct()
+    $valids = []; // liste des braches valides
     foreach ($this->oneOf as $i => $one) {
-      if ($one->checkStruct($data, array_merge($path, ["oneOf:$i"])) == [])
-        return [];
+      $errors[$i] = $one->checkStruct($data, array_merge($path, ["oneOf:$i"]));
+      if ($errors[$i] == [])
+        $valids[] = $i;
     }
-    return [implode('/',$path)=> 'None valid'];
+    if (count($valids) == 1)
+      return [];
+    return [implode('/',$path)=> ['None of the alternative structures is valid' => $errors]];
   }
   
-  /** 
+  /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
+   * Le choix de la branche suivie est effectuée en onction de la structure.
+   * Ainsi si différents branches on même structure cette logique est erronée.
    * @param array<mixed> $refdata
    * @param array<string> $path
    */
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "OneOf::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
+    if (Schema::$options['checkIntegrity'] ?? false)
+      echo "OneOf::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
+    $ones = []; // les branches du oneOf correspondant à la donnée
     foreach ($this->oneOf as $i => $one) {
       if ($one->checkStruct($refdata, array_merge($path, ["oneOf:$i"])) == [])
-        return $one->checkIntegrity($refdata, $path, $baseData);
+        $ones[] = $one;
     }
+    if (count($ones) == 1)
+      return $ones[0]->checkIntegrity($refdata, $path, $baseData);
+    elseif (count($ones) > 1)
+      return [implode('/',$path)=> 'Several valid'];
     return [implode('/',$path)=> 'None valid'];
   }
 };
 
-class Definition {
-  readonly public Struct $content;
-  
-  /** 
-   * @param array<mixed> $srce; le scre
-   * @param list<string> $path le chemin de l'objet créé
-   */
-  function __construct(array $srce, array $path) {
-    $this->content = Struct::create($srce, $path);
-  }
-};
-
+/** Référence à une définition définie dans le schéma */
 class DefRef extends Struct {
-  readonly public string $ref;
+  const PREDEF = [
+    'http://json-schema.org/schema#',
+  ]; // définition prédéfinies
+  readonly public string $ref; // le clé de la définition avec '#/definitions/' en tête
   
   /** 
    * @param array<mixed> $srce
    * @param list<string> $path le chemin de l'objet créé
    */
   function __construct(array $srce, array $path) {
+    if (Schema::$options['__construct'] ?? false)
+      echo "DefRef::__construct(baseData, path=",implode('/',$path),")<br>\n";
     parent::__construct($srce);
     $this->ref = $srce['$ref'];
   }
@@ -435,21 +484,23 @@ class DefRef extends Struct {
    */
   function defRefs(array $path): array { return [implode('/',$path) => $this]; }
 
+  /** Retourne la définition référencée si elle existe dans le schéma ou null.
+   * Attention ce déréférencement utilise la variable statique Schema::$schema */
   function definition(): ?Struct {
     $name = substr($this->ref, strlen('#/definitions/'));
-    $def = Schema::$schema->definitions[$name] ?? null;
-    return $def ? $def->content : null;
+    return Schema::$schema->definitions[$name] ?? null;
   }
   
   /** Teste si la donnée est conforme au schéma. Si oui retourne [], sinon retourne [{path}=>{erreur}]
    * @param array<mixed> $data
    * @param array<string> $path
    * @return array<string,string> */
-  function checkStruct(array|string|null $data, array $path): array {
-    //echo "DefRef::check(schema, data, path=",implode('/',$path),")<br>\n";
+  function checkStruct(array|string|float|int|null $data, array $path): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "DefRef::checkStruct(data, path=",implode('/',$path),")<br>\n";
     if ($def = $this->definition())
       return $def->checkStruct($data, $path);
-    elseif (!in_array($this->ref, ['http://json-schema.org/schema#'])) {
+    elseif (!in_array($this->ref, self::PREDEF)) {
       echo "Attention: \$ref $this->ref non défini<br>\n";
     }
     return [];
@@ -460,7 +511,7 @@ class DefRef extends Struct {
    * @param array<string> $path
    */
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
-    echo "DefRef::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
+    //echo "DefRef::checkIntegrity(data, path=",implode('/',$path),")<br>\n";
     //echo '<pre>data='; print_r($data); echo "\nthis="; print_r($this); echo '</pre>';
     $name = substr($this->ref, strlen('#/definitions/'));
     if ($this->definition())
@@ -471,24 +522,43 @@ class DefRef extends Struct {
   }
 };
 
+/** Classe des schémas JSON.
+ * Attention, la définition d'une variable statique peut créer des contraintes. */
 class Schema {
-  /** @var array<Definition> $definitions */
+  /** @var array<string,Struct> $definitions */
   readonly public array $definitions;
-  readonly public Struct $main; // définition de l'objet principal du schéma
+  readonly public Struct $main; // structure de l'objet principal du schéma
   static public self $schema;
+  /** @var array<string,string|bool> $options Options de verbosité [{optionName}=> {value}] */
+  static public array $options=[];
   
-  /** 
-   * @param array<mixed> $srce; le scre
-   * @param list<string> $path le chemin de l'objet créé
+  /** Construit le schéma à partir des données.
+   * @param array<mixed> $baseData; les données issues de Yaml contenant le schéma ou les référencant
    */
-  function __construct(array $srce, array $path=[]) {
+  function __construct(array $baseData) {
+    if (Schema::$options['__construct'] ?? false)
+      echo "Schema::__construct(baseData)<br>\n";
+    if (!isset($baseData['$schema']))
+      die("Erreur, Pas de schéma dans les données");
+    if (is_string($baseData['$schema'])) {
+      $schemaPath = $baseData['$schema'].'.schema.yaml';
+      if (!is_file($schemaPath))
+        die("Erreur, le fichier $schemaPath n'existe pas");
+      $srce = Yaml::parseFile($schemaPath);
+    }
+    elseif (is_array($baseData['$schema'])) {
+      $srce = $baseData['$schema'];
+    }
+    else
+      die("Erreur, \$schema ni string ni object");
+    
     $definitions = [];
     foreach ($srce['definitions'] ?? [] as $name => $def) {
-      $definitions[$name] = new Definition($def, array_merge($path, ['definitions', $name]));
+      $definitions[$name] = Struct::create($def, ['definitions', $name]);
     }
     $this->definitions = $definitions;
     
-    $this->main = Struct::create($srce, $path);
+    $this->main = Struct::create($srce, []);
     
     $this->checkDefinitions();
     self::$schema = $this;
@@ -499,39 +569,50 @@ class Schema {
     foreach ($this->main->defRefs([]) as $path => $defRef) {
       //echo '<pre>$defRef='; print_r($defRef);
       //echo $defRef->ref,"<br>\n";
+      if (in_array($defRef->ref, DefRef::PREDEF)) continue;
       $name = substr($defRef->ref, strlen('#/definitions/'));
       if (!isset($this->definitions[$name]))
         echo "Erreur: Définition '$name' référencée dans $path et non définie<br>\n";
     }
   }
   
-  /** Teste si la données est conforme au schéma du point de vue de la structure.
-   * Si oui retourne [], sinon retourne [{path}=> {erreur}]
+  /** Teste si la donnée est conforme au schéma du point de vue de la structure.
+   * Attention la vérification est limitée à la structure.
+   * Si oui retourne [], sinon retourne [{path}=> {erreur}].
    * @param array<mixed> $data
    * @return array<string,string> */
   function checkStruct(array $data): array {
+    if (Schema::$options['checkStruct'] ?? false)
+      echo "Schema::checkStruct(data)<br>\n";
+    self::$schema = $this;
     return $this->main->checkStruct($data, []);
   }
   
-  /**
+  /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
+   * Ne fonctionne correctement que si les oneOf sont distinguables sur les structures, par exemple string|object
    * @param array<mixed> $data
    * @return array<mixed>
    */
   function checkIntegrity(array $data): array {
-    echo "Schema::checkIntegrity(data)<br>\n";
+    //echo "Schema::checkIntegrity(data)<br>\n";
+    self::$schema = $this;
     return $this->main->checkIntegrity($data, [], new BaseData($data));
   }
 };
 
-$schema = new Schema(Yaml::parseFile($schemapath));
+$schema = new Schema(Yaml::parseFile("$_GET[file].yaml"));
 //echo '<pre>$schema='; print_r($schema);
 
-$status = $schema->checkStruct(Yaml::parseFile($docpath));
-if ($status) {
-  echo '<pre>status='; print_r($status);
+// Vérification de la structure
+if ($status = $schema->checkStruct(Yaml::parseFile("$_GET[file].yaml"))) {
+  echo "La vérification ne peut être effectuée car les données ne sont pas conformes à leur schéma ;<br>\n",
+       "Les erreurs suivantes ont été détectées:<br>\n";
+  echo '<pre>',Yaml::dump($status, 10, 2);
   die();
 }
 
-$checkIntegrity = $schema->checkIntegrity(Yaml::parseFile($docpath));
-echo '<pre>checkIntegrity='; print_r($checkIntegrity);
+// Vérification des contraintes d'intégrité
+$checkIntegrity = $schema->checkIntegrity(Yaml::parseFile("$_GET[file].yaml"));
+echo "Résulats de l'évaluation des contraintes d'intégrité:<br>\n";
+echo '<pre>',Yaml::dump(['result'=> $checkIntegrity], 10, 2);
 die();

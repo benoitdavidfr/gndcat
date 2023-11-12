@@ -18,7 +18,7 @@ parameters:
       '''
 
   paths:
-    #- ont/checkintegrity.php
+    - ont/checkintegrity.php
     - ont/path.php
     #- read.php
     - http.inc.php

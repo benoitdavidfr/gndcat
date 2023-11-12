@@ -64,7 +64,8 @@ definitions:
             $ref: '#/definitions/multiLingualLabel'
           inScheme:
             description: schémas de concepts dans lesquels le concept est défini
-            referentialIntegrity: les URI de inScheme doivent être chacun un URI défini comme ressource de skos:ConceptScheme
+            referentialIntegrity: |
+              les URI de inScheme doivent être chacun un URI défini comme ressource de skos:ConceptScheme
             type: array
             items: {type: string, format: uri}
       - description: instance foaf:Organization
@@ -169,28 +170,31 @@ definitions:
         type: array
         items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
       equivalentProperty:
-        referentialIntegrity: chaque equivalentProperty doit être le CURI d'une propriété
         type: array
-        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+        items:
+          type: string
+          pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
+          referentialIntegrity:
+            label: chaque equivalentProperty doit être le CURI d'une propriété
+            path: '#/ontologies/*/properties|objectProperties|datatypeProperties/$id'
       range:
-        description: cible de la propriété comme ensemble de classes définies par leur URI compact
+        description: cible de la propriété comme ensemble de classes ou de types de données définies par leur IRI compact
         type: array
         items:
           type: string
           pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
           referentialIntegrity:
             label: chaque range doit être le CIRI d'une classe ou d'un datatype
-            path: '#/ontologies/*/(classes|datatypes)/$id'
-      #datatype:
-      #  description: liste de types de données attendus
-      #  referentialIntegrity: chaque datatype doit être un type défini
-      #  type: array
-      #  items: {type: string}
+            path: '#/ontologies/*/classes|datatypes/$id'
       domain:
-        description: domaine de définition de la propriété comme ensemble de classes définies par leur URI compact
-        referentialIntegrity: chaque domain doit être le CURI d'une classe
+        description: domaine de définition de la propriété comme ensemble de classes définies par leur IRI compact
         type: array
-        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+        items:
+          type: string
+          pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
+          referentialIntegrity:
+            label: chaque domain doit être le CIRI d'une classe
+            path: '#/ontologies/*/classes/$id'
       inverse:
         description: définition d'une propriété inverse, cette propriété inverse n'est pas définie comme propriété
         type: string
