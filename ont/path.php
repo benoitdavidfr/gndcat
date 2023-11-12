@@ -1,8 +1,17 @@
 <?php
+/** Application d'un path à un fichier Yaml.
+ * Un path est une suite d'éléments séparés par des / commencant par un /.
+ * Chaque élément est soit:
+ *  - le nom d'une propriété Yaml dans le fichier
+ *  - une alternative entre plusieurs noms sous la forme de la liste des noms spérarés par le caractère '|'
+ *  - le caractère '*' correspondant à toutes les valeurs possibles de la propriété
+ *  - comme dernier élément la chaine '$id' signifiant le retour des clés
+ */
 require_once __DIR__.'/../vendor/autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+/** Chaque objet contient le fichier d'origine ou une des instances résultatnt de l'application d'un path */
 class BaseData {
   /** @var array<mixed>|string $data */
   readonly public array|string $data;
@@ -18,12 +27,27 @@ class BaseData {
     array_shift($path);
     $list = new BaseDataList([$this]);
     $result = [];
-    foreach (array_map(function(BaseData $bd) { return $bd->data; }, $list->path($path)->list) as $r)
-      $result[] = $r;
-    return $result;
+    //foreach (array_map(function(BaseData $bd) { return $bd->data; }, $list->path($path)->list) as $r)
+    //  $result[] = $r;
+    $result = $list->path($path)->list;
+    //echo '<pre>$list->path($path)->list = '; print_r($result);
+    
+    if (count($result) == 1)
+      return $result[0]->data;
+    else {
+      $result2 = [];
+      foreach ($result as $bd) {
+        if (is_array($bd->data))
+          $result2 = array_merge($result2, $bd->data);
+        else
+          $result2[] = $bd->data;
+      }
+    }
+    return $result2;
   }
 };
 
+/** Liste de BaseData permettant d'iétrer sur le path */
 class BaseDataList {
   /** @var list<BaseData> $list */
   readonly public array $list;
@@ -39,8 +63,8 @@ class BaseDataList {
    * @return self
    */
   function path(array $path): self {
-    echo "BaseDataList::path(",implode('/',$path),")<br>\n";
-    echo '$path='; var_dump($path);
+    //echo "BaseDataList::path(",implode('/',$path),")<br>\n";
+    //echo '$path='; var_dump($path);
     if (!$path)
       return $this;
     if ($path == ['$id']) {
@@ -56,6 +80,12 @@ class BaseDataList {
       if ($key == '*') {
         foreach ($bd->data as $k => $value) {
           $resultList[] = new BaseData($value);
+        }
+      }
+      elseif (strpos($key, '|') !== false) {
+        foreach (explode('|', $key) as $k) {
+          if (isset($bd->data[$k]))
+            $resultList[] = new BaseData($bd->data[$k]);
         }
       }
       else {
@@ -97,10 +127,12 @@ const EXAMPLES = [
   '/$id'=> "liste des propriétés de 1er niveau",
   '/ontologies'=> "liste des ontologies",
   '/ontologies/$id'=> "liste des curi des ontologies",
-  '/ontologies/*'=> "liste des contenus des ontologies",
+  '/ontologies/*'=> "liste des contenus des ontologies (qui a peu de sens car les propriétés communes s'écrasent)",
   '/ontologies/*/title'=> "liste des titres des ontologies",
   '/ontologies/*/classes'=> "liste des classes des ontologies",
   '/ontologies/*/classes/$id'=> "liste des ciri des classes des ontologies",
+  '/ontologies/*/classes/*'=> "liste des contenus des classes des ontologies (qui a peu de sens car les propriétés communes s'écrasent)",
+  '/ontologies/*/classes/*/definition'=> "liste des définitions des classes des ontologies",
   '/ontologies/*/classes/*/instances'=> "liste des instances des classes des ontologies",
 ]; // exemples de path affichés lorsque le path n'est pas défini
 if (!isset($_GET['path'])) {
