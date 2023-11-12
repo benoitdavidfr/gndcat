@@ -18,9 +18,8 @@ parameters:
       '''
 
   paths:
-    - ont/checkintegrity.php
-    - ont/path.php
-    #- read.php
+    - ont
+    - read.php
     - http.inc.php
     - inspiremd.inc.php
     - mdvars2.inc.php

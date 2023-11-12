@@ -29,7 +29,7 @@ if (!isset($_GET['file'])) { // choix du fichier à vérifier
   echo HTML_HEADER;
   echo "<a href='?file=registre'>registre</a><br>\n";
   echo "<a href='?file=reg'>reg</a><br>\n";
-  echo "<a href='?file=test'>test</a><br>\n";
+  echo "<a href='?file=checkintegrity.test'>test</a><br>\n";
   die();
 }
 
@@ -288,7 +288,7 @@ class JSObject extends Struct {
   function checkStruct(array|string|float|int|null $data, array $path): array {
     if (Schema::$options['checkStruct'] ?? false)
       echo "JSObject::check(data, path=",implode('/',$path),")<br>\n";
-    if (!is_array($data)) return [implode('/',$path)=> "!object"];
+    if (!is_array($data) || array_is_list($data)) return [implode('/',$path)=> "!object"];
     foreach ($this->required as $pname) {
       if (!isset($data[$pname]))
         return [implode('/',$path)=> "$pname obligatoire et non défini"];
@@ -431,11 +431,14 @@ class OneOf extends Struct {
     foreach ($this->oneOf as $i => $one) {
       $errors[$i] = $one->checkStruct($data, array_merge($path, ["oneOf:$i"]));
       if ($errors[$i] == [])
-        $valids[] = $i;
+        $valids[$i] = 1;
     }
     if (count($valids) == 1)
       return [];
-    return [implode('/',$path)=> ['None of the alternative structures is valid' => $errors]];
+    elseif (count($valids) == 0)
+      return [implode('/',$path)=> 'None of the alternative structures is valid'];
+    else
+      return [implode('/',$path)=> ['Several of the alternative structures are valid' => $errors]];
   }
   
   /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
@@ -500,9 +503,10 @@ class DefRef extends Struct {
       echo "DefRef::checkStruct(data, path=",implode('/',$path),")<br>\n";
     if ($def = $this->definition())
       return $def->checkStruct($data, $path);
-    elseif (!in_array($this->ref, self::PREDEF)) {
-      echo "Attention: \$ref $this->ref non défini<br>\n";
+    elseif (in_array($this->ref, self::PREDEF)) {
+      return is_array($data) ? [] : ['schema prédéfini'];
     }
+    echo "Attention: \$ref $this->ref non défini<br>\n";
     return [];
   }
   
@@ -603,7 +607,7 @@ class Schema {
 $schema = new Schema(Yaml::parseFile("$_GET[file].yaml"));
 //echo '<pre>$schema='; print_r($schema);
 
-// Vérification de la structure
+// Vérification que les données correspondent au schéma
 if ($status = $schema->checkStruct(Yaml::parseFile("$_GET[file].yaml"))) {
   echo "La vérification ne peut être effectuée car les données ne sont pas conformes à leur schéma ;<br>\n",
        "Les erreurs suivantes ont été détectées:<br>\n";

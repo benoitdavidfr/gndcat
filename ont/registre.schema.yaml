@@ -1,4 +1,4 @@
-$id: https://georef.eu/exportESph/registre.schema.yaml
+$id: https://georef.eu/gndcat/ont/registre.schema.yaml
 $schema: http://json-schema.org/schema#
 definitions:
   document:
