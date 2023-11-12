@@ -11,15 +11,17 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
 
-if (!isset($_GET['path'])) {
-  echo "<a href='?path=registre'>registre</a><br>\n";
-  echo "<a href='?path=reg'>reg</a><br>\n";
+const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>checkIntegrity</title></head><body>\n";
+
+if (!isset($_GET['fpath'])) {
+  echo HTML_HEADER;
+  echo "<a href='?fpath=registre'>registre</a><br>\n";
+  echo "<a href='?fpath=reg'>reg</a><br>\n";
   die();
 }
 
-
-$docpath = "$_GET[path].yaml"; // le chemin du doc à vérifier
-$schemapath = "$_GET[path].schema.yaml"; // le chemin du schéma contenant les règles d'intégrité
+$docpath = "$_GET[fpath].yaml"; // le chemin du doc à vérifier
+$schemapath = "$_GET[fpath].schema.yaml"; // le chemin du schéma contenant les règles d'intégrité
 
 abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
   readonly public ?string $description;
@@ -521,81 +523,6 @@ class Schema {
   }
 };
 
-class BaseData {
-  /** @var array<mixed>|string $data */
-  readonly public array|string $data;
-  
-  /** @param array<mixed>|string $data */
-  function __construct(array|string $data) { $this->data = $data; }
-  
-  /** Extrait la liste des valeurs correspondant au path
-   * @param list<string>|string $path
-   * @return array<mixed>
-   */
-  function path(array|string $path): array {
-    $path = explode('/', $path);
-    array_shift($path);
-    $list = new BaseDataList([$this]);
-    $result = [];
-    foreach (array_map(function(BaseData $bd) { return $bd->data; }, $list->path($path)->list) as $r)
-      $result = array_merge($result, $r);
-    return $result;
-  }
-};
-
-class BaseDataList {
-  /** @var list<BaseData> $list */
-  readonly public array $list;
-  
-  /** @param list<BaseData> $list */
-  function __construct(array $list) { $this->list = $list; }
-
-  /** Extrait la liste des valeurs correspondant au path
-   * @param list<string> $path
-   * @return self
-   */
-  function path(array $path): self {
-    echo "BaseDataList::path(",implode('/',$path),")<br>\n";
-    echo '$path='; var_dump($path);
-    if (!$path)
-      return $this;
-    if ($path == ['$id']) {
-      //return new self(array_keys($this->data));
-      return new self(array_map(
-        function(BaseData $bd): BaseData { return new BaseData(array_keys($bd->data)); },
-        $this->list));
-    }
-    
-    $key = array_shift($path);
-    if ($key == '*') {
-      $resultList = []; // list<BaseData>
-      foreach ($this->list as $bd) {
-        foreach ($bd->data as $key => $value) {
-          $resultList[] = new BaseData($value);
-        }
-      }
-      $bdl = new self($resultList);
-      return $bdl->path($path);
-    }
-    else {
-      $resultList = [];
-      foreach ($this->list as $bd) {
-        if (isset($bd->data[$key]))
-          $resultList[] = new BaseData($bd->data[$key]);
-      }
-      $bdl = new self($resultList);
-      return $bdl->path($path);
-    }
-  }
-};
-
-if (0) { // @phpstan-ignore-line
-  $baseData = new BaseData(Yaml::parseFile($docpath));
-  $result = $baseData->path('#/ontologies/*/classes/$id');
-  echo '<pre>$baseData->path='; print_r($result);
-  die();
-}
-
 $schema = new Schema(Yaml::parseFile($schemapath));
 //echo '<pre>$schema='; print_r($schema);
 
@@ -607,3 +534,4 @@ if ($status) {
 
 $checkIntegrity = $schema->checkIntegrity(Yaml::parseFile($docpath));
 echo '<pre>checkIntegrity='; print_r($checkIntegrity);
+die();

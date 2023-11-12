@@ -9,11 +9,12 @@ abstract: |
 lineage:
   - date: '2023-11-11'
     label: |
-      Je fais le choix d'indiquer dans une ontologie (notamment DCAT) des propriétés reprises d'autres ontologies.
-      [DCAT3](https://www.w3.org/TR/vocab-dcat-3/#external-vocab) indique:
-        DCAT requires use of elements from a number of other vocabularies. Furthermore, DCAT may be augmented by
-        additional elements from external vocabularies, following the usual RDFS [RDF-SCHEMA] and OWL2 [OWL2-OVERVIEW]
-        rules and patterns. 
+      - Je fais le choix d'indiquer dans une ontologie (notamment DCAT) des propriétés reprises d'autres ontologies.
+        [DCAT3](https://www.w3.org/TR/vocab-dcat-3/#external-vocab) indique:
+          DCAT requires use of elements from a number of other vocabularies. Furthermore, DCAT may be augmented by
+          additional elements from external vocabularies, following the usual RDFS [RDF-SCHEMA] and OWL2 [OWL2-OVERVIEW]
+          rules and patterns.
+      - mise en oeuvre d'une vérification des contraintes d'intégrité rééfrentielles
   - date: '2023-11-01'
     label: |
       - Document repris dans une logique de documentation des ontologies utilisées.
@@ -310,6 +311,7 @@ ontologies:
         label: Location, Period, or Jurisdiction
         definition: A location, period of time, or jurisdiction.
         subClassOf: []
+      
       dct:Location:
         definition: A spatial region or named place.
         subClassOf: [dct:LocationPeriodOrJurisdiction]
@@ -502,12 +504,14 @@ ontologies:
           The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction
           under which the resource is relevant.
         scopeNote: |
-          Spatial topic and spatial applicability may be a named place or a location specified by its geographic coordinates.
+          Spatial topic and spatial applicability may be a named place or a location specified by its geographic
+          coordinates.
           Temporal topic may be a named period, date, or date range. A jurisdiction may be a named administrative entity
           or a geographic place to which the resource applies. Recommended practice is to use a controlled vocabulary
-          such as the Getty Thesaurus of Geographic Names [TGN]. Where appropriate, named places or time periods may be used
-          in preference to numeric identifiers such as sets of coordinates or date ranges. Because coverage is so broadly defined,
-          it is preferable to use the more specific subproperties Temporal Coverage and Spatial Coverage.
+          such as the Getty Thesaurus of Geographic Names [TGN]. Where appropriate, named places or time periods may be
+          used in preference to numeric identifiers such as sets of coordinates or date ranges. Because coverage is so
+          broadly defined, it is preferable to use the more specific subproperties Temporal Coverage and Spatial
+          Coverage.
         range: [dct:Location, dct:Period, dct:Jurisdiction]
       dct:temporal:
         label: Temporal Coverage
@@ -1118,15 +1122,10 @@ ontologies:
       foaf:workplaceHomepage:
       foaf:page:
       foaf:primaryTopic:
-        definition: The dcat:Resource (dataset or service) described in the record. [DCAT]
-        range: [dcat:Resource]
-        domain: [dcat:CatalogRecord]
+        definition: The primary topic of some page or document.
+        range: [rdf:Resource]
+        domain: [foaf:Document]
         inverse: foaf:isPrimaryTopicOf
-        scopeNote: |
-          [DCAT] Usage note: foaf:primaryTopic property is functional: each catalog record can have at most one
-          primary topic, i.e., describes one dataset or service.
-        dcatSpecialization: |
-          Les propriétés range et domain correspondent à l'utilisation effectuée dans DCAT et pas au cas général.
   vcard:
     title: vCard Ontology - for describing People and Organizations
     source:
@@ -1265,6 +1264,14 @@ ontologies:
         definition(fr): Un compte rendu en texte libre de la ressource. [GoogleTranslate]
         range: [rdfs:Literal]
         
+      foaf:primaryTopic:
+        definition: The dcat:Resource (dataset or service) described in the record. [DCAT]
+        range: [dcat:Resource]
+        domain: [dcat:CatalogRecord]
+        inverse: foaf:isPrimaryTopicOf
+        scopeNote: |
+          [DCAT] Usage note: foaf:primaryTopic property is functional: each catalog record can have at most one
+          primary topic, i.e., describes one dataset or service.
       dcat:theme:
         definition: A main category of the resource. A resource can have multiple themes.
         subPropertyOf: [dcterms:subject]
