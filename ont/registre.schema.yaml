@@ -109,13 +109,16 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      title: {description: titre de l'exemple, type: string}
+      label: {description: étiquette de l'exemple, type: string}
       asTurtle:
         description: code Turtle de l'exemple
         type: string
       asYaml-LD:
         description: code Yaml-LD de l'exemple
         type: object
+      asText:
+        description: code Texte
+        type: string
   examples:
     description: exemple ou liste d'exemples illustrant le concept
     oneOf:
@@ -151,6 +154,20 @@ definitions:
       example:
         description: liste d'exemples illustrant la classe
         $ref: '#/definitions/examples'
+  datatype:
+    oneOf:
+      - description: description littérale du type de données
+        type: string
+      - description: description structurée du type de données
+        type: object
+        additionalProperties: false
+        properties:
+          label: {type: string}
+          definition: {type: string}
+          scopeNote: {description: "Note d'application", type: string}
+          comment: {type: string}
+          seeAlso: {description: "infos complémentaires", type: string, format: url}
+          example: {$ref: '#/definitions/examples'}
   property:
     description: description d'une propriété
     type: object
@@ -166,9 +183,15 @@ definitions:
         type: string
       subPropertyOf:
         description: liste des propriétés parentes (rdfs:subPropertyOf)
-        referentialIntegrity: chaque subPropertyOf doit être le CURI d'une propriété
         type: array
-        items: {type: string, pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'}
+        items:
+          type: string
+          pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
+          referentialIntegrity:
+            label: chaque subPropertyOf doit être le CURI d'une propriété ou une prop. inverse
+            path:
+              - /ontologies/*/properties|objectProperties|datatypeProperties/$id
+              - /ontologies/*/properties|objectProperties|datatypeProperties/*/inverse
       equivalentProperty:
         type: array
         items:
@@ -176,7 +199,7 @@ definitions:
           pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
           referentialIntegrity:
             label: chaque equivalentProperty doit être le CURI d'une propriété
-            path: '#/ontologies/*/properties|objectProperties|datatypeProperties/$id'
+            path: /ontologies/*/properties|objectProperties|datatypeProperties/$id
       range:
         description: cible de la propriété comme ensemble de classes ou de types de données définies par leur IRI compact
         type: array
@@ -185,7 +208,7 @@ definitions:
           pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
           referentialIntegrity:
             label: chaque range doit être le CIRI d'une classe ou d'un datatype
-            path: '#/ontologies/*/classes|datatypes/$id'
+            path: /ontologies/*/classes|datatypes/$id
       domain:
         description: domaine de définition de la propriété comme ensemble de classes définies par leur IRI compact
         type: array
@@ -194,7 +217,7 @@ definitions:
           pattern: '^[a-zA-Z0-9]+:[a-zA-Z0-9_]+$'
           referentialIntegrity:
             label: chaque domain doit être le CIRI d'une classe
-            path: '#/ontologies/*/classes/$id'
+            path: /ontologies/*/classes/$id
       inverse:
         description: définition d'une propriété inverse, cette propriété inverse n'est pas définie comme propriété
         type: string
@@ -267,9 +290,8 @@ definitions:
         type: object
         additionalProperties: false
         patternProperties:
-          '^[a-z]+:[a-zA-Z0-9]+$':
-            description: description littérale du type de données
-            type: string
+          '^[a-z]+:[-a-zA-Z0-9]+$':
+            $ref: '#/definitions/datatype'
       datatypeProperties:
         oneOf:
           - description: dictionnaire de propriétés non rempli

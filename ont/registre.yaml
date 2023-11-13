@@ -224,6 +224,7 @@ ontologies:
       définition d'une sémantique formelle pour l'utilisation dans les applications RDF, les 15 termes originaux
       ont été dupliqués dans cet espace de noms.
       Le DCMI encourage l'utilisation de ce nouvel espace de noms.
+      Dans le DCMI les datatypes sont appelés 'Syntax Encoding Schemes'.
     source:
       - https://www.dublincore.org/specifications/dublin-core/dcmi-terms/
       - https://www.dublincore.org/resources/userguide/publishing_metadata/
@@ -307,11 +308,21 @@ ontologies:
       dct:SizeOrDuration:
         definition: A dimension or extent, or a time taken to play or execute.
         subClassOf: [dct:MediaTypeOrExtent]
+      dct:PhysicalMedium:
+        definition: A physical material or carrier.
+        scopeNote: Examples include paper, canvas, or DVD.
+        subClassOf: [dct:MediaType]
+      dct:PhysicalResource:
+        definition: A material thing.
+        subClassOf: []
       dct:LocationPeriodOrJurisdiction:
         label: Location, Period, or Jurisdiction
         definition: A location, period of time, or jurisdiction.
         subClassOf: []
-      
+      dct:Jurisdiction:
+        definition: The extent or range of judicial, law enforcement, or other authority.
+        subClassOf: [dct:LocationPeriodOrJurisdiction]
+        
       dct:Location:
         definition: A spatial region or named place.
         subClassOf: [dct:LocationPeriodOrJurisdiction]
@@ -320,7 +331,8 @@ ontologies:
           For an extensive geometry (i.e., a set of coordinates denoting the vertices of the relevant geographic area),
           the property locn:geometry [LOCN] SHOULD be used.
           For a geographic bounding box delimiting a spatial area the property dcat:bbox SHOULD be used.
-          For the geographic center of a spatial area, or another characteristic point, the property dcat:centroid SHOULD be used.
+          For the geographic center of a spatial area, or another characteristic point, the property dcat:centroid
+          SHOULD be used.
       dct:Frequency:
         definition: A rate at which something recurs.
         subClassOf: []
@@ -349,7 +361,119 @@ ontologies:
             label:
               fr: Trimestriel
               en: Quarterly
-    properties:  
+      dct:Policy:
+        definition: |
+          A plan or course of action by an authority, intended to influence and determine decisions, actions,
+          and other matters.
+        subClassOf: []
+      dct:ProvenanceStatement:
+        definition: |
+          A statement about the intellectual property rights (IPR) held in or over a resource, a legal document giving
+          official permission to do something with a resource, or a statement about access rights.
+        subClassOf: []
+
+    datatypes:
+      dct:Box:
+        label: DCMI Box
+        definition: |
+          The set of regions in space defined by their geographic coordinates according to the DCMI Box Encoding Scheme.
+        scopeNote: |
+          We define the following components to describe the box:
+            northlimit:
+              definition: The constant coordinate for the northernmost face or edge
+              defaultValue: INF
+            eastlimit:
+              definition: The constant coordinate for the easternmost face or edge2 	INF3
+              defaultValue: INF
+            southlimit:
+              definition: The constant coordinate for the southernmost face or edge2 	-INF3
+              defaultValue: -INF
+            westlimit:
+              definition: The constant coordinate for the westernmost face or edge2 	-INF3
+              defaultValue: -INF
+            uplimit:
+              definition: The constant coordinate for the uppermost face or edge2 	INF3
+              defaultValue: INF
+            downlimit:
+              definition: The constant coordinate for the lowermost face or edge2 	-INF3
+              defaultValue: -INF
+            units:
+              definition: The units applying to unlabelled numeric values of northlimit, eastlimit, southlimit, westlimit
+              defautValue: signed decimal degrees
+            zunits:
+              definition: The units applying to unlabelled numeric values of uplimit, downlimit
+              defautValue: metres
+            projection:
+              definition: |
+                The name of the projection used with any parameters required, such as ellipsoid parameters, datum,
+                standard parallels and meridians, zone, etc
+              defautValue: |
+                geographic coordinates on Earth for northlimit, eastlimit, southlimit, westlimit;
+                height above mean-sea-level for uplimit, downlimit
+            name:
+              definition: A name for the place4
+        example:
+          - label: Western Australia
+            asText: |
+              name=Western Australia; northlimit=-13.5; southlimit=-35.5; westlimit=112.5; eastlimit=129
+        seeAlso: https://www.dublincore.org/specifications/dublin-core/dcmi-box/
+      dct:ISO3166:
+        definition: The set of codes listed in ISO 3166-1 for the representation of names of countries.
+      dct:ISO639-2:
+        definition: The three-letter alphabetic codes listed in ISO639-2 for the representation of names of languages.
+      dct:ISO639-3:
+        definition: The set of three-letter codes listed in ISO 639-3 for the representation of names of languages.
+      dct:Period:
+        definition: The set of time intervals defined by their limits according to the DCMI Period Encoding Scheme.
+        scopeNote: |
+          We define the following components to describe the interval:
+            start:
+              definition: The instant corresponding to the commencement of the time interval
+              defaultValue: -INF
+            end:
+              definition: The instant corresponding to the termination of the time interval
+              defaultValue: INF
+            scheme:
+              definition: The encoding used for the representation of the time-instants in the start and end components
+              defaultValue: W3C-DTF
+            name:
+              definition: A name for the time interval
+        seeAlso: https://www.dublincore.org/specifications/dublin-core/dcmi-period/
+        example:
+          - label: The Great Depression
+            asText: name=The Great Depression; start=1929; end=1939;
+          - label: Perth International Arts Festival, 2000
+            asText: name=Perth International Arts Festival, 2000; start=2000-01-26; end=2000-02-20;
+          - label: 999 AFL Grand Final [AFL is an obscure Australian ball game]
+            asText: start=1999-09-25T14:20+10:00; end=1999-09-25T16:40+10:00; scheme=W3C-DTF;
+          - label: The Phanerozoic Eon
+            asText: start=Cambrian period; scheme=Geological timescale; name=Phanerozoic Eon;
+      dct:Point:
+        definition: |
+          The set of points in space defined by their geographic coordinates according to the DCMI Point Encoding Scheme.
+      dct:RFC1766:
+        definition: The set of tags, constructed according to RFC 1766, for the identification of languages.
+        seeAlso: http://www.ietf.org/rfc/rfc1766.txt
+      dct:RFC3066:
+        definition: The set of tags constructed according to RFC 3066 for the identification of languages.
+        seeAlso: http://www.ietf.org/rfc/rfc3066.txt
+      dct:RFC4646:
+        definition: The set of tags constructed according to RFC 4646 for the identification of languages.
+        comment: RFC 4646 obsoletes RFC 3066.
+        seeAlso: http://www.ietf.org/rfc/rfc4646.txt
+      dct:RFC5646:
+        definition: The set of tags constructed according to RFC 5646 for the identification of languages.
+        comment: RFC 5646 obsoletes RFC 4646.
+        seeAlso: http://www.ietf.org/rfc/rfc5646.txt
+      dct:URI:
+        definition: |
+          The set of identifiers constructed according to the generic syntax for Uniform Resource Identifiers
+          as specified by the Internet Engineering Task Force.
+        seeAlso: http://www.ietf.org/rfc/rfc3986.txt
+      dct:W3CDTF:
+        definition: The set of dates and times constructed according to the W3C Date and Time Formats Specification.
+        seeAlso: http://www.w3.org/TR/NOTE-datetime
+    properties:
       dct:title: # MD DCMI de base: titres, id, type, résumé, ...
         definition: A name given to the resource.
         range: [rdfs:Literal]
@@ -527,16 +651,18 @@ ontologies:
       dct:format: # format, conformité
         definition: The file format, physical medium, or dimensions of the resource.
         scopeNote: |
-          Recommended practice is to use a controlled vocabulary where available. For example, for file formats one could use
-          the list of Internet Media Types [MIME]. Examples of dimensions include size and duration.
-        range: [dct:MediaType, dct:Extent ]
+          Recommended practice is to use a controlled vocabulary where available. For example, for file formats one
+          could use the list of Internet Media Types [MIME]. Examples of dimensions include size and duration.
+        range: [dct:MediaType] # DCMI indique aussi dct:Extent qui semble une erreur
       dct:medium:
         definition: The material or physical carrier of the resource.
         range: [dct:PhysicalMedium]
+        domain: [dct:PhysicalResource]
         subPropertyOf: [dct:format]
       dct:extent:
         definition: The size or duration of the resource.
         scopeNote: Recommended practice is to specify the file size in megabytes and duration in ISO 8601 format.
+        subPropertyOf: [dct:format]
       dct:conformsTo:
         definition: An established standard to which the described resource conforms.
         range: [dct:Standard]
@@ -587,9 +713,9 @@ ontologies:
       dct:accrualMethod: # accrual
       dct:accrualPeriodicity:
         definition: The frequency at which a dataset is published. [DCAT]
-        range: [dcterms:Frequency]
+        range: [dct:Frequency]
         scopeNote: |
-          Usage note: The value of dcterms:accrualPeriodicity gives the rate at which the dataset-as-a-whole is updated. This may be complemented by dcat:temporalResolution to give the time between collected data points in a time series.
+          Usage note: The value of dct:accrualPeriodicity gives the rate at which the dataset-as-a-whole is updated. This may be complemented by dcat:temporalResolution to give the time between collected data points in a time series.
       dct:accrualPolicy:
 
       dct:educationLevel: # divers
@@ -608,7 +734,8 @@ ontologies:
         definition: Examples include lists, tables, and databases. A dataset may be useful for direct machine processing.
         subClassOf: []
       dctype:Event:
-        definition: Metadata for an event provides descriptive information that is the basis for discovery of the purpose, location, duration, and responsible agents associated with an event. Examples include an exhibition, webcast, conference, workshop, open day, performance, battle, trial, wedding, tea party, conflagration.
+        definition: |
+          Metadata for an event provides descriptive information that is the basis for discovery of the purpose, location, duration, and responsible agents associated with an event. Examples include an exhibition, webcast, conference, workshop, open day, performance, battle, trial, wedding, tea party, conflagration.
         subClassOf: []
       dctype:Image:
         definition: Examples include images and photographs of physical objects, paintings, prints, drawings, other images and graphics, animations and moving pictures, film, diagrams, maps, musical notation. Note that Image may include both electronic and physical representations.
@@ -1106,6 +1233,13 @@ ontologies:
             name:
               fr: Ministère chargé de l'écologie
             homepage: https://www.ecologie.gouv.fr/
+      foaf:Document:
+        definition: The foaf:Document class represents those things which are, broadly conceived, 'documents'.
+        subClassOf: []
+      foaf:Image:
+        definition: An image.
+        scopeNote:  Digital images (such as JPEG, PNG, GIF bitmaps, SVG diagrams etc.) are examples of foaf:Image.
+        subClassOf: [foaf:Document]
     properties:  
       foaf:name:
       foaf:mbox:
@@ -1123,7 +1257,7 @@ ontologies:
       foaf:page:
       foaf:primaryTopic:
         definition: The primary topic of some page or document.
-        range: [rdf:Resource]
+        range: [rdfs:Resource]
         domain: [foaf:Document]
         inverse: foaf:isPrimaryTopicOf
   vcard:
@@ -1142,8 +1276,7 @@ ontologies:
     properties:
       vcard:fn:
         definition: The full name of the object (as a single string). This is the only mandatory property.
-        range: [rdfs:Literal]
-        datatype: [xsd:string]
+        range: [xsd:string]
       vcard:hasEmail:
         definition: To specify the electronic mail address for communication with the object
         range: [vcard:Email]
@@ -1199,7 +1332,7 @@ ontologies:
         range:	[dcat:CatalogRecord]
       dcat:resource:
         definition: A resource that is listed in the catalog.
-        subPropertyOf: [dcterms:hasPart]
+        subPropertyOf: [dct:hasPart]
         domain: [dcat:Catalog]
         range: [dcat:Resource]
         inverse: dcat:inCatalog
@@ -1274,7 +1407,7 @@ ontologies:
           primary topic, i.e., describes one dataset or service.
       dcat:theme:
         definition: A main category of the resource. A resource can have multiple themes.
-        subPropertyOf: [dcterms:subject]
+        subPropertyOf: [dct:subject]
         range: [rdfs:Resource]
         scopeNote: |
           Usage note: The set of themes used to categorize the resources are organized in a skos:ConceptScheme,
@@ -1316,7 +1449,7 @@ ontologies:
         definition: A dataset series of which the dataset is part.
         domain: [dcat:Dataset]
         range: [dcat:DatasetSeries]
-        subPropertyOf: [dcterms:isPartOf]
+        subPropertyOf: [dct:isPartOf]
         inverse: dcat:seriesMember
       dcat:distribution:
         definition:	An available distribution of the dataset.
@@ -1347,7 +1480,7 @@ ontologies:
       dcat:downloadURL:
         definition: |
           The URL of the downloadable file in a given format. E.g., CSV file or RDF file. The format is indicated
-          by the distribution's dcterms:format and/or dcat:mediaType
+          by the distribution's dct:format and/or dcat:mediaType
         domain: [dcat:Distribution]
         range: [rdfs:Resource]
         scopeNote: |
@@ -1366,14 +1499,14 @@ ontologies:
       dcat:hasVersion:
         definition: This resource has a more specific, versioned resource [PAV].
         equivalentProperty: [pav:hasVersion]
-        subPropertyOf: [dcterms:hasVersion, prov:generalizationOf]
+        subPropertyOf: [dct:hasVersion, prov:generalizationOf]
         scopeNote: |
           Usage note:
             This property is intended for relating a non-versioned or abstract resource to several versioned resources,
             e.g., snapshots [PAV].
             The notion of version used by this property is limited to versions resulting from revisions occurring
             to a resource as part of its life-cycle. Therefore, its semantics is more specific than its super-property
-            dcterms:hasVersion, which makes use of a broader notion of version, including editions and adaptations.
+            dct:hasVersion, which makes use of a broader notion of version, including editions and adaptations.
       dcat:hasCurrentVersion:
         definition: This resource has a more specific, versioned resource with equivalent content [PAV].
         equivalentProperty: [pav:hasCurrentVersion]
@@ -1440,7 +1573,7 @@ ontologies:
         range: [prov:Attribution]
         scopeNote: |
           Usage note: Used to link to an Agent where the nature of the relationship is known but does not match one
-          of the standard [DCTERMS] properties (dcterms:creator, dcterms:publisher).
+          of the standard [DCTERMS] properties (dct:creator, dct:publisher).
           Use dcat:hadRole on the prov:Attribution to capture the responsibility of the Agent with respect to
           the Resource. See 15.1 Relationships between datasets and agents for usage examples.
       prov:wasGeneratedBy:
@@ -1620,7 +1753,6 @@ ontologies:
           pairs. Either whitespace or commas can be used to separate latitude and longitude; whitespace should be used when writing a list of
           several such points.
         subClassOf: [schema:StructuredValue]
-        
     properties:
       schema:distribution:
         definition: |
@@ -1678,7 +1810,7 @@ ontologies:
           sameThing(P1, P2) :- type(P1, Point), type(P2, Point), spaciallyIntersects(P1, P2).
         subClassOf: [wgs84:SpatialThing]
         example:
-          - title: A basic, standalone example
+          - label: A basic, standalone example
             asTurtle: |
               @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
 
@@ -1686,7 +1818,7 @@ ontologies:
                 a geo:Point ;
                 geo:lat "55.701" ;
                 geo:long "12.552" .
-          - title: An example that combines Geo, Dublin Core and FOAF vocabularies
+          - label: An example that combines Geo, Dublin Core and FOAF vocabularies
             asTurtle: |
               @prefix dc11: <http://purl.org/dc/elements/1.1/> .
               @prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -1774,7 +1906,7 @@ ontologies:
         scopeNote: |
           La spécification mentionne l'utilisation de la propriété 'rdfs:seeAlso' sous le nom de 'geographic identifier'
         example:
-          - title: Example 3 - RDF (WGS84 lat/long)
+          - label: Example 3 - RDF (WGS84 lat/long)
             asTurtle: |
               @prefix locn: <http://w3.org/ns/locn#> .
               @prefix sf: <http://www.opengis.net/ont/sf#> .
@@ -1784,7 +1916,7 @@ ontologies:
                 locn:geometry [ a sf:Point ;
                                 wgs:lat "51.477811" ;
                                 wgs:long "-0.001475" ] .
-          - title: Example 4 - RDF (schema.org)
+          - label: Example 4 - RDF (schema.org)
             asTurtle: |
               @prefix locn: <http://w3.org/ns/locn#> .
               @prefix schema: <https://schema.org/> .
@@ -1907,8 +2039,11 @@ ontologies:
         range: [skos:Concept]
         scopeNote: Can be a point, line or polygon.
       locn:latitude:
-        definition: The geographic coordinate that specifies the north / south position of the Geomerty on the Earth's surface.
-        editorialNote: l'exemple de Location utilise schema:latitude et non locn:latitude. Cette propriété est-elle définie dans locn ?
+        definition: |
+          The geographic coordinate that specifies the north / south position of the Geomerty on the Earth's surface.
+        editorialNote: |
+          l'exemple de Location utilise schema:latitude et non locn:latitude.
+          Cette propriété est-elle définie dans locn ?
         domain: [locn:Geometry]
         range: [xsd:string]
       locn:longitude:

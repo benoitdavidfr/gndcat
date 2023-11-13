@@ -100,17 +100,18 @@ abstract class Struct { // Literal | Object | Array | DefRef | OneOf | ...
 /** Stoke les contraintes d'intégrité définies dans le schéma */
 class RefIntegrity {
   readonly public ?string $label;
-  readonly public string $path;
+  /** @var list<string> $paths les paths définissant la cible de la contrainte */
+  readonly public array $paths;
   
   /**
-   * @param array<string,string> $refIntegrity
+   * @param array<string,string|list<string>> $refIntegrity
    * @param list<string> $path le chemin de l'objet créé
   */
   function __construct(array $refIntegrity, array $path) {
     if (Schema::$options['__construct'] ?? false)
       echo "Création d'une RefIntegrity pour path=",implode('/',$path),"<br>\n";
     $this->label = $refIntegrity['label'];
-    $this->path = $refIntegrity['path'];
+    $this->paths = is_string($refIntegrity['path']) ? [$refIntegrity['path']] : $refIntegrity['path'];
   }
 
   /** Vérifie l'intégrité, renvoie un message pour chaque valeur testée.
@@ -121,7 +122,7 @@ class RefIntegrity {
   function checkIntegrity(array|string|null $refdata, array $path, BaseData $baseData): array {
     if (Schema::$options['checkIntegrity'] ?? false)
       echo "RefIntegrity::checkIntegrity(data=",json_encode($refdata),", path=",implode('/',$path),")<br>\n";
-    $vals = $baseData->path($this->path);
+    $vals = $baseData->path($this->paths);
     return [implode('/',$path)
         => in_array($refdata, $vals) ? 'ok pour '.json_encode($refdata)
            : json_encode($refdata).' !in_array '.json_encode($vals)];

@@ -20,17 +20,17 @@ class BaseData {
   function __construct(array|string $data) { $this->data = $data; }
   
   /** Extrait la liste des valeurs correspondant au path
+   * @param list<string> $paths
    * @return array<mixed>
    */
-  function path(string $path): array {
-    $path = explode('/', $path);
-    array_shift($path);
-    $list = new BaseDataList([$this]);
+  function path(array $paths): array {
     $result = [];
-    //foreach (array_map(function(BaseData $bd) { return $bd->data; }, $list->path($path)->list) as $r)
-    //  $result[] = $r;
-    $result = $list->path($path)->list;
-    //echo '<pre>$list->path($path)->list = '; print_r($result);
+    foreach ($paths as $path) {
+      $path = explode('/', $path);
+      array_shift($path);
+      $list = new BaseDataList([$this]);
+      $result = array_merge($result, $list->path($path)->list);
+    }
     
     if (count($result) == 1)
       return $result[0]->data;
@@ -79,7 +79,9 @@ class BaseDataList {
     foreach ($this->list as $bd) {
       if ($key == '*') {
         foreach ($bd->data as $k => $value) {
-          $resultList[] = new BaseData($value);
+          //echo "<pre>k=$k, value="; print_r($value);
+          if ($value)
+            $resultList[] = new BaseData($value);
         }
       }
       elseif (strpos($key, '|') !== false) {
@@ -101,12 +103,14 @@ class BaseDataList {
 
 if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
 
+
 const HTML_HEADER = "<!DOCTYPE HTML>\n<html><head><title>path</title></head><body>\n";
 
 if (!isset($_GET['file'])) { // Sélection du nom du fichier
   echo HTML_HEADER;
   echo "<a href='?file=registre'>registre</a><br>\n";
   echo "<a href='?file=reg'>reg</a><br>\n";
+  echo "<a href='?file=checkintegrity.test'>checkintegrity.test</a><br>\n";
   die();
 }
 
@@ -144,5 +148,5 @@ if (!isset($_GET['path'])) {
 }
 
 $baseData = new BaseData(Yaml::parseFile("$_GET[file].yaml"));
-$result = $baseData->path($_GET['path']);
+$result = $baseData->path([$_GET['path']]);
 echo '<pre>',Yaml::dump($result, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
