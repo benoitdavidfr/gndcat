@@ -200,6 +200,7 @@ ontologies:
       Espace de noms utilisé pour les 15 éléments originaux du Dublin Core créés en 1995 et formalisés en RDF en 2000.
       Cet espace de nom correspond au domaine d'application de la norme ISO 15836 publiée en 2003 et révisée en 2017
       sous le nom ISO 15836-1:2017.
+    publisher: https://www.dublincore.org/about/
     properties:
       dce:title:
       dce:identifier:
@@ -228,6 +229,7 @@ ontologies:
     source:
       - https://www.dublincore.org/specifications/dublin-core/dcmi-terms/
       - https://www.dublincore.org/resources/userguide/publishing_metadata/
+    publisher: https://www.dublincore.org/about/
     classes:
       dct:Agent:
         definition: A resource that acts or has the power to act.
@@ -725,7 +727,7 @@ ontologies:
     title: DCMI Type Vocabulary
     source:
       - http://purl.org/dc/dcmitype/
-    publisher: http://purl.org/dc/aboutdcmi#DCMI
+    publisher: https://www.dublincore.org/about/
     classes:
       dctype:Collection:
         definition: A collection is described as a group; its parts may also be separately described.
@@ -1225,6 +1227,10 @@ ontologies:
               fr: Organisation internationale de normalisation (ISO)
               en: International Organization for Standardization (ISO)
             homepage: https://www.iso.org/
+          - $id: https://www.dublincore.org/about/
+            name:
+              en: Dublin Core™ Metadata Initiative (DCMI)
+            homepage: https://www.dublincore.org/
           - $id: https://www.ogc.org/
             name:
               en: Open Geospatial Consortium

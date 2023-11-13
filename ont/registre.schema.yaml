@@ -1,5 +1,5 @@
 $id: https://georef.eu/gndcat/ont/registre.schema.yaml
-$schema: http://json-schema.org/schema#
+$schema: 'http://schema.georef.eu/json-schema_with_refintegrity#'
 definitions:
   document:
     description: description d'un document de référence
@@ -48,7 +48,9 @@ definitions:
             $ref: '#/definitions/multiLingualLabel'
           publisher:
             description: éditeur défini comme URI défini comme ressource de foaf:Organization
-            referentialIntegrity: publisher doit être un URI défini comme ressource de foaf:Organization
+            referentialIntegrity:
+              label: publisher doit être un URI défini comme ressource de foaf:Organization
+              path: '#/ontologies/foaf/classes/foaf:Organization/instances/$id'
             type: string
             format: uri
       - description: instance skos:Concept
@@ -64,10 +66,14 @@ definitions:
             $ref: '#/definitions/multiLingualLabel'
           inScheme:
             description: schémas de concepts dans lesquels le concept est défini
-            referentialIntegrity: |
-              les URI de inScheme doivent être chacun un URI défini comme ressource de skos:ConceptScheme
             type: array
-            items: {type: string, format: uri}
+            items:
+              type: string
+              format: uri
+              referentialIntegrity:
+                label: |
+                  les URI de inScheme doivent être chacun un URI défini comme ressource de skos:ConceptScheme
+                path: '#/ontologies/skos/classes/skos:ConceptScheme/instances/$id'
       - description: instance foaf:Organization
         type: object
         required: [ $id, name, homepage ]
@@ -143,11 +149,13 @@ definitions:
       scopeNote: {description: note d'application d'un concept (source SKOS), type: string }
       subClassOf:
         description: liste des classes parentes définies par leur URI compact (rdfs:subClassOf)
-        referentialIntegrity: chaque CURI de subClassOf doit un CURI d'une classe
         type: array
         items:
           type: string
           pattern: '^[a-zA-Z0-9]+:[A-Za-z0-9]+$'
+          referentialIntegrity:
+            label: chaque CURI de subClassOf doit un CURI d'une classe
+            path: '#/ontologies/*/classes/$id'
       instances:
         description: liste d'instances bien connues de la classe et utiles
         $ref: '#/definitions/instances'
@@ -255,7 +263,9 @@ definitions:
           $ref: '#/definitions/document'
       publisher:
         description: éditeur défini comme URI défini comme ressource de foaf:Organization
-        referentialIntegrity: publisher doit être un URI défini comme ressource de foaf:Organization
+        referentialIntegrity:
+          label: publisher doit être un URI défini comme ressource de foaf:Organization
+          path: '#/ontologies/foaf/classes/foaf:Organization/instances/$id'
         type: string
         format: uri
       abstract:

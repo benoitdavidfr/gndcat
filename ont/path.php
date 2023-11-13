@@ -68,9 +68,17 @@ class BaseDataList {
     if (!$path)
       return $this;
     if ($path == ['$id']) {
-      //return new self(array_keys($this->data));
+      // si la donnée est un array non liste alors $id correspond à la clé dans cet array
+      // Par contre si la donnée est une liste alors $id correspond au champ $id de chaque élément
       return new self(array_map(
-        function(BaseData $bd): BaseData { return new BaseData(array_keys($bd->data)); },
+        function(BaseData $bd): BaseData {
+          if (!is_array($bd->data))
+            throw new Exception("BaseData::$data not an array");
+          elseif (array_is_list($bd->data))
+            return new BaseData(array_map(function(array $a) { return $a['$id'] ?? null; }, $bd->data));
+          else
+            return new BaseData(array_keys($bd->data));
+        },
         $this->list));
     }
     

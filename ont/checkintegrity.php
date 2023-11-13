@@ -610,7 +610,7 @@ $schema = new Schema(Yaml::parseFile("$_GET[file].yaml"));
 
 // Vérification que les données correspondent au schéma
 if ($status = $schema->checkStruct(Yaml::parseFile("$_GET[file].yaml"))) {
-  echo "La vérification ne peut être effectuée car les données ne sont pas conformes à leur schéma ;<br>\n",
+  echo HTML_HEADER,"La vérification ne peut être effectuée car les données ne sont pas conformes à leur schéma ;<br>\n",
        "Les erreurs suivantes ont été détectées:<br>\n";
   echo '<pre>',Yaml::dump($status, 10, 2);
   die();
@@ -618,6 +618,6 @@ if ($status = $schema->checkStruct(Yaml::parseFile("$_GET[file].yaml"))) {
 
 // Vérification des contraintes d'intégrité
 $checkIntegrity = $schema->checkIntegrity(Yaml::parseFile("$_GET[file].yaml"));
-echo "Résulats de l'évaluation des contraintes d'intégrité:<br>\n";
+echo HTML_HEADER,"Résulats de l'évaluation des contraintes d'intégrité:<br>\n";
 echo '<pre>',Yaml::dump(['result'=> $checkIntegrity], 10, 2);
 die();
